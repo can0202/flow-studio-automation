@@ -16,6 +16,7 @@ interface QueueState {
   approveJob: (jobId: string) => Promise<void>;
   deleteJob: (jobId: string) => Promise<void>;
   clearCompleted: () => Promise<void>;
+  clearAll: () => Promise<void>;
   retryFailed: () => Promise<void>;
   setSelectedJob: (job: Job | null) => void;
   setStatusFilter: (filter: string) => void;
@@ -110,6 +111,15 @@ export const useQueueStore = create<QueueState>((set, get) => ({
     }
   },
 
+  clearAll: async () => {
+    try {
+      await window.api.clearAllJobs();
+      set({ jobs: [], selectedJob: null });
+    } catch (err) {
+      console.error('Failed to clear all jobs:', err);
+    }
+  },
+
   retryFailed: async () => {
     try {
       await window.api.retryFailedJobs();
@@ -126,13 +136,19 @@ export const useQueueStore = create<QueueState>((set, get) => ({
   handleJobUpdate: (updatedJob) => {
     set((state) => {
       const index = state.jobs.findIndex((j) => j.id === updatedJob.id);
-      let updatedList = [...state.jobs];
-      if (index >= 0) {
-        updatedList[index] = updatedJob;
-      } else {
-        updatedList = [updatedJob, ...updatedList];
+      if (index < 0) {
+        // Job not found locally — this can happen on reconnect, add it
+        // But only if it's not a race condition with createJob (check by createdAt recency)
+        const alreadyExists = state.jobs.some((j) => j.id === updatedJob.id);
+        if (alreadyExists) return state; // no-op
+        return {
+          jobs: [updatedJob, ...state.jobs],
+          selectedJob: state.selectedJob,
+        };
       }
 
+      const updatedList = [...state.jobs];
+      updatedList[index] = updatedJob;
       return {
         jobs: updatedList,
         selectedJob: state.selectedJob?.id === updatedJob.id ? updatedJob : state.selectedJob,

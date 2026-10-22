@@ -12,6 +12,8 @@ interface OutputState {
   loadOutputs: (projectName?: string) => Promise<void>;
   openFile: (filePath: string) => Promise<void>;
   revealInExplorer: (filePath: string) => Promise<void>;
+  deleteOutput: (filePath: string) => Promise<boolean>;
+  deleteOutputs: (filePaths: string[]) => Promise<{ success: boolean; deletedCount: number }>;
   setSelectedOutput: (item: OutputFileItem | null) => void;
   setFilterType: (filterType: 'all' | 'image' | 'video') => void;
   setFilterProject: (filterProject: string) => void;
@@ -50,6 +52,39 @@ export const useOutputStore = create<OutputState>((set, get) => ({
       await window.api.revealInExplorer(filePath);
     } catch (err) {
       console.error('Failed to reveal file:', err);
+    }
+  },
+
+  deleteOutput: async (filePath: string) => {
+    try {
+      const res = await window.api.deleteOutput(filePath);
+      if (res) {
+        set((state) => ({
+          outputs: state.outputs.filter((o) => o.path !== filePath),
+          selectedOutput: state.selectedOutput?.path === filePath ? null : state.selectedOutput,
+        }));
+      }
+      return res;
+    } catch (err) {
+      console.error('Failed to delete output:', err);
+      return false;
+    }
+  },
+
+  deleteOutputs: async (filePaths: string[]) => {
+    try {
+      const res = await window.api.deleteOutputs(filePaths);
+      if (res.success) {
+        const pathSet = new Set(filePaths);
+        set((state) => ({
+          outputs: state.outputs.filter((o) => !pathSet.has(o.path)),
+          selectedOutput: state.selectedOutput && pathSet.has(state.selectedOutput.path) ? null : state.selectedOutput,
+        }));
+      }
+      return res;
+    } catch (err) {
+      console.error('Failed to delete outputs batch:', err);
+      return { success: false, deletedCount: 0 };
     }
   },
 

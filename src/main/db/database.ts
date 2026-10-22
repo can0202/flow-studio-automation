@@ -188,18 +188,18 @@ export class AppDatabase {
     };
   }
 
-  public addSession(id: string, name: string, profileDir: string): Session {
+  public addSession(id: string, name: string, profileDir: string, initialStatus: Session['status'] = 'ready'): Session {
     const now = new Date().toISOString();
     this.sqlite.prepare(`
       INSERT INTO sessions (id, name, profile_dir, status, created_at)
-      VALUES (?, ?, ?, 'ready', ?)
-    `).run(id, name, profileDir, now);
+      VALUES (?, ?, ?, ?, ?)
+    `).run(id, name, profileDir, initialStatus, now);
 
     return {
       id,
       name,
       profileDir,
-      status: 'ready',
+      status: initialStatus,
       createdAt: now,
     };
   }
@@ -242,7 +242,11 @@ export class AppDatabase {
     const aspectRatio = input.aspectRatio || '1:1';
     const duration = input.duration || 5;
     const maxRetries = input.maxRetries ?? settings.defaultMaxRetries;
-    const metadata = input.projectName ? { projectName: input.projectName } : {};
+    const metadata = {
+      ...(input.metadata || {}),
+      ...(input.projectName ? { projectName: input.projectName } : {}),
+      repeatCount: input.repeatCount ?? 1,
+    };
 
     this.sqlite.prepare(`
       INSERT INTO jobs (
@@ -334,6 +338,10 @@ export class AppDatabase {
 
   public clearCompletedJobs() {
     this.sqlite.prepare("DELETE FROM jobs WHERE status = 'completed'").run();
+  }
+
+  public clearAllJobs() {
+    this.sqlite.prepare('DELETE FROM jobs').run();
   }
 
   public retryFailedJobs() {

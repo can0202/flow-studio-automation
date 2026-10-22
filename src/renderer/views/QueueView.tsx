@@ -29,6 +29,7 @@ export const QueueView: React.FC = () => {
     approveJob,
     deleteJob,
     clearCompleted,
+    clearAll,
     retryFailed,
     createBatchJobs,
   } = useQueueStore();
@@ -41,6 +42,7 @@ export const QueueView: React.FC = () => {
   // Batch import modal state
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [importText, setImportText] = useState('');
+  const [importAspectRatio, setImportAspectRatio] = useState('16:9');
   const [previewItems, setPreviewItems] = useState<CreateJobInput[]>([]);
 
   // Filter jobs
@@ -70,8 +72,8 @@ export const QueueView: React.FC = () => {
     { id: 'interrupted', label: 'Bị ngắt', count: jobs.filter((j) => j.status === 'interrupted').length },
   ];
 
-  // Parse batch input
-  const handleParseImport = (text: string) => {
+  // Parse batch input (supports Plain Text line-by-line, CSV, and JSON)
+  const handleParseImport = (text: string, customRatio = importAspectRatio) => {
     setImportText(text);
     if (!text.trim()) {
       setPreviewItems([]);
@@ -87,7 +89,7 @@ export const QueueView: React.FC = () => {
           name: item.name || `Batch Job #${i + 1}`,
           type: (item.type === 'video' ? 'video' : 'image') as JobType,
           prompt: item.prompt || '',
-          aspectRatio: item.aspectRatio || '1:1',
+          aspectRatio: item.aspectRatio || customRatio,
           duration: item.duration || 5,
           model: item.model || '',
         })).filter((item) => item.prompt.trim() !== '');
@@ -97,24 +99,46 @@ export const QueueView: React.FC = () => {
       }
     } catch {}
 
-    // Fallback: parse CSV / lines
+    // Parse plain lines / CSV
     const lines = text.split(/\r?\n/).filter((l) => l.trim() !== '');
     const items: CreateJobInput[] = [];
 
-    // Check if line 0 is a header
-    const startIndex = lines[0]?.toLowerCase().includes('prompt') ? 1 : 0;
+    // Check if line 0 is a CSV header
+    const isCsvHeader = lines[0]?.toLowerCase().startsWith('prompt,');
+    const startIndex = isCsvHeader ? 1 : 0;
 
     for (let i = startIndex; i < lines.length; i++) {
-      const line = lines[i];
-      // Split by comma handling simple quotes
-      const parts = line.split(',').map((p) => p.trim().replace(/^["']|["']$/g, ''));
-      if (parts.length > 0 && parts[0]) {
+      const line = lines[i].trim();
+      if (!line) continue;
+
+      // Check if line matches structured CSV: "prompt", type, ratio, duration
+      const csvQuotedMatch = line.match(/^"(.+)",\s*(image|video)(?:,\s*([0-9:]+))?(?:,\s*(\d+))?$/i);
+      if (csvQuotedMatch) {
+        items.push({
+          name: `Batch #${items.length + 1}`,
+          prompt: csvQuotedMatch[1].trim(),
+          type: csvQuotedMatch[2].toLowerCase() as any,
+          aspectRatio: csvQuotedMatch[3] || customRatio,
+          duration: parseInt(csvQuotedMatch[4] || '5') || 5,
+        });
+      } else if (isCsvHeader && line.includes(',')) {
+        // Fallback for CSV header mode
+        const parts = line.split(',').map((p) => p.trim().replace(/^["']|["']$/g, ''));
         items.push({
           name: `Batch #${items.length + 1}`,
           prompt: parts[0],
           type: (parts[1]?.toLowerCase() === 'video' ? 'video' : 'image') as any,
-          aspectRatio: parts[2] || '1:1',
-          duration: parseInt(parts[3]) || 5,
+          aspectRatio: parts[2] || customRatio,
+          duration: parseInt(parts[3] || '5') || 5,
+        });
+      } else {
+        // Plain text mode: Each line is a complete prompt (preserves all internal commas!)
+        items.push({
+          name: `Batch #${items.length + 1}`,
+          prompt: line,
+          type: 'image',
+          aspectRatio: customRatio,
+          duration: 5,
         });
       }
     }
@@ -187,6 +211,23 @@ export const QueueView: React.FC = () => {
           >
             <Trash2 className="w-3.5 h-3.5 text-rose-400" />
             <span>Xóa đã hoàn thành</span>
+          </button>
+
+          {/* Clear All Queue */}
+          <button
+            onClick={async () => {
+              if (jobs.length === 0) return;
+              if (window.confirm('Bạn có chắc chắn muốn xóa TOÀN BỘ danh sách hàng đợi không? Thao tác này sẽ dọn sạch tất cả các job đang chờ và hoàn thành.')) {
+                await clearAll();
+                addNotification({ type: 'info', message: 'Đã xóa toàn bộ hàng đợi.' });
+              }
+            }}
+            disabled={jobs.length === 0}
+            className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-rose-500/15 hover:bg-rose-500/25 disabled:opacity-40 text-rose-300 border border-rose-500/30 transition-colors flex items-center gap-1.5"
+            title="Xóa toàn bộ tác vụ trong hàng đợi SQLite"
+          >
+            <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+            <span>Xóa tất cả hàng đợi</span>
           </button>
 
           {/* Batch Import */}
@@ -330,11 +371,16 @@ export const QueueView: React.FC = () => {
                           </span>
 
                           {(job.status === 'running' || job.status === 'downloading') && (
-                            <div className="w-24 h-1.5 rounded-full bg-slate-800 overflow-hidden">
-                              <div
-                                className="h-full bg-indigo-500 transition-all duration-300"
-                                style={{ width: `${job.progress || 10}%` }}
-                              />
+                            <div className="flex items-center gap-2">
+                              <div className="w-20 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                                <div
+                                  className="h-full bg-indigo-500 transition-all duration-300"
+                                  style={{ width: `${job.progress || 10}%` }}
+                                />
+                              </div>
+                              <span className="text-[10px] font-mono font-medium text-indigo-400">
+                                {job.progress || 10}%
+                              </span>
                             </div>
                           )}
                         </div>
@@ -423,21 +469,46 @@ export const QueueView: React.FC = () => {
             </div>
 
             <div className="p-6 space-y-4 overflow-y-auto flex-1">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-400">Dán nội dung CSV hoặc JSON:</span>
-                <button
-                  onClick={loadCsvTemplate}
-                  className="text-xs font-semibold text-indigo-400 hover:text-indigo-300"
-                >
-                  Load Template CSV Mẫu
-                </button>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <span className="text-xs font-semibold text-slate-300">Dán danh sách Prompts:</span>
+                  <p className="text-[11px] text-slate-500">Mỗi dòng là 1 prompt (tự do), hoặc theo định dạng CSV / JSON</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-semibold text-slate-400">Tỷ lệ:</span>
+                  <div className="flex bg-slate-900 border border-slate-800 rounded-lg p-0.5">
+                    {['16:9', '1:1', '9:16', '4:3', '3:4'].map((r) => (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => {
+                          setImportAspectRatio(r);
+                          handleParseImport(importText, r);
+                        }}
+                        className={`text-[10px] px-2 py-0.5 rounded font-mono transition-colors ${
+                          importAspectRatio === r
+                            ? 'bg-indigo-600 text-white font-bold'
+                            : 'text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        {r}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    onClick={loadCsvTemplate}
+                    className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 ml-2"
+                  >
+                    CSV Mẫu
+                  </button>
+                </div>
               </div>
 
               <textarea
                 value={importText}
                 onChange={(e) => handleParseImport(e.target.value)}
-                placeholder="Dán định dạng CSV: prompt, type, aspectRatio, duration... hoặc JSON array"
-                rows={5}
+                placeholder="Dán danh sách 100 prompt vào đây (mỗi dòng 1 prompt)...&#10;Ví dụ:&#10;Stopping a vehicle in front of the security gate, chibi cartoon style...&#10;A cute cat barista serving coffee in cozy rainy cafe...&#10;Cyberpunk city market at sunset with neon reflections..."
+                rows={6}
                 className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 resize-none"
               />
 

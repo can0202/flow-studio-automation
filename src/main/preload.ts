@@ -25,6 +25,7 @@ const api: IElectronAPI = {
   approveJob: (jobId: string) => ipcRenderer.invoke('jobs:approve', jobId),
   deleteJob: (jobId: string) => ipcRenderer.invoke('jobs:delete', jobId),
   clearCompletedJobs: () => ipcRenderer.invoke('jobs:clearCompleted'),
+  clearAllJobs: () => ipcRenderer.invoke('jobs:clearAll'),
   retryFailedJobs: () => ipcRenderer.invoke('jobs:retryFailed'),
 
   // Queue
@@ -37,6 +38,15 @@ const api: IElectronAPI = {
   getOutputs: (projectName?: string) => ipcRenderer.invoke('outputs:list', projectName),
   openFile: (filePath: string) => ipcRenderer.invoke('outputs:openFile', filePath),
   revealInExplorer: (filePath: string) => ipcRenderer.invoke('outputs:revealInExplorer', filePath),
+  readAsDataUrl: (filePath: string) => ipcRenderer.invoke('outputs:readAsDataUrl', filePath),
+  batchRenameOutputs: (options: any) => ipcRenderer.invoke('outputs:batchRename', options),
+  deleteOutput: (filePath: string) => ipcRenderer.invoke('outputs:delete', filePath),
+  deleteOutputs: (filePaths: string[]) => ipcRenderer.invoke('outputs:deleteBatch', filePaths),
+
+  // Media Sync
+  startMediaSync: (options: any) => ipcRenderer.invoke('sync:start', options),
+  cancelMediaSync: () => ipcRenderer.invoke('sync:cancel'),
+  scanProjects: (sessionId?: string) => ipcRenderer.invoke('sync:scanProjects', sessionId ?? ''),
 
   // Event Listeners
   onQueueStatsUpdated: (callback: (stats: QueueStats) => void) => {
@@ -58,6 +68,11 @@ const api: IElectronAPI = {
     const handler = (_event: any, notification: any) => callback(notification);
     ipcRenderer.on('app:notification', handler);
     return () => ipcRenderer.removeListener('app:notification', handler);
+  },
+  onSyncProgress: (callback: (progress: any) => void) => {
+    const handler = (_event: any, progress: any) => callback(progress);
+    ipcRenderer.on('sync:progress', handler);
+    return () => ipcRenderer.removeListener('sync:progress', handler);
   },
 };
 

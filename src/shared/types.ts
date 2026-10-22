@@ -128,6 +128,8 @@ export interface CreateJobInput {
   maxRetries?: number;
   projectName?: string;
   sessionId?: string;
+  repeatCount?: number; // Web generation multiplier: 1, 2, 3, 4 (x1, x2, x3, x4)
+  metadata?: Record<string, any>;
 }
 
 export interface BatchImportItem {
@@ -137,6 +139,45 @@ export interface BatchImportItem {
   duration?: number;
   model?: string;
   referenceImageUrl?: string;
+  repeatCount?: number;
+}
+
+export interface BatchNamingConfig {
+  prefix?: string;
+  pattern: 'prefix_index' | 'project_index' | 'prefix_date_index' | 'date_index' | 'custom';
+  customPattern?: string;
+  startNumber: number;
+  digits: number;
+  separator?: string;
+}
+
+export interface DiscoveredProject {
+  name: string;
+  url?: string;
+}
+
+export interface SyncMediaOptions {
+  sessionId?: string;
+  scope: 'all_projects' | 'current_project';
+  targetProjectName?: string;
+  selectedProjectNames?: string[]; // If set, only sync these projects (subset of all_projects)
+  namingConfig: BatchNamingConfig;
+}
+
+export interface SyncProgress {
+  status: 'scanning' | 'downloading' | 'completed' | 'cancelled' | 'error';
+  currentProject?: string;
+  currentFile?: string;
+  downloadedCount: number;
+  skippedCount: number;
+  totalFound: number;
+  message?: string;
+}
+
+export interface BatchRenameOptions {
+  projectName?: string;
+  fileIds?: string[];
+  namingConfig: BatchNamingConfig;
 }
 
 export interface IElectronAPI {
@@ -163,6 +204,7 @@ export interface IElectronAPI {
   approveJob: (jobId: string) => Promise<void>;
   deleteJob: (jobId: string) => Promise<void>;
   clearCompletedJobs: () => Promise<void>;
+  clearAllJobs: () => Promise<void>;
   retryFailedJobs: () => Promise<void>;
 
   // Queue
@@ -175,12 +217,22 @@ export interface IElectronAPI {
   getOutputs: (projectName?: string) => Promise<OutputFileItem[]>;
   openFile: (filePath: string) => Promise<void>;
   revealInExplorer: (filePath: string) => Promise<void>;
+  readAsDataUrl: (filePath: string) => Promise<string | null>;
+  batchRenameOutputs: (options: BatchRenameOptions) => Promise<{ success: boolean; renamedCount: number; message: string }>;
+  deleteOutput: (filePath: string) => Promise<boolean>;
+  deleteOutputs: (filePaths: string[]) => Promise<{ success: boolean; deletedCount: number }>;
+
+  // Media Sync
+  startMediaSync: (options: SyncMediaOptions) => Promise<{ success: boolean; downloaded: number; skipped: number; message: string }>;
+  cancelMediaSync: () => Promise<void>;
+  scanProjects: (sessionId?: string) => Promise<{ success: boolean; projects: DiscoveredProject[]; message: string }>;
 
   // Event Listeners
   onQueueStatsUpdated: (callback: (stats: QueueStats) => void) => () => void;
   onJobUpdated: (callback: (job: Job) => void) => () => void;
   onSessionUpdated: (callback: (session: Session) => void) => () => void;
   onNotification: (callback: (notification: { type: 'info' | 'success' | 'warning' | 'error'; message: string }) => void) => () => void;
+  onSyncProgress: (callback: (progress: SyncProgress) => void) => () => void;
 }
 
 declare global {

@@ -33,7 +33,7 @@ export class SessionManager {
     return this.db.getSessionById(id);
   }
 
-  public addSession(name: string): Session {
+  public addSession(name: string, initialStatus?: SessionStatus): Session {
     const id = 'sess_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
     const profileDir = path.join(this.baseDir, id);
 
@@ -41,7 +41,29 @@ export class SessionManager {
       fs.mkdirSync(profileDir, { recursive: true });
     }
 
-    return this.db.addSession(id, name, profileDir);
+    const settings = this.db.getSettings();
+    const status = initialStatus || (settings.simulationMode ? 'ready' : 'auth_required');
+
+    return this.db.addSession(id, name, profileDir, status);
+  }
+
+  public isBrowserOpen(sessionId: string): boolean {
+    return this.activeContexts.has(sessionId);
+  }
+
+  public getActiveContext(sessionId: string): BrowserContext | undefined {
+    return this.activeContexts.get(sessionId);
+  }
+
+  public async closeBrowser(sessionId: string): Promise<void> {
+    const context = this.activeContexts.get(sessionId);
+    if (context) {
+      try {
+        await context.close();
+      } catch {}
+      this.activeContexts.delete(sessionId);
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+    }
   }
 
   public async openBrowser(sessionId: string): Promise<{ success: boolean; message: string }> {
@@ -151,11 +173,64 @@ export class SessionManager {
         return {
           success: false,
           status: 'auth_required',
-          message: 'Cần đăng nhập: vui lòng dùng "Mở trình duyệt" để đăng nhập Google Flow.',
+          message: 'Cần đăng nhập: Vui lòng bấm "Mở trình duyệt (Đăng nhập)" để đăng nhập Google Flow.',
         };
       }
 
-      // 2. Check if user is ALREADY logged in (avatar, account chip, prompt input, or studio UI)
+      // 2. Deep check DOM for login link vs user avatar
+      const domAuthStatus = await page.evaluate(() => {
+        const elements = Array.from(document.querySelectorAll('a, button, img'));
+        let hasSignIn = false;
+        let hasUserAvatar = false;
+
+        for (const el of elements) {
+          const href = ((el as HTMLAnchorElement).href || '').toLowerCase();
+          const src = ((el as HTMLImageElement).src || '').toLowerCase();
+          const aria = (el.getAttribute('aria-label') || '').toLowerCase();
+          const alt = (el.getAttribute('alt') || '').toLowerCase();
+          const text = (el.textContent || '').trim().toLowerCase();
+
+          if (
+            href.includes('accounts.google.com') ||
+            href.includes('servicelogin') ||
+            text === 'sign in' || text === 'đăng nhập' ||
+            aria.includes('sign in') || aria.includes('đăng nhập')
+          ) {
+            hasSignIn = true;
+          }
+
+          if (
+            href.includes('signoutoptions') ||
+            aria.includes('google account') || aria.includes('tài khoản google') ||
+            alt.includes('google account') || alt.includes('tài khoản google') ||
+            (src.includes('googleusercontent.com') && !src.includes('default_avatar'))
+          ) {
+            hasUserAvatar = true;
+          }
+        }
+
+        return { hasSignIn, hasUserAvatar };
+      }).catch(() => null);
+
+      if (domAuthStatus?.hasSignIn && !domAuthStatus.hasUserAvatar) {
+        this.db.updateSessionStatus(sessionId, 'auth_required', 'Yêu cầu đăng nhập Google');
+        return {
+          success: false,
+          status: 'auth_required',
+          message: 'Cần đăng nhập: Vui lòng bấm "Mở trình duyệt (Đăng nhập)" để đăng nhập tài khoản Google Flow của bạn.',
+        };
+      }
+
+      if (domAuthStatus?.hasUserAvatar) {
+        this.db.updateSessionStatus(sessionId, 'ready', 'Phiên kết nối và hoạt động');
+        return {
+          success: true,
+          status: 'ready',
+          message: `Phiên "${session.name}" đã đăng nhập và sẵn sàng.`,
+        };
+      }
+
+      // 3. Check if user is ALREADY logged in via Playwright selectors
       for (const sel of FLOW_SELECTORS.userLoggedInIndicators) {
         try {
           const isVis = await page.locator(sel).first().isVisible({ timeout: 1200 }).catch(() => false);
@@ -170,7 +245,7 @@ export class SessionManager {
         } catch {}
       }
 
-      // 3. If landing page has Enter Studio button, try clicking it to verify
+      // 4. If landing page has Enter Studio button, try clicking it to verify workspace
       for (const sel of FLOW_SELECTORS.enterStudioButtons) {
         try {
           const btn = page.locator(sel).first();
@@ -197,7 +272,7 @@ export class SessionManager {
         } catch {}
       }
 
-      // 4. Check quota exhausted
+      // 5. Check quota exhausted
       for (const sel of FLOW_SELECTORS.quotaExhaustedIndicators) {
         try {
           const isVis = await page.locator(sel).first().isVisible({ timeout: 1000 }).catch(() => false);
@@ -212,7 +287,7 @@ export class SessionManager {
         } catch {}
       }
 
-      // 5. Check DOM auth required
+      // 6. Check DOM auth required
       for (const sel of FLOW_SELECTORS.authRequiredIndicators) {
         try {
           const isVis = await page.locator(sel).first().isVisible({ timeout: 1000 }).catch(() => false);
@@ -227,12 +302,12 @@ export class SessionManager {
         } catch {}
       }
 
-      // 6. Default to ready if on a valid Google domain and not prompted for login
-      this.db.updateSessionStatus(sessionId, 'ready', 'Phiên kết nối và hoạt động');
+      // If cannot confirm login and on flow.google.com landing page, default to auth_required
+      this.db.updateSessionStatus(sessionId, 'auth_required', 'Chưa xác thực đăng nhập Google Flow');
       return {
-        success: true,
-        status: 'ready',
-        message: `Phiên "${session.name}" đã kết nối và sẵn sàng.`,
+        success: false,
+        status: 'auth_required',
+        message: 'Cần đăng nhập: Vui lòng bấm "Mở trình duyệt (Đăng nhập)" để đăng nhập tài khoản Google Flow.',
       };
     } catch (err: any) {
       this.db.updateSessionStatus(sessionId, 'paused', `Kiểm tra kết nối thất bại: ${err.message}`);
@@ -246,6 +321,7 @@ export class SessionManager {
         try {
           await context.close();
         } catch {}
+        await new Promise((resolve) => setTimeout(resolve, 1500));
       }
     }
   }

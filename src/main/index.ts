@@ -1,13 +1,29 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, protocol } from 'electron';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import fs from 'fs';
 import { AppDatabase } from './db/database.ts';
 import { OutputManager } from './services/output-manager.ts';
 import { SessionManager } from './services/session-manager.ts';
 import { MockProvider } from './services/providers/mock-provider.ts';
 import { GoogleFlowAdapter } from './services/providers/flow-adapter.ts';
 import { JobQueue } from './services/job-queue.ts';
-import type { CreateJobInput, SessionStatus, Settings } from '../shared/types.ts';
+import { MediaSyncService } from './services/media-sync.ts';
+import { BatchNamer } from './services/batch-namer.ts';
+import type { CreateJobInput, SessionStatus, Settings, SyncMediaOptions, BatchRenameOptions } from '../shared/types.ts';
+
+// Register standard custom protocol for safe streaming/loading of local media (images & videos)
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'app-media',
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      stream: true,
+      bypassCSP: true,
+    },
+  },
+]);
 
 let mainWindow: BrowserWindow | null = null;
 let db: AppDatabase;
@@ -16,6 +32,7 @@ let sessionManager: SessionManager;
 let mockProvider: MockProvider;
 let flowAdapter: GoogleFlowAdapter;
 let jobQueue: JobQueue;
+let mediaSyncService: MediaSyncService;
 
 function createWindow() {
   const isDev = process.env.NODE_ENV === 'development';
@@ -54,6 +71,7 @@ function initApp() {
   sessionManager = new SessionManager(db);
   mockProvider = new MockProvider(outputManager);
   flowAdapter = new GoogleFlowAdapter(outputManager, db.getSettings().flowUrl);
+  mediaSyncService = new MediaSyncService(outputManager, sessionManager);
 
   // Initialize at least 1 default session if none exist
   const existingSessions = sessionManager.getSessions();
@@ -92,6 +110,9 @@ function registerIpcHandlers() {
     }
     if (partial.flowUrl) {
       flowAdapter.setFlowUrl(partial.flowUrl);
+    }
+    if (partial.concurrencyLimit) {
+      jobQueue.processQueue();
     }
     return updated;
   });
@@ -172,6 +193,10 @@ function registerIpcHandlers() {
     db.clearCompletedJobs();
   });
 
+  ipcMain.handle('jobs:clearAll', async () => {
+    jobQueue.clearAllJobs();
+  });
+
   ipcMain.handle('jobs:retryFailed', async () => {
     db.retryFailedJobs();
     jobQueue.processQueue();
@@ -206,9 +231,103 @@ function registerIpcHandlers() {
   ipcMain.handle('outputs:revealInExplorer', async (_e, filePath: string) => {
     outputManager.revealInExplorer(filePath);
   });
+
+  ipcMain.handle('outputs:readAsDataUrl', async (_e, filePath: string) => {
+    try {
+      if (!filePath || !fs.existsSync(filePath)) return null;
+      const ext = path.extname(filePath).toLowerCase();
+      const mimeTypes: Record<string, string> = {
+        '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.webp': 'image/webp',
+        '.svg': 'image/svg+xml',
+        '.mp4': 'video/mp4',
+      };
+      const mime = mimeTypes[ext] || 'application/octet-stream';
+      const data = await fs.promises.readFile(filePath);
+      return `data:${mime};base64,${data.toString('base64')}`;
+    } catch {
+      return null;
+    }
+  });
+
+  ipcMain.handle('outputs:batchRename', async (_e, options: BatchRenameOptions) => {
+    return BatchNamer.renameOutputs(outputManager, options);
+  });
+
+  ipcMain.handle('outputs:delete', async (_e, filePath: string) => {
+    return outputManager.deleteOutput(filePath);
+  });
+
+  ipcMain.handle('outputs:deleteBatch', async (_e, filePaths: string[]) => {
+    return outputManager.deleteOutputs(filePaths);
+  });
+
+  // Media Sync
+  ipcMain.handle('sync:start', async (_e, options: SyncMediaOptions) => {
+    return mediaSyncService.sync(options, (progress) => {
+      mainWindow?.webContents.send('sync:progress', progress);
+    });
+  });
+
+  ipcMain.handle('sync:cancel', async () => {
+    mediaSyncService.cancel();
+  });
+
+  ipcMain.handle('sync:scanProjects', async (_e, sessionId?: string | null) => {
+    console.log(`[IPC] sync:scanProjects received sessionId="${sessionId}"`);
+    return mediaSyncService.scanProjects(sessionId);
+  });
+}
+
+function registerProtocolHandlers() {
+  protocol.handle('app-media', async (request) => {
+    try {
+      const parsedUrl = new URL(request.url);
+      let filePath = parsedUrl.searchParams.get('path');
+      if (!filePath) {
+        filePath = decodeURIComponent(parsedUrl.pathname);
+        if (process.platform === 'win32' && filePath.startsWith('/')) {
+          filePath = filePath.slice(1);
+        }
+      } else {
+        filePath = decodeURIComponent(filePath);
+      }
+
+      if (!filePath || !fs.existsSync(filePath)) {
+        return new Response('File not found: ' + filePath, { status: 404 });
+      }
+
+      // Read file into memory immediately so the file handle is released
+      // (avoids Windows file-lock issues that block deletion while image is displayed)
+      const ext = path.extname(filePath).toLowerCase();
+      const mimeTypes: Record<string, string> = {
+        '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.webp': 'image/webp',
+        '.gif': 'image/gif',
+        '.svg': 'image/svg+xml',
+        '.mp4': 'video/mp4',
+        '.webm': 'video/webm',
+        '.mov': 'video/quicktime',
+      };
+      const mimeType = mimeTypes[ext] || 'application/octet-stream';
+      const data = await fs.promises.readFile(filePath);
+      return new Response(data, {
+        status: 200,
+        headers: { 'Content-Type': mimeType },
+      });
+    } catch (err: any) {
+      console.error('[Protocol app-media] Error serving file:', err);
+      return new Response('Protocol error: ' + (err.message || String(err)), { status: 500 });
+    }
+  });
 }
 
 app.whenReady().then(() => {
+  registerProtocolHandlers();
   initApp();
   createWindow();
 

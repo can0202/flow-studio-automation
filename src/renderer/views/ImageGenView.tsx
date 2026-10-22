@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQueueStore } from '../store/queue-store.ts';
 import { useSessionStore } from '../store/session-store.ts';
 import { useAppStore } from '../store/app-store.ts';
-import { JOB_STATUS_NAMES, SESSION_STATUS_NAMES } from '../../shared/types.ts';
+import { JOB_STATUS_NAMES, SESSION_STATUS_NAMES, CreateJobInput } from '../../shared/types.ts';
 import {
   Sparkles,
   Layers,
@@ -47,21 +47,67 @@ const PRESET_TEMPLATES = [
 ];
 
 export const ImageGenView: React.FC = () => {
-  const { createJob, jobs } = useQueueStore();
+  const { createJob, createBatchJobs, jobs } = useQueueStore();
   const { sessions } = useSessionStore();
   const { setActiveTab, addNotification } = useAppStore();
 
+  const [isBatchMode, setIsBatchMode] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [name, setName] = useState('');
-  const [aspectRatio, setAspectRatio] = useState('1:1');
+  const [aspectRatio, setAspectRatio] = useState('16:9');
   const [model, setModel] = useState('imagen-3.0');
+  const [repeatCount, setRepeatCount] = useState<number>(1);
   const [batchCount, setBatchCount] = useState(1);
   const [projectName, setProjectName] = useState('FlowStudioProject');
   const [referenceImageUrl, setReferenceImageUrl] = useState('');
   const [selectedSessionId, setSelectedSessionId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const promptLines = prompt
+    .split(/\r?\n/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+
   const handleCreate = async (generateNow = false) => {
+    if (isBatchMode) {
+      if (promptLines.length === 0) {
+        addNotification({ type: 'warning', message: 'Vui lòng nhập danh sách ít nhất 1 prompt.' });
+        return;
+      }
+
+      setIsSubmitting(true);
+      try {
+        const batchInputs: CreateJobInput[] = promptLines.map((p, idx) => ({
+          name: name.trim() ? `${name.trim()} (#${idx + 1})` : `Nano Banana (#${idx + 1})`,
+          type: 'image',
+          provider: 'nano_banana',
+          prompt: p,
+          model,
+          aspectRatio,
+          referenceImageUrl: referenceImageUrl.trim() || undefined,
+          sessionId: selectedSessionId || undefined,
+          projectName,
+          repeatCount,
+        }));
+
+        await createBatchJobs(batchInputs);
+        addNotification({
+          type: 'success',
+          message: `Đã thêm ${batchInputs.length} job tạo ảnh vào hàng đợi SQLite!`,
+        });
+
+        if (generateNow) {
+          setActiveTab('queue');
+        } else {
+          setPrompt('');
+          setName('');
+        }
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
     if (!prompt.trim()) {
       addNotification({ type: 'warning', message: 'Vui lòng nhập prompt tạo ảnh.' });
       return;
@@ -86,6 +132,7 @@ export const ImageGenView: React.FC = () => {
           referenceImageUrl: referenceImageUrl.trim() || undefined,
           sessionId: selectedSessionId || undefined,
           projectName,
+          repeatCount,
         });
       }
 
@@ -112,42 +159,85 @@ export const ImageGenView: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Form: Prompt and Parameters (2 cols) */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Mode Switcher Tabs */}
+          <div className="flex bg-[#0d1322] border border-slate-800 rounded-xl p-1 gap-1">
+            <button
+              type="button"
+              onClick={() => setIsBatchMode(false)}
+              className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all ${
+                !isBatchMode
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Tạo đơn lẻ (Single Prompt)
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsBatchMode(true)}
+              className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-2 ${
+                isBatchMode
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Tạo hàng loạt (Dán 100+ Prompts)</span>
+            </button>
+          </div>
+
           {/* Prompt card */}
           <div className="p-6 rounded-2xl border border-slate-800 bg-[#0d1322] space-y-4">
             <div className="flex items-center justify-between">
               <label className="text-sm font-bold text-white flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-indigo-400" />
-                <span>Prompt tạo ảnh (Nano Banana / Imagen)</span>
+                <span>
+                  {isBatchMode
+                    ? 'Danh sách Prompts hàng loạt (Mỗi dòng 1 prompt)'
+                    : 'Prompt tạo ảnh (Nano Banana / Imagen)'}
+                </span>
               </label>
-              <span className="text-xs font-mono text-slate-500">{prompt.length} ký tự</span>
+              {isBatchMode ? (
+                <span className="text-xs font-bold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                  {promptLines.length} prompts phát hiện
+                </span>
+              ) : (
+                <span className="text-xs font-mono text-slate-500">{prompt.length} ký tự</span>
+              )}
             </div>
 
             <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Mô tả cảnh chi tiết (vd: Chân dung phi hành gia trên sao Hỏa đang cầm cầu sáng cổ xưa, ánh sáng điện ảnh, 8k)..."
-              rows={4}
-              className="w-full p-4 rounded-xl bg-slate-900 border border-slate-800 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all resize-none"
+              placeholder={
+                isBatchMode
+                  ? 'Dán danh sách 100 prompt vào đây, mỗi dòng là một prompt riêng biệt...\nVí dụ:\nStopping a vehicle in front of the security gate, chibi cartoon style...\nA cute cat barista serving hot coffee in rainy afternoon cafe...\nCyberpunk neon Tokyo street market with reflective puddles, 8k...'
+                  : 'Mô tả cảnh chi tiết (vd: Chân dung phi hành gia trên sao Hỏa đang cầm cầu sáng cổ xưa, ánh sáng điện ảnh, 8k)...'
+              }
+              rows={isBatchMode ? 8 : 4}
+              className="w-full p-4 rounded-xl bg-slate-900 border border-slate-800 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all resize-none font-mono"
             />
 
-            {/* Quick Preset Buttons */}
-            <div className="space-y-2">
-              <span className="text-xs font-semibold text-slate-400">Gợi ý mẫu (Presets):</span>
-              <div className="flex flex-wrap gap-2">
-                {PRESET_TEMPLATES.map((tpl, i) => (
-                  <button
-                    key={i}
-                    onClick={() => {
-                      setPrompt(tpl.prompt);
-                      setAspectRatio(tpl.aspectRatio);
-                    }}
-                    className="text-xs px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-colors"
-                  >
-                    {tpl.title}
-                  </button>
-                ))}
+            {/* Quick Preset Buttons (only in single mode) */}
+            {!isBatchMode && (
+              <div className="space-y-2">
+                <span className="text-xs font-semibold text-slate-400">Gợi ý mẫu (Presets):</span>
+                <div className="flex flex-wrap gap-2">
+                  {PRESET_TEMPLATES.map((tpl, i) => (
+                    <button
+                      key={i}
+                      onClick={() => {
+                        setPrompt(tpl.prompt);
+                        setAspectRatio(tpl.aspectRatio);
+                      }}
+                      className="text-xs px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-colors"
+                    >
+                      {tpl.title}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Aspect Ratios card */}
@@ -174,6 +264,42 @@ export const ImageGenView: React.FC = () => {
                       <div className={ratio.icon} />
                     </div>
                     <span className="text-xs font-semibold">{ratio.id}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Repeat Multiplier card (x1, x2, x3, x4) */}
+          <div className="p-6 rounded-2xl border border-slate-800 bg-[#0d1322] space-y-4">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-bold text-white flex items-center gap-2">
+                <Layers className="w-4 h-4 text-indigo-400" />
+                <span>Số lượng ảnh tạo mỗi lần trên Web (Multiplier)</span>
+              </label>
+              <span className="text-xs text-amber-400 font-medium">
+                Mặc định x1 (Tiết kiệm credit, web mặc định x2)
+              </span>
+            </div>
+
+            <div className="grid grid-cols-4 gap-3">
+              {[1, 2, 3, 4].map((cnt) => {
+                const isSelected = repeatCount === cnt;
+                return (
+                  <button
+                    key={cnt}
+                    type="button"
+                    onClick={() => setRepeatCount(cnt)}
+                    className={`py-3 px-4 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all ${
+                      isSelected
+                        ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300 shadow-sm'
+                        : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                    }`}
+                  >
+                    <span className="text-base font-bold font-mono">x{cnt}</span>
+                    <span className="text-[10px] text-slate-400">
+                      {cnt === 1 ? '1 ảnh / prompt' : `${cnt} ảnh / prompt`}
+                    </span>
                   </button>
                 );
               })}
@@ -209,19 +335,21 @@ export const ImageGenView: React.FC = () => {
                 </select>
               </div>
 
-              <div>
-                <label className="text-xs font-semibold text-slate-400 block mb-1.5">Số lượng tạo (Batch Count)</label>
-                <input
-                  type="number"
-                  min={1}
-                  max={10}
-                  value={batchCount}
-                  onChange={(e) => setBatchCount(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
-                />
-              </div>
+              {!isBatchMode && (
+                <div>
+                  <label className="text-xs font-semibold text-slate-400 block mb-1.5">Số lượng tạo lặp lại</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={batchCount}
+                    onChange={(e) => setBatchCount(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+              )}
 
-              <div>
+              <div className={isBatchMode ? 'sm:col-span-1' : ''}>
                 <label className="text-xs font-semibold text-slate-400 block mb-1.5">Tên thư mục Project</label>
                 <input
                   type="text"
@@ -232,7 +360,7 @@ export const ImageGenView: React.FC = () => {
               </div>
 
               <div className="sm:col-span-2">
-                <label className="text-xs font-semibold text-slate-400 block mb-1.5">Ảnh tham chiếu (Reference Image Path)</label>
+                <label className="text-xs font-semibold text-slate-400 block mb-1.5">Ảnh tham chiếu (Reference Image Path - Tùy chọn)</label>
                 <input
                   type="text"
                   value={referenceImageUrl}
@@ -262,21 +390,29 @@ export const ImageGenView: React.FC = () => {
             {/* Submit Action Buttons */}
             <div className="pt-4 flex items-center gap-3">
               <button
-                disabled={isSubmitting || !prompt.trim()}
+                disabled={isSubmitting || (isBatchMode ? promptLines.length === 0 : !prompt.trim())}
                 onClick={() => handleCreate(false)}
                 className="flex-1 py-3 px-4 rounded-xl font-semibold text-sm bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <Plus className="w-4 h-4" />
-                <span>Thêm vào Queue ({batchCount})</span>
+                <span>
+                  {isBatchMode
+                    ? `Thêm ${promptLines.length} jobs vào Queue`
+                    : `Thêm vào Queue (${batchCount})`}
+                </span>
               </button>
 
               <button
-                disabled={isSubmitting || !prompt.trim()}
+                disabled={isSubmitting || (isBatchMode ? promptLines.length === 0 : !prompt.trim())}
                 onClick={() => handleCreate(true)}
                 className="flex-1 py-3 px-4 rounded-xl font-semibold text-sm bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <Send className="w-4 h-4" />
-                <span>Tạo & Chuyển sang Hàng đợi</span>
+                <span>
+                  {isBatchMode
+                    ? `Tạo ${promptLines.length} jobs & Chuyển sang Hàng đợi`
+                    : 'Tạo & Chuyển sang Hàng đợi'}
+                </span>
               </button>
             </div>
           </div>

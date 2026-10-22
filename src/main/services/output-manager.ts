@@ -141,4 +141,43 @@ export class OutputManager {
       }
     }
   }
+
+  public deleteOutput(filePath: string): boolean {
+    try {
+      // Normalize path separators for cross-platform compatibility
+      const normalizedPath = path.resolve(filePath);
+
+      if (fs.existsSync(normalizedPath)) {
+        fs.unlinkSync(normalizedPath);
+        console.log(`[OutputManager] Deleted file: ${normalizedPath}`);
+      } else {
+        console.warn(`[OutputManager] File not found (already deleted?): ${normalizedPath}`);
+      }
+
+      // Also delete associated metadata
+      const ext = path.extname(normalizedPath);
+      const baseName = path.basename(normalizedPath, ext);
+      const dir = path.dirname(normalizedPath);
+      const projDir = path.dirname(dir);
+      const metaPath = path.join(projDir, 'metadata', `${baseName}.json`);
+      if (fs.existsSync(metaPath)) {
+        fs.unlinkSync(metaPath);
+        console.log(`[OutputManager] Deleted metadata: ${metaPath}`);
+      }
+      return true;
+    } catch (err) {
+      console.error('[OutputManager] Failed to delete output file:', filePath, err);
+      return false;
+    }
+  }
+
+  public deleteOutputs(filePaths: string[]): { success: boolean; deletedCount: number } {
+    let deletedCount = 0;
+    for (const fp of filePaths) {
+      if (this.deleteOutput(fp)) {
+        deletedCount++;
+      }
+    }
+    return { success: true, deletedCount };
+  }
 }

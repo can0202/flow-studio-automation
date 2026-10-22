@@ -65,6 +65,13 @@ export class JobQueue {
     return this.isRunning;
   }
 
+  public clearAllJobs() {
+    this.activeJobs.clear();
+    this.busySessions.clear();
+    this.db.clearAllJobs();
+    this.emitStats();
+  }
+
   private startLoop() {
     if (this.loopTimer) clearInterval(this.loopTimer);
     this.loopTimer = setInterval(() => {
@@ -182,6 +189,13 @@ export class JobQueue {
     const settings = this.db.getSettings();
     const provider = settings.simulationMode ? this.mockProvider : this.flowAdapter;
 
+    // In real mode: ensure any interactive browser opened via "Mở trình duyệt" is closed before worker runs
+    if (!settings.simulationMode && this.sessionManager.isBrowserOpen(session.id)) {
+      console.log(`[JobQueue] Đang đóng cửa sổ trình duyệt thủ công của phiên "${session.name}" trước khi chạy tác vụ...`);
+      await this.sessionManager.closeBrowser(session.id);
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+
     // Update job to running
     const updatedJob = this.db.updateJob(job.id, {
       status: 'running',
@@ -292,10 +306,11 @@ export class JobQueue {
       return;
     }
 
-    // 3. Transient Error: Retry with exponential backoff if retryCount < maxRetries
+    // 3. Transient Error: Retry with exponential backoff if retryCount < maxRetries and isTransient is true
+    const isTransient = result.isTransient !== false;
     const nextRetry = (job.retryCount || 0) + 1;
-    if (nextRetry <= job.maxRetries) {
-      const delayMs = Math.pow(2, nextRetry - 1) * 1500;
+    if (isTransient && nextRetry <= job.maxRetries) {
+      const delayMs = Math.pow(2, nextRetry - 1) * 2500;
       console.log(`[JobQueue] Lỗi tạm thời ở job ${job.id}. Lần thử ${nextRetry}/${job.maxRetries}. Đang thử lại sau ${delayMs}ms...`);
 
       const retryingJob = this.db.updateJob(job.id, {
@@ -312,10 +327,10 @@ export class JobQueue {
       return;
     }
 
-    // 4. Exceeded max retries: mark as failed
+    // 4. Exceeded max retries or non-transient error: mark as failed
     const failedJob = this.db.updateJob(job.id, {
       status: 'failed',
-      errorMessage: `Thất bại sau ${job.maxRetries} lần thử: ${errorMsg}`,
+      errorMessage: isTransient ? `Thất bại sau ${job.maxRetries} lần thử: ${errorMsg}` : errorMsg,
     })!;
     this.emitJob(failedJob);
 
