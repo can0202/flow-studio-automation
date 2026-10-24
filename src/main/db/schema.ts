@@ -7,6 +7,7 @@ export const sessionsTable = sqliteTable('sessions', {
   status: text('status').notNull().default('ready'),
   lastCheckedAt: text('last_checked_at'),
   notes: text('notes'),
+  quotaInfo: text('quota_info'),
   createdAt: text('created_at').notNull(),
 });
 

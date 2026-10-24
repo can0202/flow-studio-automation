@@ -47,6 +47,7 @@ export class AppDatabase {
         status TEXT NOT NULL DEFAULT 'ready',
         last_checked_at TEXT,
         notes TEXT,
+        quota_info TEXT,
         created_at TEXT NOT NULL
       );
 
@@ -82,6 +83,12 @@ export class AppDatabase {
         value TEXT NOT NULL
       );
     `);
+
+    // ── Migrations: Add new columns to existing databases safely ──
+    const sessionCols = (this.sqlite.prepare("PRAGMA table_info(sessions)").all() as any[]).map((c) => c.name);
+    if (!sessionCols.includes('quota_info')) {
+      this.sqlite.exec('ALTER TABLE sessions ADD COLUMN quota_info TEXT');
+    }
   }
 
   public runCrashRecovery() {
@@ -170,6 +177,7 @@ export class AppDatabase {
       status: r.status,
       lastCheckedAt: r.last_checked_at,
       notes: r.notes,
+      quotaInfo: r.quota_info,
       createdAt: r.created_at,
     }));
   }
@@ -184,6 +192,7 @@ export class AppDatabase {
       status: r.status,
       lastCheckedAt: r.last_checked_at,
       notes: r.notes,
+      quotaInfo: r.quota_info,
       createdAt: r.created_at,
     };
   }
@@ -204,15 +213,23 @@ export class AppDatabase {
     };
   }
 
-  public updateSessionStatus(id: string, status: Session['status'], notes?: string) {
+  public updateSessionStatus(id: string, status: Session['status'], notes?: string, quotaInfo?: string) {
     const now = new Date().toISOString();
-    if (notes !== undefined) {
+    if (notes !== undefined && quotaInfo !== undefined) {
+      this.sqlite.prepare('UPDATE sessions SET status = ?, notes = ?, quota_info = ?, last_checked_at = ? WHERE id = ?')
+        .run(status, notes, quotaInfo, now, id);
+    } else if (notes !== undefined) {
       this.sqlite.prepare('UPDATE sessions SET status = ?, notes = ?, last_checked_at = ? WHERE id = ?')
         .run(status, notes, now, id);
     } else {
       this.sqlite.prepare('UPDATE sessions SET status = ?, last_checked_at = ? WHERE id = ?')
         .run(status, now, id);
     }
+  }
+
+  public updateSessionQuota(id: string, quotaInfo: string) {
+    this.sqlite.prepare('UPDATE sessions SET quota_info = ?, last_checked_at = ? WHERE id = ?')
+      .run(quotaInfo, new Date().toISOString(), id);
   }
 
   public removeSession(id: string) {

@@ -75,9 +75,11 @@ export interface Session {
   status: SessionStatus;
   lastCheckedAt?: string;
   notes?: string;
+  quotaInfo?: string; // Scraped credit/quota info, e.g. "72 / 100 credits"
   activeJobId?: string;
   createdAt: string;
 }
+
 
 export interface Settings {
   concurrencyLimit: number;
@@ -191,9 +193,11 @@ export interface IElectronAPI {
   getSessions: () => Promise<Session[]>;
   addSession: (name: string) => Promise<Session>;
   openSessionBrowser: (sessionId: string) => Promise<{ success: boolean; message: string }>;
-  testSessionConnection: (sessionId: string) => Promise<{ success: boolean; status: SessionStatus; message: string }>;
+  testSessionConnection: (sessionId: string) => Promise<{ success: boolean; status: SessionStatus; message: string; quotaInfo?: string }>;
   updateSessionStatus: (sessionId: string, status: SessionStatus) => Promise<void>;
   removeSession: (sessionId: string) => Promise<void>;
+  getSessionQuota: (sessionId: string) => Promise<{ success: boolean; quotaInfo: string }>;
+
 
   // Jobs
   getJobs: () => Promise<Job[]>;

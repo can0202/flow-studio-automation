@@ -77,6 +77,7 @@ export const ImageGenView: React.FC = () => {
 
       setIsSubmitting(true);
       try {
+        const batchId = `batch_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
         const batchInputs: CreateJobInput[] = promptLines.map((p, idx) => ({
           name: name.trim() ? `${name.trim()} (#${idx + 1})` : `Nano Banana (#${idx + 1})`,
           type: 'image',
@@ -88,12 +89,18 @@ export const ImageGenView: React.FC = () => {
           sessionId: selectedSessionId || undefined,
           projectName,
           repeatCount,
+          metadata: {
+            batchId,
+            batchIndex: idx + 1,
+            batchTotal: promptLines.length,
+            isBatch: true,
+          },
         }));
 
         await createBatchJobs(batchInputs);
         addNotification({
           type: 'success',
-          message: `Đã thêm ${batchInputs.length} job tạo ảnh vào hàng đợi SQLite!`,
+          message: `Đã thêm ${batchInputs.length} job tạo ảnh vào hàng đợi SQLite (sẽ tạo chung 1 project)!`,
         });
 
         if (generateNow) {
@@ -115,6 +122,7 @@ export const ImageGenView: React.FC = () => {
 
     setIsSubmitting(true);
     try {
+      const singleBatchId = batchCount > 1 ? `batch_${Date.now()}_${Math.random().toString(36).slice(2, 7)}` : undefined;
       for (let i = 0; i < batchCount; i++) {
         const jobName = name.trim()
           ? batchCount > 1
@@ -133,6 +141,14 @@ export const ImageGenView: React.FC = () => {
           sessionId: selectedSessionId || undefined,
           projectName,
           repeatCount,
+          metadata: singleBatchId
+            ? {
+                batchId: singleBatchId,
+                batchIndex: i + 1,
+                batchTotal: batchCount,
+                isBatch: true,
+              }
+            : undefined,
         });
       }
 

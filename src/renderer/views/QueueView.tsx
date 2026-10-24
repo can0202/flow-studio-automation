@@ -158,7 +158,27 @@ export const QueueView: React.FC = () => {
 
   const handleConfirmEnqueue = async () => {
     if (previewItems.length === 0) return;
-    await createBatchJobs(previewItems);
+    const batchId = `batch_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    const imageCount = previewItems.filter((i) => i.type === 'image').length;
+    let imgIdx = 0;
+    const itemsWithBatch = previewItems.map((item) => {
+      if (item.type === 'image' && imageCount > 1) {
+        imgIdx++;
+        return {
+          ...item,
+          metadata: {
+            ...(item.metadata || {}),
+            batchId,
+            batchIndex: imgIdx,
+            batchTotal: imageCount,
+            isBatch: true,
+          },
+        };
+      }
+      return item;
+    });
+
+    await createBatchJobs(itemsWithBatch);
     addNotification({
       type: 'success',
       message: `Đã thêm ${previewItems.length} job vào hàng đợi SQLite.`,

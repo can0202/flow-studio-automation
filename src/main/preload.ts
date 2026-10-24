@@ -15,6 +15,7 @@ const api: IElectronAPI = {
   testSessionConnection: (sessionId: string) => ipcRenderer.invoke('sessions:testConnection', sessionId),
   updateSessionStatus: (sessionId: string, status: SessionStatus) => ipcRenderer.invoke('sessions:updateStatus', sessionId, status),
   removeSession: (sessionId: string) => ipcRenderer.invoke('sessions:remove', sessionId),
+  getSessionQuota: (sessionId: string) => ipcRenderer.invoke('sessions:getQuota', sessionId),
 
   // Jobs
   getJobs: () => ipcRenderer.invoke('jobs:list'),

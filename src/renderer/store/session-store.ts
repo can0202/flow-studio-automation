@@ -10,9 +10,10 @@ interface SessionState {
   loadSessions: () => Promise<void>;
   addSession: (name: string) => Promise<Session | null>;
   openBrowser: (sessionId: string) => Promise<{ success: boolean; message: string }>;
-  testConnection: (sessionId: string) => Promise<{ success: boolean; status: SessionStatus; message: string }>;
+  testConnection: (sessionId: string) => Promise<{ success: boolean; status: SessionStatus; message: string; quotaInfo?: string }>;
   updateStatus: (sessionId: string, status: SessionStatus) => Promise<void>;
   removeSession: (sessionId: string) => Promise<void>;
+  getQuota: (sessionId: string) => Promise<{ success: boolean; quotaInfo: string }>;
   setSelectedSession: (session: Session | null) => void;
   handleSessionUpdate: (updatedSession: Session) => void;
 }
@@ -82,6 +83,16 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       }));
     } catch (err) {
       console.error('Failed to remove session:', err);
+    }
+  },
+
+  getQuota: async (sessionId: string) => {
+    try {
+      const res = await window.api.getSessionQuota(sessionId);
+      await get().loadSessions(); // Refresh to get updated quotaInfo
+      return res;
+    } catch (err: any) {
+      return { success: false, quotaInfo: err.message || 'Lỗi khi lấy quota' };
     }
   },
 

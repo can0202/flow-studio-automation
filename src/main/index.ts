@@ -156,6 +156,10 @@ function registerIpcHandlers() {
     return sessionManager.removeSession(sessionId);
   });
 
+  ipcMain.handle('sessions:getQuota', async (_e, sessionId: string) => {
+    return sessionManager.getSessionQuota(sessionId);
+  });
+
   // Jobs
   ipcMain.handle('jobs:list', async () => {
     return db.getJobs();

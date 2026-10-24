@@ -17,7 +17,10 @@ import {
   Folder,
   X,
   Sparkles,
+  Zap,
 } from 'lucide-react';
+
+
 
 export const SessionsView: React.FC = () => {
   const { sessions, addSession, openBrowser, testConnection, updateStatus, removeSession } = useSessionStore();
@@ -26,6 +29,7 @@ export const SessionsView: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newSessionName, setNewSessionName] = useState('');
   const [testingId, setTestingId] = useState<string | null>(null);
+
 
   const handleAddSession = async () => {
     if (!newSessionName.trim()) {
@@ -59,7 +63,9 @@ export const SessionsView: React.FC = () => {
       if (res.success) {
         addNotification({
           type: 'success',
-          message: `Phiên "${session.name}" đã sẵn sàng! Đang chuyển đến màn hình Tạo ảnh...`,
+          message: res.quotaInfo
+            ? `Phiên "${session.name}" sẵn sàng! Quota: ${res.quotaInfo}`
+            : `Phiên "${session.name}" đã sẵn sàng! Đang chuyển đến màn hình Tạo ảnh...`,
         });
         setTimeout(() => {
           setActiveTab('image');
@@ -71,6 +77,8 @@ export const SessionsView: React.FC = () => {
       setTestingId(null);
     }
   };
+
+
 
   const formatNote = (note?: string) => {
     if (!note) return '';
@@ -164,6 +172,15 @@ export const SessionsView: React.FC = () => {
                 </div>
               )}
 
+              {/* Session Quota Info */}
+              {session.quotaInfo && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-violet-950/30 border border-violet-500/20">
+                  <Zap className="w-3.5 h-3.5 text-violet-400 shrink-0" />
+                  <span className="text-xs font-semibold text-violet-300">Quota:</span>
+                  <span className="text-xs text-violet-200 font-mono">{session.quotaInfo}</span>
+                </div>
+              )}
+
               {/* Profile directory info */}
               <div className="text-xs text-slate-500 font-mono flex items-center gap-2">
                 <Folder className="w-3.5 h-3.5 shrink-0" />
@@ -190,6 +207,7 @@ export const SessionsView: React.FC = () => {
                   <RotateCw className={`w-3.5 h-3.5 ${isTesting ? 'animate-spin text-indigo-400' : ''}`} />
                   <span>{isTesting ? 'Đang kiểm tra...' : 'Kiểm tra kết nối'}</span>
                 </button>
+
 
                 {/* Direct Go-to-Image button if Ready */}
                 {session.status === 'ready' && (

@@ -52,6 +52,9 @@ export class JobQueue {
 
   public pauseQueue() {
     this.isRunning = false;
+    if ('closeActiveSession' in (this.flowAdapter as any)) {
+      (this.flowAdapter as any).closeActiveSession();
+    }
     this.emitStats();
   }
 
@@ -68,6 +71,9 @@ export class JobQueue {
   public clearAllJobs() {
     this.activeJobs.clear();
     this.busySessions.clear();
+    if ('closeActiveSession' in (this.flowAdapter as any)) {
+      (this.flowAdapter as any).closeActiveSession();
+    }
     this.db.clearAllJobs();
     this.emitStats();
   }
@@ -86,6 +92,9 @@ export class JobQueue {
       clearInterval(this.loopTimer);
       this.loopTimer = null;
     }
+    if ('closeActiveSession' in (this.flowAdapter as any)) {
+      (this.flowAdapter as any).closeActiveSession();
+    }
   }
 
   public async processQueue() {
@@ -103,7 +112,12 @@ export class JobQueue {
       .filter((j) => j.status === 'pending')
       .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
-    if (pendingJobs.length === 0) return;
+    if (pendingJobs.length === 0) {
+      if (this.activeJobs.size === 0 && 'closeActiveSession' in (this.flowAdapter as any)) {
+        (this.flowAdapter as any).closeActiveSession();
+      }
+      return;
+    }
 
     const allSessions = this.db.getSessions();
 
@@ -207,6 +221,19 @@ export class JobQueue {
     this.emitJob(updatedJob);
     this.emitStats();
 
+    // Restore batch project URL from sibling jobs if needed
+    if (job.type === 'image' && job.metadata?.batchId && 'getBatchProjectUrl' in (provider as any)) {
+      const adapter = provider as any;
+      if (!adapter.getBatchProjectUrl(job.metadata.batchId)) {
+        const sibling = this.db.getJobs().find(
+          (j) => j.metadata?.batchId === job.metadata?.batchId && j.metadata?.flowProjectUrl
+        );
+        if (sibling?.metadata?.flowProjectUrl) {
+          adapter.setBatchProjectUrl(job.metadata.batchId, sibling.metadata.flowProjectUrl);
+        }
+      }
+    }
+
     try {
       const result = await provider.generate(
         updatedJob,
@@ -224,6 +251,9 @@ export class JobQueue {
         }
       );
 
+      const flowProjectUrl = result.metadata?.flowProjectUrl;
+      const metadataUpdates = flowProjectUrl ? { flowProjectUrl } : {};
+
       if (result.success && result.outputFile) {
         // Check if user approval is required (for Image in Image -> Video workflow)
         if (job.requiresApproval && !job.approvedByUser) {
@@ -233,6 +263,10 @@ export class JobQueue {
             outputFile: result.outputFile,
             thumbnailFile: result.thumbnailFile,
             completedAt: new Date().toISOString(),
+            metadata: {
+              ...(job.metadata || {}),
+              ...metadataUpdates,
+            },
           })!;
           this.emitJob(completedJob);
           this.emitNotification({
@@ -246,6 +280,10 @@ export class JobQueue {
             outputFile: result.outputFile,
             thumbnailFile: result.thumbnailFile,
             completedAt: new Date().toISOString(),
+            metadata: {
+              ...(job.metadata || {}),
+              ...metadataUpdates,
+            },
           })!;
           this.emitJob(completedJob);
           this.emitNotification({

@@ -12,7 +12,9 @@ import {
   Send,
   Plus,
   CheckCircle2,
+  Hash,
 } from 'lucide-react';
+
 
 const VIDEO_RATIOS = [
   { id: '16:9', label: 'Nằm ngang (16:9)', desc: 'Màn hình rộng điện ảnh' },
@@ -40,19 +42,22 @@ const MOTION_PRESETS = [
 ];
 
 export const VideoGenView: React.FC = () => {
-  const { createJob, jobs } = useQueueStore();
+  const { createJob, createBatchJobs, jobs } = useQueueStore();
+
   const { sessions } = useSessionStore();
   const { setActiveTab, addNotification } = useAppStore();
 
   const [prompt, setPrompt] = useState('');
   const [name, setName] = useState('');
   const [aspectRatio, setAspectRatio] = useState('16:9');
-  const [duration, setDuration] = useState(5);
+  const [duration, setDuration] = useState(8);
+  const [repeatCount, setRepeatCount] = useState(1);
   const [model, setModel] = useState('veo-3.0');
   const [projectName, setProjectName] = useState('FlowStudioProject');
   const [referenceImageUrl, setReferenceImageUrl] = useState('');
   const [selectedSessionId, setSelectedSessionId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
 
   const handleCreate = async (generateNow = false) => {
     if (!prompt.trim()) {
@@ -62,24 +67,36 @@ export const VideoGenView: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      const jobName = name.trim() || `Veo 3-${new Date().toLocaleTimeString()}`;
-
-      await createJob({
-        name: jobName,
-        type: 'video',
-        provider: 'veo_3',
+      const baseJobName = name.trim() || `Veo 3-${new Date().toLocaleTimeString()}`;
+      const baseInput = {
+        type: 'video' as const,
+        provider: 'veo_3' as const,
         prompt: prompt.trim(),
         model,
         aspectRatio,
         duration,
+        repeatCount: 1, // Each job always generates x1; repeatCount controls how many JOBS we create
         referenceImageUrl: referenceImageUrl.trim() || undefined,
         sessionId: selectedSessionId || undefined,
         projectName,
-      });
+      };
+
+      if (repeatCount <= 1) {
+        await createJob({ ...baseInput, name: baseJobName });
+      } else {
+        // Create N independent jobs — each will run in its own new project
+        const inputs = Array.from({ length: repeatCount }, (_, i) => ({
+          ...baseInput,
+          name: `${baseJobName} #${i + 1}`,
+        }));
+        await createBatchJobs(inputs);
+      }
 
       addNotification({
         type: 'success',
-        message: 'Đã thêm job tạo video Veo 3 vào hàng đợi.',
+        message: repeatCount > 1
+          ? `Đã thêm ${repeatCount} job tạo video Veo 3 vào hàng đợi.`
+          : 'Đã thêm job tạo video Veo 3 vào hàng đợi.',
       });
 
       if (generateNow) {
@@ -92,6 +109,7 @@ export const VideoGenView: React.FC = () => {
       setIsSubmitting(false);
     }
   };
+
 
   const recentVideoJobs = jobs.filter((j) => j.type === 'video').slice(0, 4);
 
@@ -174,22 +192,51 @@ export const VideoGenView: React.FC = () => {
                 <span>Thời lượng video (Duration)</span>
               </label>
               <div className="flex gap-3">
-                {[5, 10].map((sec) => (
+                {[4, 6, 8, 10].map((sec) => (
                   <button
                     key={sec}
                     onClick={() => setDuration(sec)}
-                    className={`flex-1 py-2.5 px-4 rounded-xl border text-center font-bold text-sm transition-all ${
+                    className={`flex-1 py-2.5 px-2 rounded-xl border text-center font-bold text-sm transition-all ${
                       duration === sec
                         ? 'bg-violet-600/15 border-violet-500 text-violet-400'
                         : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200'
                     }`}
                   >
-                    {sec} Giây ({sec}s)
+                    {sec}s
                   </button>
                 ))}
               </div>
             </div>
+
+            {/* Video Count (Repeat) Selector */}
+            <div>
+              <label className="text-sm font-bold text-white flex items-center gap-2 mb-3">
+                <Hash className="w-4 h-4 text-violet-400" />
+                <span>Số lượng video tạo ra (Count)</span>
+              </label>
+              <div className="flex gap-3">
+                {[1, 2, 3, 4].map((count) => (
+                  <button
+                    key={count}
+                    onClick={() => setRepeatCount(count)}
+                    className={`flex-1 py-2.5 px-2 rounded-xl border text-center font-bold text-sm transition-all ${
+                      repeatCount === count
+                        ? 'bg-violet-600/15 border-violet-500 text-violet-400'
+                        : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    x{count}
+                  </button>
+                ))}
+              </div>
+              {repeatCount > 1 && (
+                <p className="text-[11px] text-slate-500 mt-2">
+                  ⚡ Sẽ tạo <span className="text-violet-400 font-bold">{repeatCount} video riêng biệt</span> từ cùng một prompt — mỗi video là một job độc lập trong hàng đợi.
+                </p>
+              )}
+            </div>
           </div>
+
 
           {/* Advanced details */}
           <div className="p-6 rounded-2xl border border-slate-800 bg-[#0d1322] space-y-4">
