@@ -9,7 +9,22 @@ import {
   HardDrive,
   ShieldCheck,
   CheckCircle2,
+  Key,
+  Eye,
+  EyeOff,
+  Sparkles,
+  RefreshCw,
+  Bot,
+  Gauge,
+  Activity,
+  AlertTriangle,
+  XCircle,
 } from 'lucide-react';
+import {
+  checkAllAiQuotas,
+  AiQuotaInfo,
+  getAiUsageToday,
+} from '../services/ai-prompt-service';
 
 export const SettingsView: React.FC = () => {
   const { settings, updateSettings, addNotification } = useAppStore();
@@ -20,6 +35,34 @@ export const SettingsView: React.FC = () => {
   const [projectName, setProjectName] = useState('FlowStudioProject');
   const [flowUrl, setFlowUrl] = useState('');
   const [simulationMode, setSimulationMode] = useState(true);
+  const [geminiApiKey, setGeminiApiKey] = useState('');
+  const [showGeminiKey, setShowGeminiKey] = useState(false);
+  const [openaiApiKey, setOpenaiApiKey] = useState('');
+  const [showOpenaiKey, setShowOpenaiKey] = useState(false);
+  const [claudeApiKey, setClaudeApiKey] = useState('');
+  const [showClaudeKey, setShowClaudeKey] = useState(false);
+  const [preferredAiProvider, setPreferredAiProvider] = useState<'gemini' | 'openai' | 'claude'>('gemini');
+
+  // Quota checking state
+  const [quotas, setQuotas] = useState<AiQuotaInfo[] | null>(null);
+  const [isCheckingQuotas, setIsCheckingQuotas] = useState(false);
+
+  const handleCheckQuotas = async () => {
+    setIsCheckingQuotas(true);
+    try {
+      const q = await checkAllAiQuotas({
+        ...settings,
+        geminiApiKey,
+        openaiApiKey,
+        claudeApiKey,
+      } as any);
+      setQuotas(q);
+    } catch {
+      // Ignore
+    } finally {
+      setIsCheckingQuotas(false);
+    }
+  };
 
   useEffect(() => {
     if (settings) {
@@ -29,6 +72,15 @@ export const SettingsView: React.FC = () => {
       setProjectName(settings.defaultProjectName);
       setFlowUrl(settings.flowUrl);
       setSimulationMode(settings.simulationMode);
+      setGeminiApiKey(settings.geminiApiKey || '');
+      setOpenaiApiKey(settings.openaiApiKey || '');
+      setClaudeApiKey(settings.claudeApiKey || '');
+      setPreferredAiProvider(settings.preferredAiProvider || 'gemini');
+
+      // Tự động kiểm tra quota nếu đã có key
+      if (settings.geminiApiKey || settings.openaiApiKey || settings.claudeApiKey) {
+        checkAllAiQuotas(settings).then(setQuotas).catch(() => { });
+      }
     }
   }, [settings]);
 
@@ -40,7 +92,12 @@ export const SettingsView: React.FC = () => {
       defaultProjectName: projectName.trim(),
       flowUrl: flowUrl.trim(),
       simulationMode,
+      geminiApiKey: geminiApiKey.trim(),
+      openaiApiKey: openaiApiKey.trim(),
+      claudeApiKey: claudeApiKey.trim(),
+      preferredAiProvider,
     });
+    handleCheckQuotas();
   };
 
   const handleBrowseFolder = async () => {
@@ -51,7 +108,7 @@ export const SettingsView: React.FC = () => {
   };
 
   return (
-    <div className="p-8 space-y-8 overflow-y-auto max-h-[calc(100vh-4rem)] max-w-4xl">
+    <div className="p-8 space-y-8 overflow-y-auto max-h-[calc(100vh-4rem)] ">
       {/* Simulation Mode Card */}
       <div className="p-6 rounded-2xl bg-gradient-to-r from-amber-950/30 via-slate-900 to-indigo-950/30 border border-amber-500/30 space-y-4">
         <div className="flex items-center justify-between">
@@ -165,6 +222,273 @@ export const SettingsView: React.FC = () => {
               onChange={(e) => setFlowUrl(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-sm font-mono text-slate-100 focus:outline-none focus:border-indigo-500"
             />
+          </div>
+
+          {/* AI Providers Section (Gemini, ChatGPT, Claude) */}
+          <div className="sm:col-span-2 pt-4 border-t border-slate-800/80 space-y-4">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-bold text-slate-200 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-violet-400" />
+                <span>Cấu hình AI Tạo Prompt SRT (Multi-Provider & Auto-Failover)</span>
+              </label>
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-violet-950/40 border border-violet-800/50 text-[11px] text-violet-300">
+                <RefreshCw className="w-3 h-3 text-violet-400 animate-spin-slow" />
+                <span>Tự động chuyển đổi khi hết quota</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Nhập ít nhất 1 API key. Bạn có thể nhập cả 3 để tạo chuỗi dự phòng:{' '}
+              <span className="text-slate-300 font-medium">
+                khi provider đang dùng bị hết quota hoặc giới hạn tốc độ (Rate Limit), hệ thống sẽ tự động chuyển sang provider tiếp theo
+              </span>{' '}
+              ngay lập tức mà không bị gián đoạn.
+            </p>
+
+            {/* Provider ưu tiên */}
+            <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <span className="text-xs font-semibold text-slate-300 block">Ưu tiên gọi trước (Primary Provider)</span>
+                <span className="text-[11px] text-slate-500">Nếu provider này hết quota sẽ tự động chuyển sang các provider khác có key</span>
+              </div>
+              <select
+                value={preferredAiProvider}
+                onChange={(e) => setPreferredAiProvider(e.target.value as any)}
+                className="px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-xs text-slate-200 focus:outline-none focus:border-violet-500 font-medium"
+              >
+                <option value="gemini">1. Google Gemini (Mặc định)</option>
+                <option value="openai">2. OpenAI (ChatGPT / gpt-4o-mini)</option>
+                <option value="claude">3. Anthropic (Claude 3.5)</option>
+              </select>
+            </div>
+
+            {/* 1. Google Gemini */}
+            <div className="p-3.5 rounded-xl bg-slate-900/40 border border-slate-800/90 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                  <Key className="w-3.5 h-3.5 text-blue-400" />
+                  Google Gemini API Key
+                  {geminiApiKey && <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-400 border border-emerald-800/50">Đã thiết lập</span>}
+                </label>
+                <button
+                  type="button"
+                  onClick={() => window.api.openExternal('https://aistudio.google.com/apikey')}
+                  className="text-[11px] text-blue-400 hover:text-blue-300 hover:underline flex items-center gap-1"
+                >
+                  Lấy key miễn phí tại Google AI Studio ↗
+                </button>
+              </div>
+              <div className="relative">
+                <input
+                  type={showGeminiKey ? 'text' : 'password'}
+                  value={geminiApiKey}
+                  onChange={(e) => setGeminiApiKey(e.target.value)}
+                  placeholder="AIzaSy..."
+                  className="w-full px-3.5 py-2.5 pr-10 rounded-xl bg-slate-900 border border-slate-800 text-sm font-mono text-slate-100 focus:outline-none focus:border-blue-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowGeminiKey(!showGeminiKey)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                >
+                  {showGeminiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              <span className="text-[11px] text-slate-500 block">
+                Hỗ trợ tự động các model Gemini mới (gemini-3.8-flash, gemini-2.5-flash). Miễn phí 1,500 lượt/ngày tại Google AI Studio.
+              </span>
+            </div>
+
+            {/* 2. OpenAI ChatGPT */}
+            <div className="p-3.5 rounded-xl bg-slate-900/40 border border-slate-800/90 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                  <Bot className="w-3.5 h-3.5 text-emerald-400" />
+                  OpenAI (ChatGPT) API Key
+                  {openaiApiKey && <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-400 border border-emerald-800/50">Đã thiết lập</span>}
+                </label>
+                <button
+                  type="button"
+                  onClick={() => window.api.openExternal('https://platform.openai.com/api-keys')}
+                  className="text-[11px] text-emerald-400 hover:text-emerald-300 hover:underline flex items-center gap-1"
+                >
+                  Lấy key tại OpenAI Platform ↗
+                </button>
+              </div>
+              <div className="relative">
+                <input
+                  type={showOpenaiKey ? 'text' : 'password'}
+                  value={openaiApiKey}
+                  onChange={(e) => setOpenaiApiKey(e.target.value)}
+                  placeholder="sk-proj-..."
+                  className="w-full px-3.5 py-2.5 pr-10 rounded-xl bg-slate-900 border border-slate-800 text-sm font-mono text-slate-100 focus:outline-none focus:border-emerald-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowOpenaiKey(!showOpenaiKey)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                >
+                  {showOpenaiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              <span className="text-[11px] text-slate-500 block">
+                Sử dụng model gpt-4o-mini (nhanh, rẻ và tạo cảnh hình ảnh rất chuẩn).
+              </span>
+            </div>
+
+            {/* 3. Anthropic Claude */}
+            <div className="p-3.5 rounded-xl bg-slate-900/40 border border-slate-800/90 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  Anthropic (Claude) API Key
+                  {claudeApiKey && <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-400 border border-emerald-800/50">Đã thiết lập</span>}
+                </label>
+                <button
+                  type="button"
+                  onClick={() => window.api.openExternal('https://console.anthropic.com/settings/keys')}
+                  className="text-[11px] text-amber-400 hover:text-amber-300 hover:underline flex items-center gap-1"
+                >
+                  Lấy key tại Anthropic Console ↗
+                </button>
+              </div>
+              <div className="relative">
+                <input
+                  type={showClaudeKey ? 'text' : 'password'}
+                  value={claudeApiKey}
+                  onChange={(e) => setClaudeApiKey(e.target.value)}
+                  placeholder="sk-ant-api..."
+                  className="w-full px-3.5 py-2.5 pr-10 rounded-xl bg-slate-900 border border-slate-800 text-sm font-mono text-slate-100 focus:outline-none focus:border-amber-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowClaudeKey(!showClaudeKey)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                >
+                  {showClaudeKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              <span className="text-[11px] text-slate-500 block">
+                Sử dụng Claude 3.5 Haiku / Sonnet (văn phong sáng tạo và hiểu ngữ cảnh SRT sâu sắc).
+              </span>
+            </div>
+
+            {/* AI Quota Monitoring Dashboard */}
+            <div className="pt-4 border-t border-slate-800/80 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                    <Gauge className="w-4 h-4 text-emerald-400" />
+                    Bảng Giám Sát Quota & Hạn Mức Từng AI
+                  </span>
+                  <span className="text-[11px] text-slate-500">
+                    Theo dõi số lượng requests còn lại, trạng thái kết nối và số lượt đã dùng trong ngày.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCheckQuotas}
+                  disabled={isCheckingQuotas}
+                  className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 border border-slate-700 transition-all flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isCheckingQuotas ? 'animate-spin text-violet-400' : ''}`} />
+                  <span>{isCheckingQuotas ? 'Đang kiểm tra...' : 'Kiểm tra Quota ngay'}</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+                {(quotas || [
+                  { provider: 'gemini', name: 'Google Gemini', hasKey: Boolean(geminiApiKey), status: geminiApiKey ? 'checking' : 'unconfigured', statusText: geminiApiKey ? 'Đang tải...' : 'Chưa cấu hình', tierLimit: '1,500 requests/ngày', usedToday: getAiUsageToday().gemini },
+                  { provider: 'openai', name: 'OpenAI (ChatGPT)', hasKey: Boolean(openaiApiKey), status: openaiApiKey ? 'checking' : 'unconfigured', statusText: openaiApiKey ? 'Đang tải...' : 'Chưa cấu hình', tierLimit: 'Pay-as-you-go', usedToday: getAiUsageToday().openai },
+                  { provider: 'claude', name: 'Anthropic (Claude)', hasKey: Boolean(claudeApiKey), status: claudeApiKey ? 'checking' : 'unconfigured', statusText: claudeApiKey ? 'Đang tải...' : 'Chưa cấu hình', tierLimit: 'Credits Tier', usedToday: getAiUsageToday().claude },
+                ]).map((q) => {
+                  const isGemini = q.provider === 'gemini';
+                  const isOpenAi = q.provider === 'openai';
+
+                  return (
+                    <div
+                      key={q.provider}
+                      className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 flex flex-col space-y-3"
+                    >
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                            {isGemini ? (
+                              <Key className="w-3.5 h-3.5 text-blue-400" />
+                            ) : isOpenAi ? (
+                              <Bot className="w-3.5 h-3.5 text-emerald-400" />
+                            ) : (
+                              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                            )}
+                            {q.name}
+                          </span>
+                          <span
+                            className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${q.status === 'active'
+                              ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-400'
+                              : q.status === 'out_of_quota'
+                                ? 'bg-rose-950/60 border-rose-500/40 text-rose-400'
+                                : q.status === 'invalid_key'
+                                  ? 'bg-amber-950/60 border-amber-500/40 text-amber-400'
+                                  : q.status === 'checking'
+                                    ? 'bg-violet-950/60 border-violet-500/40 text-violet-400'
+                                    : 'bg-slate-900 border-slate-800 text-slate-500'
+                              }`}
+                          >
+                            {q.status === 'active'
+                              ? '🟢 Sẵn sàng'
+                              : q.status === 'out_of_quota'
+                                ? '🔴 Hết Quota'
+                                : q.status === 'invalid_key'
+                                  ? '🟡 Lỗi Key'
+                                  : q.status === 'checking'
+                                    ? '⏳ Đang kiểm tra'
+                                    : '⚪ Chưa có key'}
+                          </span>
+                        </div>
+
+                        <p className="text-[11px] text-slate-400 leading-tight">
+                          {q.statusText}
+                        </p>
+                      </div>
+
+                      {/* Quota details */}
+                      <div className="p-2 rounded-lg bg-slate-900/80 border border-slate-800/80 text-[11px] space-y-1">
+                        <div className="flex justify-between items-center text-slate-400">
+                          <span>Hạn mức chuẩn:</span>
+                          <span className="font-medium text-slate-200">{q.tierLimit}</span>
+                        </div>
+                        {q.remainingRequests !== undefined && (
+                          <div className="flex justify-between items-center text-slate-400">
+                            <span>Requests còn lại:</span>
+                            <span className="font-semibold text-emerald-400">
+                              {q.remainingRequests}
+                            </span>
+                          </div>
+                        )}
+                        {q.remainingTokens && (
+                          <div className="flex justify-between items-center text-slate-400">
+                            <span>Tokens còn lại:</span>
+                            <span className="font-mono text-[10px] text-slate-300">
+                              {q.remainingTokens}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex justify-between items-center text-slate-400 pt-1 border-t border-slate-800/60">
+                          <span>Đã dùng hôm nay:</span>
+                          <span className="font-bold text-violet-400">{q.usedToday} lượt</span>
+                        </div>
+                      </div>
+
+                      {q.lastChecked && (
+                        <span className="text-[10px] text-slate-600 block text-right">
+                          Cập nhật lúc: {q.lastChecked}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
 

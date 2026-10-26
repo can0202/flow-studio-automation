@@ -112,7 +112,7 @@ export class SessionManager {
     }
   }
 
-  public async testConnection(sessionId: string): Promise<{ success: boolean; status: SessionStatus; message: string }> {
+  public async testConnection(sessionId: string): Promise<{ success: boolean; status: SessionStatus; message: string; quotaInfo?: string }> {
     const session = this.db.getSessionById(sessionId);
     if (!session) {
       return { success: false, status: 'disabled', message: 'Không tìm thấy phiên' };

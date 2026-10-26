@@ -1,7 +1,7 @@
 {
   "name": "flow-studio-automation",
   "version": "1.0.0",
-  "description": "",
+  "description": "Flow Studio Automation - Tự động hoá Google Flow",
   "main": "dist/main/index.cjs",
   "scripts": {
     "build:main": "node scripts/build-main.mjs",
@@ -9,7 +9,61 @@
     "build": "node scripts/build-main.mjs && vite build",
     "dev:renderer": "vite",
     "dev": "node scripts/dev.mjs",
-    "test": "vitest run"
+    "test": "vitest run",
+    "dist": "node scripts/build-main.mjs && vite build && electron-builder --win",
+    "dist:portable": "node scripts/build-main.mjs && vite build && electron-builder --win portable",
+    "pack": "node scripts/build-main.mjs && vite build && electron-builder --dir"
+  },
+  "build": {
+    "appId": "com.flowstudio.automation",
+    "productName": "Flow Studio",
+    "copyright": "Copyright © 2025 Flow Studio",
+    "afterPack": "scripts/afterPack.mjs",
+    "npmRebuild": false,
+    "buildDependenciesFromSource": false,
+    "directories": {
+      "output": "release",
+      "buildResources": "build-assets"
+    },
+    "files": [
+      "dist/**/*",
+      "node_modules/better-sqlite3/**/*",
+      "node_modules/bindings/**/*",
+      "node_modules/file-uri-to-path/**/*",
+      "node_modules/playwright/**/*",
+      "node_modules/playwright-core/**/*"
+    ],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ],
+      "icon": "build-assets/icon.ico",
+      "artifactName": "${productName}-v${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Flow Studio",
+      "installerIcon": "build-assets/icon.ico",
+      "uninstallerIcon": "build-assets/icon.ico",
+      "installerHeaderIcon": "build-assets/icon.ico",
+      "include": "build-assets/installer.nsh"
+    },
+    "portable": {
+      "artifactName": "${productName}-v${version}-Portable.exe"
+    },
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/better-sqlite3/**",
+      "node_modules/bindings/**",
+      "node_modules/file-uri-to-path/**",
+      "node_modules/playwright/**",
+      "node_modules/playwright-core/**"
+    ]
   },
   "type": "module",
   "dependencies": {
@@ -34,6 +88,7 @@
     "concurrently": "^10.0.6",
     "cross-env": "^10.1.0",
     "electron": "^44.8.0",
+    "electron-builder": "^26.18.0",
     "esbuild": "^0.28.2",
     "postcss": "^8.5.30",
     "tailwindcss": "^4.3.3",

@@ -12,6 +12,7 @@ import {
   Pause,
   Zap,
   AlertTriangle,
+  Wand2,
 } from 'lucide-react';
 import { useAppStore, type TabType } from '../store/app-store.ts';
 import { useQueueStore } from '../store/queue-store.ts';
@@ -38,6 +39,7 @@ export const Sidebar: React.FC = () => {
 
   const navItems: NavItem[] = [
     { id: 'dashboard', label: 'Bảng điều khiển', icon: LayoutDashboard },
+    { id: 'prompt-gen', label: 'Tạo Prompt SRT', icon: Wand2 },
     { id: 'image', label: 'Tạo ảnh', icon: ImageIcon },
     { id: 'video', label: 'Tạo video', icon: VideoIcon },
     { id: 'image-to-video', label: 'Ảnh → Video', icon: Film, badge: reviewNeededCount, badgeColor: 'bg-amber-500' },
@@ -75,11 +77,10 @@ export const Sidebar: React.FC = () => {
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                  isActive
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-medium transition-all ${isActive
                     ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-3">
                   <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
@@ -87,9 +88,8 @@ export const Sidebar: React.FC = () => {
                 </div>
                 {item.badge !== undefined && item.badge > 0 && (
                   <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full text-white ${
-                      item.badgeColor || 'bg-indigo-500'
-                    }`}
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full text-white ${item.badgeColor || 'bg-indigo-500'
+                      }`}
                   >
                     {item.badge}
                   </span>
@@ -107,9 +107,8 @@ export const Sidebar: React.FC = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span
-                className={`w-2 h-2 rounded-full ${
-                  settings?.simulationMode ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'
-                }`}
+                className={`w-2 h-2 rounded-full ${settings?.simulationMode ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'
+                  }`}
               />
               <span className="text-xs font-semibold text-slate-300">
                 {settings?.simulationMode ? 'Chế độ Giả lập' : 'Chế độ Thực'}
@@ -132,11 +131,10 @@ export const Sidebar: React.FC = () => {
         {/* Queue Start/Pause button */}
         <button
           onClick={toggleQueue}
-          className={`w-full py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
-            isQueueRunning
+          className={`w-full py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all ${isQueueRunning
               ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20'
               : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20'
-          }`}
+            }`}
         >
           {isQueueRunning ? (
             <>

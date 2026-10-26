@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog, protocol } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, protocol, shell } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import { AppDatabase } from './db/database.ts';
@@ -10,6 +10,17 @@ import { JobQueue } from './services/job-queue.ts';
 import { MediaSyncService } from './services/media-sync.ts';
 import { BatchNamer } from './services/batch-namer.ts';
 import type { CreateJobInput, SessionStatus, Settings, SyncMediaOptions, BatchRenameOptions } from '../shared/types.ts';
+
+// Set Windows App User Model ID for taskbar & notifications
+if (process.platform === 'win32') {
+  app.setAppUserModelId('com.flowstudio.automation');
+}
+
+// Set Playwright browsers path to use system-level cache (works both in dev and packaged)
+// Playwright installs to %LOCALAPPDATA%\ms-playwright by default on Windows
+const playwrightBrowsersPath = process.env.PLAYWRIGHT_BROWSERS_PATH
+  || path.join(process.env.LOCALAPPDATA || path.join(process.env.USERPROFILE || '', 'AppData', 'Local'), 'ms-playwright');
+process.env.PLAYWRIGHT_BROWSERS_PATH = playwrightBrowsersPath;
 
 // Register standard custom protocol for safe streaming/loading of local media (images & videos)
 protocol.registerSchemesAsPrivileged([
@@ -24,6 +35,8 @@ protocol.registerSchemesAsPrivileged([
     },
   },
 ]);
+
+
 
 let mainWindow: BrowserWindow | null = null;
 let db: AppDatabase;
@@ -128,6 +141,13 @@ function registerIpcHandlers() {
     });
     if (result.canceled || result.filePaths.length === 0) return null;
     return result.filePaths[0];
+  });
+
+  ipcMain.handle('app:openExternal', async (_e, url: string) => {
+    // Validate URL to prevent arbitrary code execution
+    if (url.startsWith('https://') || url.startsWith('http://')) {
+      await shell.openExternal(url);
+    }
   });
 
   // Sessions

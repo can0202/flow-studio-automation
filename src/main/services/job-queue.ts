@@ -192,6 +192,15 @@ export class JobQueue {
       if (s && s.status === 'ready' && !this.busySessions.has(s.id)) {
         return s;
       }
+
+      // NẾU phiên được chỉ định không sẵn sàng (hết quota, tạm dừng, lỗi xác thực...)
+      // Tự động chuyển giao (fallback) sang bất kỳ phiên nào khác đang READY để không bao giờ làm nghẽn hàng đợi!
+      const fallback = sessions.find((item) => item.status === 'ready' && !this.busySessions.has(item.id));
+      if (fallback) {
+        console.log(`[JobQueue] Phiên chỉ định "${s?.name || job.sessionId}" không sẵn sàng (${s?.status || 'không tồn tại'}). Tự động chuyển giao sang phiên sẵn sàng "${fallback.name}".`);
+        return fallback;
+      }
+
       return undefined;
     }
 
@@ -306,21 +315,44 @@ export class JobQueue {
   private async handleJobFailure(job: Job, session: Session, result: GenerationResult) {
     const errorMsg = result.error || 'Lỗi tạo nội dung không xác định';
 
-    // 1. Quota Exhausted: STOP session, do not retry!
+    // 1. Quota Exhausted: Mark session exhausted, failover to other ready session if available!
     if (result.isQuotaExhausted) {
       this.sessionManager.updateStatus(session.id, 'quota_exhausted', errorMsg);
       const updatedSession = this.sessionManager.getSessionById(session.id);
       if (updatedSession) this.emitSession(updatedSession);
 
+      // Check if there is another ready session we can automatically hand off to
+      const allSessions = this.db.getSessions();
+      const otherReadySession = allSessions.find(
+        (s) => s.id !== session.id && s.status === 'ready' && !this.busySessions.has(s.id)
+      );
+
+      if (otherReadySession) {
+        console.log(`[JobQueue] Session "${session.name}" hết quota. Tự động chuyển job "${job.name}" sang phiên "${otherReadySession.name}".`);
+        const transferredJob = this.db.updateJob(job.id, {
+          status: 'pending',
+          sessionId: null as any,
+          progress: 0,
+          errorMessage: undefined,
+        })!;
+        this.emitJob(transferredJob);
+
+        this.emitNotification({
+          type: 'warning',
+          message: `Phiên "${session.name}" đã hết quota. Đang tự động chuyển tiếp tác vụ "${job.name}" sang phiên "${otherReadySession.name}".`,
+        });
+        return;
+      }
+
       const failedJob = this.db.updateJob(job.id, {
         status: 'failed',
-        errorMessage: `Hết hạn ngạch quota: ${errorMsg}. Worker đã dừng.`,
+        errorMessage: `Hết hạn ngạch quota: ${errorMsg}. Không còn phiên nào sẵn sàng.`,
       })!;
       this.emitJob(failedJob);
 
       this.emitNotification({
         type: 'error',
-        message: `Hết hạn ngạch quota cho phiên "${session.name}". Worker đã dừng.`,
+        message: `Hết hạn ngạch quota cho phiên "${session.name}". Không còn phiên nào khác sẵn sàng. Worker đã dừng.`,
       });
       return;
     }

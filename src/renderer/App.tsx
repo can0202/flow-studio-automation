@@ -12,6 +12,7 @@ import { QueueView } from './views/QueueView.tsx';
 import { SessionsView } from './views/SessionsView.tsx';
 import { OutputsView } from './views/OutputsView.tsx';
 import { SettingsView } from './views/SettingsView.tsx';
+import { PromptGenView } from './views/PromptGenView.tsx';
 
 export const App: React.FC = () => {
   const { activeTab, loadSettings, loadStats, addNotification } = useAppStore();
@@ -72,6 +73,8 @@ export const App: React.FC = () => {
         return <OutputsView />;
       case 'settings':
         return <SettingsView />;
+      case 'prompt-gen':
+        return <PromptGenView />;
       default:
         return <DashboardView />;
     }

@@ -7,6 +7,7 @@ const api: IElectronAPI = {
   updateSettings: (settings: Partial<Settings>) => ipcRenderer.invoke('app:updateSettings', settings),
   getStats: () => ipcRenderer.invoke('app:getStats'),
   selectFolder: () => ipcRenderer.invoke('app:selectFolder'),
+  openExternal: (url: string) => ipcRenderer.invoke('app:openExternal', url),
 
   // Sessions
   getSessions: () => ipcRenderer.invoke('sessions:list'),

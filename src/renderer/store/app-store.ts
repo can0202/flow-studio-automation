@@ -9,7 +9,8 @@ export type TabType =
   | 'queue'
   | 'sessions'
   | 'outputs'
-  | 'settings';
+  | 'settings'
+  | 'prompt-gen';
 
 export interface ToastNotification {
   id: string;

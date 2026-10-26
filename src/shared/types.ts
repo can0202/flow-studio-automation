@@ -81,6 +81,8 @@ export interface Session {
 }
 
 
+export type AiPromptProvider = 'gemini' | 'openai' | 'claude';
+
 export interface Settings {
   concurrencyLimit: number;
   defaultMaxRetries: number;
@@ -88,6 +90,10 @@ export interface Settings {
   simulationMode: boolean;
   defaultProjectName: string;
   flowUrl: string;
+  geminiApiKey?: string;
+  openaiApiKey?: string;
+  claudeApiKey?: string;
+  preferredAiProvider?: AiPromptProvider;
 }
 
 export interface QueueStats {
@@ -188,6 +194,7 @@ export interface IElectronAPI {
   updateSettings: (settings: Partial<Settings>) => Promise<Settings>;
   getStats: () => Promise<QueueStats>;
   selectFolder: () => Promise<string | null>;
+  openExternal: (url: string) => Promise<void>;
 
   // Sessions
   getSessions: () => Promise<Session[]>;

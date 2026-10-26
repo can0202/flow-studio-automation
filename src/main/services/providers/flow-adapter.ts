@@ -914,12 +914,25 @@ export class GoogleFlowAdapter implements FlowProvider {
         }
       } else {
         // ── Reusing already open project page from previous job of this batch ──
+        if (!page || page.isClosed()) {
+          return {
+            success: false,
+            error: `Trang làm việc dự án của batch đã bị đóng. Vui lòng thử lại.`,
+          };
+        }
         onProgress({
           progress: 20,
           stage: 'starting',
           message: `Đang tạo tiếp ảnh trên cùng dự án (Ảnh #${job.metadata?.batchIndex || 1}/${job.metadata?.batchTotal || '?'})...`,
         });
-        await page!.waitForTimeout(500);
+        await page.waitForTimeout(500);
+      }
+
+      if (!page || page.isClosed()) {
+        return {
+          success: false,
+          error: `Không thể kết nối hoặc khởi tạo trang làm việc trên Google Flow cho phiên "${session.name}".`,
+        };
       }
 
       // ── Check quota state immediately inside project workspace ──────────

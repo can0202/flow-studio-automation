@@ -364,7 +364,7 @@ export class AppDatabase {
   public retryFailedJobs() {
     this.sqlite.prepare(`
       UPDATE jobs 
-      SET status = 'pending', retry_count = 0, error_message = NULL, progress = 0, updated_at = ?
+      SET status = 'pending', retry_count = 0, error_message = NULL, progress = 0, session_id = NULL, updated_at = ?
       WHERE status IN ('failed', 'interrupted')
     `).run(new Date().toISOString());
   }

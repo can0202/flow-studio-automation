@@ -11,7 +11,9 @@ const VIEW_TITLES: Record<TabType, { title: string; desc: string }> = {
   sessions: { title: 'Quản lý phiên', desc: 'Phiên trình duyệt Google Flow cô lập với bảo vệ đăng nhập & quota' },
   outputs: { title: 'File đầu ra', desc: 'Duyệt và xem các ảnh, video đã tải về và siêu dữ liệu JSON' },
   settings: { title: 'Cài đặt', desc: 'Cấu hình đồng thời, thư mục đầu ra và tùy chọn tự động hóa' },
+  'prompt-gen': { title: 'Tạo Prompt từ SRT', desc: 'Dùng Gemini AI để chuyển phụ đề SRT thành image prompts theo nhân vật & style cố định' },
 };
+
 
 export const Header: React.FC = () => {
   const { activeTab, settings, stats, notifications, removeNotification, updateSettings } = useAppStore();
