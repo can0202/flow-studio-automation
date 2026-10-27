@@ -99,68 +99,105 @@ export interface AiQuotaInfo {
 // ─── Gemini API (với auto-fallback giữa các models) ──────────────────────────
 
 const GEMINI_MODELS = [
+  'gemini-3.5-flash',
+  'gemini-3.5-flash-lite',
+  'gemini-3.1-flash-lite',
   'gemini-3.8-flash',
-  'gemini-2.5-flash',
-  'gemini-1.5-flash-latest',
-  'gemini-1.5-flash',
-  'gemini-1.5-pro',
+  'gemini-3.7-flash',
+  'gemini-3.6-flash',
 ];
+
+function isTransientError(errMsg: string, status?: number): boolean {
+  const lower = (errMsg || '').toLowerCase();
+  return (
+    status === 503 ||
+    status === 500 ||
+    status === 504 ||
+    lower.includes('high demand') ||
+    lower.includes('spikes in demand') ||
+    lower.includes('overloaded') ||
+    lower.includes('try again later') ||
+    lower.includes('temporarily') ||
+    lower.includes('unavailable') ||
+    (status === 429 && !lower.includes('quota'))
+  );
+}
 
 async function callGemini(
   apiKey: string,
   systemPrompt: string,
   userContent: string
 ): Promise<string> {
+  const maxRetries = 2;
   let lastError: Error | null = null;
 
-  for (const model of GEMINI_MODELS) {
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: 'user',
-              parts: [{ text: systemPrompt + '\n\n' + userContent }],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 8192,
-          },
-        }),
-      });
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    if (attempt > 0) {
+      // Delay before retrying on high demand / transient server error
+      await new Promise((r) => setTimeout(r, 2000 * attempt));
+    }
 
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        const errMsg = err?.error?.message || `HTTP ${response.status} ${response.statusText}`;
+    for (const model of GEMINI_MODELS) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [
+              {
+                role: 'user',
+                parts: [{ text: systemPrompt + '\n\n' + userContent }],
+              },
+            ],
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 8192,
+            },
+          }),
+        });
+
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({}));
+          const errMsg = err?.error?.message || `HTTP ${response.status} ${response.statusText}`;
+
+          // If model not found, deprecated or unsupported on this tier -> try next model
+          if (
+            response.status === 404 ||
+            errMsg.includes('not found') ||
+            errMsg.includes('no longer available') ||
+            errMsg.includes('is not supported') ||
+            errMsg.includes('limit: 0')
+          ) {
+            lastError = new Error(`Model ${model}: ${errMsg}`);
+            continue;
+          }
+
+          // If model has temporary high demand / server overloaded / 503 / 429 -> try next model in GEMINI_MODELS
+          if (isTransientError(errMsg, response.status)) {
+            lastError = new Error(`Google Gemini (${model}) đang quá tải/high demand: ${errMsg}`);
+            continue;
+          }
+
+          throw new Error(errMsg);
+        }
+
+        const data = await response.json();
+        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!text) throw new Error('Gemini không trả về nội dung text.');
+        return text;
+      } catch (err: any) {
+        lastError = err;
+        const msg = err?.message || '';
         if (
-          response.status === 404 ||
-          errMsg.includes('not found') ||
-          errMsg.includes('no longer available') ||
-          errMsg.includes('is not supported')
+          msg.includes('not found') ||
+          msg.includes('no longer available') ||
+          isTransientError(msg)
         ) {
-          lastError = new Error(`Model ${model}: ${errMsg}`);
           continue;
         }
-        throw new Error(errMsg);
+        throw err;
       }
-
-      const data = await response.json();
-      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!text) throw new Error('Gemini không trả về nội dung text.');
-      return text;
-    } catch (err: any) {
-      lastError = err;
-      if (
-        err?.message?.includes('not found') ||
-        err?.message?.includes('no longer available')
-      ) {
-        continue;
-      }
-      throw err;
     }
   }
 

@@ -158,19 +158,35 @@ export const QueueView: React.FC = () => {
 
   const handleConfirmEnqueue = async () => {
     if (previewItems.length === 0) return;
-    const batchId = `batch_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     const imageCount = previewItems.filter((i) => i.type === 'image').length;
+    const videoCount = previewItems.filter((i) => i.type === 'video').length;
+    const imgBatchId = imageCount > 1 ? `batch_${Date.now()}_img_${Math.random().toString(36).slice(2, 6)}` : undefined;
+    const vidBatchId = videoCount > 1 ? `batch_${Date.now()}_vid_${Math.random().toString(36).slice(2, 6)}` : undefined;
     let imgIdx = 0;
+    let vidIdx = 0;
     const itemsWithBatch = previewItems.map((item) => {
-      if (item.type === 'image' && imageCount > 1) {
+      if (item.type === 'image' && imgBatchId) {
         imgIdx++;
         return {
           ...item,
           metadata: {
             ...(item.metadata || {}),
-            batchId,
+            batchId: imgBatchId,
             batchIndex: imgIdx,
             batchTotal: imageCount,
+            isBatch: true,
+          },
+        };
+      }
+      if (item.type === 'video' && vidBatchId) {
+        vidIdx++;
+        return {
+          ...item,
+          metadata: {
+            ...(item.metadata || {}),
+            batchId: vidBatchId,
+            batchIndex: vidIdx,
+            batchTotal: videoCount,
             isBatch: true,
           },
         };

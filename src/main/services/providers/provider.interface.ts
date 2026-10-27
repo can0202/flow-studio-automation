@@ -10,6 +10,7 @@ export interface GenerationResult {
   success: boolean;
   outputFile?: string;
   thumbnailFile?: string;
+  lastFrameFile?: string;
   error?: string;
   isTransient?: boolean;
   isQuotaExhausted?: boolean;

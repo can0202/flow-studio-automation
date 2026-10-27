@@ -1,3 +1,4 @@
+import fs from 'fs';
 import type { AppDatabase } from '../db/database.ts';
 import type { SessionManager } from './session-manager.ts';
 import type { FlowProvider, GenerationProgress, GenerationResult } from './providers/provider.interface.ts';
@@ -155,10 +156,17 @@ export class JobQueue {
           continue;
         }
 
-        // Pass reference image from parent output if not already set
+        // Pass reference image from parent output if not already set (e.g. Image -> Video or Video chaining)
         if (!job.referenceImageUrl) {
-          this.db.updateJob(job.id, { referenceImageUrl: parent.outputFile });
-          job.referenceImageUrl = parent.outputFile;
+          const parentRef = parent.metadata?.lastFrameFile || (parent.type === 'image' ? parent.outputFile : undefined);
+          if (parentRef && fs.existsSync(parentRef)) {
+            this.db.updateJob(job.id, { referenceImageUrl: parentRef });
+            job.referenceImageUrl = parentRef;
+            console.log(`[JobQueue] Đã truyền khung hình tham chiếu từ job cha "${parent.name}" sang job "${job.name}": ${parentRef}`);
+          } else if (parent.outputFile && fs.existsSync(parent.outputFile)) {
+            this.db.updateJob(job.id, { referenceImageUrl: parent.outputFile });
+            job.referenceImageUrl = parent.outputFile;
+          }
         }
       }
 
@@ -231,7 +239,7 @@ export class JobQueue {
     this.emitStats();
 
     // Restore batch project URL from sibling jobs if needed
-    if (job.type === 'image' && job.metadata?.batchId && 'getBatchProjectUrl' in (provider as any)) {
+    if (job.metadata?.batchId && 'getBatchProjectUrl' in (provider as any)) {
       const adapter = provider as any;
       if (!adapter.getBatchProjectUrl(job.metadata.batchId)) {
         const sibling = this.db.getJobs().find(
@@ -283,6 +291,7 @@ export class JobQueue {
             message: `Ảnh đã sẵn sàng để xem xét: "${job.name}". Vui lòng phê duyệt để tiếp tục tạo video.`,
           });
         } else {
+          const lastFrameFile = result.lastFrameFile || result.metadata?.lastFrameFile;
           const completedJob = this.db.updateJob(job.id, {
             status: 'completed',
             progress: 100,
@@ -292,6 +301,7 @@ export class JobQueue {
             metadata: {
               ...(job.metadata || {}),
               ...metadataUpdates,
+              ...(lastFrameFile ? { lastFrameFile } : {}),
             },
           })!;
           this.emitJob(completedJob);

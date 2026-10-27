@@ -732,13 +732,12 @@ export class GoogleFlowAdapter implements FlowProvider {
     const projectName = (job.metadata?.projectName as string) || 'FlowStudioProject';
     const { imagesDir, videosDir } = this.outputManager.getProjectDirs(projectName);
 
-    // ── Batch Image Workspace Strategy ─────────────────────────────────────
-    // For batch image jobs (pasting multiple prompts), all prompts in that batch
+    // ── Batch Workspace Strategy (Image & Video) ───────────────────────────
+    // For batch jobs (both batch images and batch videos/chaining), all items in that batch
     // must be generated within the SAME single project without opening new projects.
-    // We KEEP the browser context & project page open across prompts of the same batch.
-    // - Video jobs ALWAYS create fresh projects (isolated download).
-    // - Single image jobs create fresh projects (no conflict).
-    const isBatchImageJob = job.type === 'image' && Boolean(job.metadata?.batchId);
+    // We KEEP the browser context & project page open across items of the same batch.
+    // - Single jobs create fresh projects (no conflict).
+    const isBatchJob = Boolean(job.metadata?.batchId);
     const batchId = job.metadata?.batchId as string | undefined;
 
     let context: BrowserContext | null = null;
@@ -746,7 +745,7 @@ export class GoogleFlowAdapter implements FlowProvider {
     let isReusingActiveBatch = false;
 
     if (
-      isBatchImageJob &&
+      isBatchJob &&
       batchId &&
       this.activeBatch &&
       this.activeBatch.batchId === batchId &&
@@ -756,7 +755,7 @@ export class GoogleFlowAdapter implements FlowProvider {
       context = this.activeBatch.context;
       page = this.activeBatch.page;
       isReusingActiveBatch = true;
-      console.log(`[FlowAdapter] [BATCH REUSE] Tiếp tục tạo ảnh trên cùng Project đang mở (Batch: ${batchId}, Ảnh #${job.metadata?.batchIndex || '?'}/${job.metadata?.batchTotal || '?'})`);
+      console.log(`[FlowAdapter] [BATCH REUSE] Tiếp tục tạo ${job.type === 'video' ? 'video' : 'ảnh'} trên cùng Project đang mở (Batch: ${batchId}, #${job.metadata?.batchIndex || '?'}/${job.metadata?.batchTotal || '?'})`);
     } else {
       if (this.activeBatch) {
         await this.closeActiveSession();
@@ -769,10 +768,15 @@ export class GoogleFlowAdapter implements FlowProvider {
         context = await chromium.launchPersistentContext(session.profileDir, getBrowserLaunchOptions(false));
         page = context.pages().length > 0 ? context.pages()[0] : await context.newPage();
 
-        // ── Navigate to Google Flow ──
-        onProgress({ progress: 15, stage: 'starting', message: 'Đang kết nối đến Google Flow...' });
+        // ── Navigate to Google Flow (reuse batch project URL if known) ──
+        const targetUrl = (batchId ? this.batchProjectUrls.get(batchId) : undefined) || FLOW_URLS.primary;
+        onProgress({
+          progress: 15,
+          stage: 'starting',
+          message: targetUrl !== FLOW_URLS.primary ? 'Đang mở lại dự án chung của lô...' : 'Đang kết nối đến Google Flow...',
+        });
         try {
-          await page.goto(FLOW_URLS.primary, { waitUntil: 'domcontentloaded', timeout: 40000 });
+          await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 40000 });
         } catch (e: any) {
           console.warn('[FlowAdapter] Initial goto notice:', e.message);
         }
@@ -907,7 +911,7 @@ export class GoogleFlowAdapter implements FlowProvider {
         }
 
         // ── Remember active batch session so next jobs in this batch stay in this EXACT project ──
-        if (isBatchImageJob && batchId && context && page && !page.isClosed()) {
+        if (isBatchJob && batchId && context && page && !page.isClosed()) {
           this.activeBatch = { context, page, sessionId: session.id, batchId };
           this.batchProjectUrls.set(batchId, page.url());
           console.log(`[FlowAdapter] [BATCH ESTABLISHED] Dự án chung cho batch [${batchId}] đã sẵn sàng tại: ${page.url()}`);
@@ -923,7 +927,7 @@ export class GoogleFlowAdapter implements FlowProvider {
         onProgress({
           progress: 20,
           stage: 'starting',
-          message: `Đang tạo tiếp ảnh trên cùng dự án (Ảnh #${job.metadata?.batchIndex || 1}/${job.metadata?.batchTotal || '?'})...`,
+          message: `Đang tạo tiếp ${job.type === 'video' ? 'video' : 'ảnh'} trên cùng dự án (#${job.metadata?.batchIndex || 1}/${job.metadata?.batchTotal || '?'})...`,
         });
         await page.waitForTimeout(500);
       }
@@ -1069,7 +1073,7 @@ export class GoogleFlowAdapter implements FlowProvider {
       onProgress({ progress: 75, stage: 'generating', message: 'Đang chờ Google Flow tạo nội dung...' });
       const generationResult = await this.waitForGeneration(page, job.type, preSnapshot, onProgress);
       if (!generationResult.success) {
-        if (isBatchImageJob) await this.closeActiveSession();
+        if (isBatchJob) await this.closeActiveSession();
         return generationResult;
       }
 
@@ -1079,7 +1083,7 @@ export class GoogleFlowAdapter implements FlowProvider {
       const downloadResult = await this.downloadResult(page, job, targetDir, preSnapshot);
 
       if (!downloadResult.success || !downloadResult.outputFile) {
-        if (isBatchImageJob) await this.closeActiveSession();
+        if (isBatchJob) await this.closeActiveSession();
         return {
           success: false,
           error: downloadResult.error || 'Tải xuống đầu ra từ Google Flow thất bại.',
@@ -1092,20 +1096,34 @@ export class GoogleFlowAdapter implements FlowProvider {
       onProgress({ progress: 100, stage: 'completed', message: 'Tạo nội dung hoàn tất!' });
 
       const flowProjectUrl = page.url().includes('/project/') ? page.url() : undefined;
+
+      // If this was the last item of the batch, cleanly close the browser session
+      if (
+        isBatchJob &&
+        job.metadata?.batchIndex &&
+        job.metadata?.batchTotal &&
+        Number(job.metadata.batchIndex) >= Number(job.metadata.batchTotal)
+      ) {
+        console.log(`[FlowAdapter] Batch [${batchId}] đã hoàn thành tất cả các mục (${job.metadata.batchIndex}/${job.metadata.batchTotal}). Đang đóng phiên làm việc...`);
+        await this.closeActiveSession();
+      }
+
       return {
         success: true,
         outputFile: downloadResult.outputFile,
         thumbnailFile: downloadResult.thumbnailFile,
+        lastFrameFile: downloadResult.lastFrameFile,
         metadata: {
           engine: 'Google Flow Playwright Adapter',
           finalUrl: page.url(),
           flowProjectUrl,
+          lastFrameFile: downloadResult.lastFrameFile,
           timestamp: new Date().toISOString(),
         },
       };
     } catch (err: any) {
       console.error('[FlowAdapter] Unhandled error during generation:', err);
-      if (isBatchImageJob) {
+      if (isBatchJob) {
         await this.closeActiveSession();
       }
       const isClosed =
@@ -1121,9 +1139,9 @@ export class GoogleFlowAdapter implements FlowProvider {
           : `Lỗi tự động hóa trình duyệt: ${err.message || String(err)}`,
       };
     } finally {
-      // For batch image jobs, keep browser open so all prompts in batch stay in ONE project!
-      // For single image jobs and video jobs, always close context immediately.
-      if (context && !isBatchImageJob) {
+      // For batch jobs, keep browser open so all prompts/videos in batch stay in ONE project!
+      // For single jobs, always close context immediately.
+      if (context && !isBatchJob) {
         try {
           await context.close();
         } catch {}
@@ -1550,7 +1568,7 @@ export class GoogleFlowAdapter implements FlowProvider {
     job: Job,
     targetDir: string,
     baseline?: MediaSnapshot
-  ): Promise<{ success: boolean; outputFile?: string; thumbnailFile?: string; error?: string }> {
+  ): Promise<{ success: boolean; outputFile?: string; thumbnailFile?: string; lastFrameFile?: string; error?: string }> {
     const ext = job.type === 'image' ? 'png' : 'mp4';
     const filePath = path.join(targetDir, `${job.id}.${ext}`);
     const minImageBytes = 10240; // 10KB minimum for valid image (avoids avatars/icons)
@@ -1643,6 +1661,10 @@ export class GoogleFlowAdapter implements FlowProvider {
               await download.saveAs(filePath);
               console.log(`[FlowAdapter] Video downloaded to: ${filePath} (${fs.statSync(filePath).size} bytes)`);
 
+              // Extract last frame of video for video chaining / continuity
+              const lastFramePath = filePath.replace('.mp4', '_last_frame.png');
+              const extractedFrame = await this.extractVideoLastFrame(page, filePath, lastFramePath);
+
               // Close the modal
               await page.keyboard.press('Escape').catch(() => {});
               const doneBtn = page.locator('button:has-text("Xong"), button:has-text("Done")').first();
@@ -1655,7 +1677,13 @@ export class GoogleFlowAdapter implements FlowProvider {
                 const sz = fs.statSync(filePath).size;
                 if (sz >= minVideoBytes && this.isMp4File(filePath)) {
                   console.log(`[FlowAdapter] Video validated successfully: ${sz} bytes`);
-                  return { success: true, outputFile: filePath, thumbnailFile: fs.existsSync(thumbPath) ? thumbPath : undefined };
+                  const finalLastFrame = (extractedFrame && fs.existsSync(extractedFrame)) ? extractedFrame : (fs.existsSync(thumbPath) ? thumbPath : undefined);
+                  return {
+                    success: true,
+                    outputFile: filePath,
+                    thumbnailFile: fs.existsSync(thumbPath) ? thumbPath : undefined,
+                    lastFrameFile: finalLastFrame,
+                  };
                 } else {
                   console.warn(`[FlowAdapter] Downloaded file failed validation (size: ${sz}, isMp4: ${this.isMp4File(filePath)})`);
                   fs.unlinkSync(filePath);
@@ -2025,5 +2053,90 @@ export class GoogleFlowAdapter implements FlowProvider {
       success: false,
       error: 'Không tìm thấy kết quả media hợp lệ trên Google Flow hoặc file tải về không đạt tiêu chuẩn (>10KB). Vui lòng thử lại.',
     };
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Extract last frame of video for video chaining / continuity
+  // Seeks to near the end of the video, renders to canvas, and saves as PNG.
+  // ──────────────────────────────────────────────────────────────────────────
+  private async extractVideoLastFrame(page: Page, videoPath: string, outputPath: string): Promise<string | undefined> {
+    try {
+      if (!fs.existsSync(videoPath)) return undefined;
+
+      // Method 1: Check if active video element exists in viewer modal before closing
+      const modalVideo = page.locator('.cdk-overlay-container video, video').first();
+      if (await modalVideo.isVisible({ timeout: 1200 }).catch(() => false)) {
+        try {
+          const frameBase64 = await page.evaluate(async () => {
+            const v = document.querySelector<HTMLVideoElement>('.cdk-overlay-container video, video');
+            if (!v || !v.duration) return null;
+            v.pause();
+            v.currentTime = Math.max(0, v.duration - 0.08);
+            await new Promise((r) => {
+              v.onseeked = r;
+              setTimeout(r, 1500);
+            });
+            const canvas = document.createElement('canvas');
+            canvas.width = v.videoWidth || 1280;
+            canvas.height = v.videoHeight || 720;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return null;
+            ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+            return canvas.toDataURL('image/png').replace(/^data:image\/png;base64,/, '');
+          });
+
+          if (frameBase64 && frameBase64.length > 200) {
+            fs.writeFileSync(outputPath, Buffer.from(frameBase64, 'base64'));
+            return outputPath;
+          }
+        } catch (e: any) {
+          console.warn('[FlowAdapter] In-modal video frame capture skipped:', e.message);
+        }
+      }
+
+      // Method 2: Load video buffer into offscreen video element in page
+      const videoBuffer = fs.readFileSync(videoPath);
+      if (videoBuffer.length < 80 * 1024 * 1024) {
+        const base64Data = `data:video/mp4;base64,${videoBuffer.toString('base64')}`;
+        const frameBase64 = await page.evaluate(async (dataUrl) => {
+          return new Promise<string | null>((resolve) => {
+            const v = document.createElement('video');
+            v.muted = true;
+            v.playsInline = true;
+            v.preload = 'auto';
+            v.src = dataUrl;
+
+            v.onloadedmetadata = () => {
+              v.currentTime = Math.max(0, v.duration - 0.08);
+            };
+
+            v.onseeked = () => {
+              try {
+                const canvas = document.createElement('canvas');
+                canvas.width = v.videoWidth || 1280;
+                canvas.height = v.videoHeight || 720;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return resolve(null);
+                ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+                resolve(canvas.toDataURL('image/png').replace(/^data:image\/png;base64,/, ''));
+              } catch {
+                resolve(null);
+              }
+            };
+
+            v.onerror = () => resolve(null);
+            setTimeout(() => resolve(null), 8000);
+          });
+        }, base64Data);
+
+        if (frameBase64 && frameBase64.length > 200) {
+          fs.writeFileSync(outputPath, Buffer.from(frameBase64, 'base64'));
+          return outputPath;
+        }
+      }
+    } catch (err: any) {
+      console.warn('[FlowAdapter] Failed to extract last frame from video:', err.message);
+    }
+    return undefined;
   }
 }

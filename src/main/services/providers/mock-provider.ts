@@ -74,6 +74,8 @@ export class MockProvider implements FlowProvider {
     let outputFile = '';
     let thumbnailFile = '';
 
+    let lastFrameFile: string | undefined = undefined;
+
     if (job.type === 'image') {
       const fileName = `${job.id}.svg`;
       outputFile = path.join(imagesDir, fileName);
@@ -84,16 +86,19 @@ export class MockProvider implements FlowProvider {
     } else {
       const fileName = `${job.id}.mp4`;
       const thumbName = `${job.id}_thumb.svg`;
+      const lastFrameName = `${job.id}_last_frame.svg`;
       outputFile = path.join(videosDir, fileName);
       thumbnailFile = path.join(videosDir, thumbName);
+      lastFrameFile = path.join(videosDir, lastFrameName);
 
       // Create a valid mini MP4 binary placeholder or simulated video container
       const videoBuffer = this.createMockVideoFile(job);
       fs.writeFileSync(outputFile, videoBuffer);
 
-      // Create thumbnail svg
+      // Create thumbnail and last frame svg
       const svgThumb = this.createMockImageSvg(job, session, true);
       fs.writeFileSync(thumbnailFile, svgThumb, 'utf-8');
+      fs.writeFileSync(lastFrameFile, svgThumb, 'utf-8');
     }
 
     // Verify file actually exists before completing
@@ -113,10 +118,12 @@ export class MockProvider implements FlowProvider {
       success: true,
       outputFile,
       thumbnailFile,
+      lastFrameFile,
       metadata: {
         engine: 'Simulation Mode (Mock)',
         generationTimeMs: 2200,
         fileSize: fs.statSync(outputFile).size,
+        lastFrameFile,
       },
     };
   }
