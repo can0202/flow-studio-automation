@@ -121,6 +121,8 @@ export class AppDatabase {
       simulationMode: true, // Default to true as recommended for safe MVP testing
       defaultProjectName: 'FlowStudioProject',
       flowUrl: 'https://flow.google.com',
+      strictSessionBinding: true,
+      accountConcurrency: true,
     };
 
     for (const [k, v] of Object.entries(defaultSettings)) {
@@ -145,10 +147,15 @@ export class AppDatabase {
         simulationMode: true,
         defaultProjectName: 'FlowStudioProject',
         flowUrl: 'https://flow.google.com',
+        strictSessionBinding: true,
+        accountConcurrency: true,
       };
     }
     const rows = this.sqlite.prepare('SELECT key, value FROM settings').all() as { key: string; value: string }[];
-    const result: any = {};
+    const result: any = {
+      strictSessionBinding: true,
+      accountConcurrency: true,
+    };
     for (const row of rows) {
       try {
         result[row.key] = JSON.parse(row.value);
@@ -367,6 +374,36 @@ export class AppDatabase {
       SET status = 'pending', retry_count = 0, error_message = NULL, progress = 0, session_id = NULL, updated_at = ?
       WHERE status IN ('failed', 'interrupted')
     `).run(new Date().toISOString());
+  }
+
+  public transferSessionJobs(fromSessionId: string, toSessionId: string): number {
+    const info = this.sqlite.prepare(`
+      UPDATE jobs 
+      SET session_id = ?, updated_at = ?
+      WHERE session_id = ? AND status = 'pending'
+    `).run(toSessionId, new Date().toISOString(), fromSessionId);
+    return info.changes;
+  }
+
+  public pauseSessionJobs(sessionId: string): number {
+    const info = this.sqlite.prepare(`
+      UPDATE jobs 
+      SET status = 'paused', updated_at = ?
+      WHERE session_id = ? AND status = 'pending'
+    `).run(new Date().toISOString(), sessionId);
+    return info.changes;
+  }
+
+  /** Resume paused jobs of a session back to pending. Optionally reassign to another session. */
+  public resumeSessionJobs(sessionId: string, toSessionId?: string): number {
+    const now = new Date().toISOString();
+    const newSession = toSessionId || sessionId;
+    const info = this.sqlite.prepare(`
+      UPDATE jobs
+      SET status = 'pending', session_id = ?, error_message = NULL, updated_at = ?
+      WHERE session_id = ? AND status = 'paused'
+    `).run(newSession, now, sessionId);
+    return info.changes;
   }
 
   public getStats(): QueueStats {

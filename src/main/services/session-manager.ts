@@ -4,7 +4,7 @@ import fs from 'fs';
 import { app } from 'electron';
 import type { AppDatabase } from '../db/database.ts';
 import type { Session, SessionStatus } from '../../shared/types.ts';
-import { FLOW_SELECTORS, FLOW_URLS, getBrowserLaunchOptions } from './providers/flow-adapter.ts';
+import { FLOW_SELECTORS, FLOW_URLS, getBrowserLaunchOptions, applyStealthScripts } from './providers/flow-adapter.ts';
 
 export class SessionManager {
   private db: AppDatabase;
@@ -79,6 +79,7 @@ export class SessionManager {
     try {
       console.log(`[SessionManager] Opening browser for session ${session.name} with profile at ${session.profileDir}`);
       const context = await chromium.launchPersistentContext(session.profileDir, getBrowserLaunchOptions(false));
+      await applyStealthScripts(context);
 
       this.activeContexts.set(sessionId, context);
 
@@ -138,6 +139,7 @@ export class SessionManager {
         context = this.activeContexts.get(sessionId)!;
       } else {
         context = await chromium.launchPersistentContext(session.profileDir, getBrowserLaunchOptions(true));
+        await applyStealthScripts(context);
         ownContext = true;
       }
 
@@ -381,6 +383,7 @@ export class SessionManager {
         context = this.activeContexts.get(sessionId)!;
       } else {
         context = await chromium.launchPersistentContext(session.profileDir, getBrowserLaunchOptions(true));
+        await applyStealthScripts(context);
         ownContext = true;
       }
 

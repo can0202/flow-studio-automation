@@ -6,6 +6,7 @@ import type { SyncMediaOptions, SyncProgress, DiscoveredProject } from '../../sh
 import type { OutputManager } from './output-manager.ts';
 import type { SessionManager } from './session-manager.ts';
 import { BatchNamer } from './batch-namer.ts';
+import { getBrowserLaunchOptions, applyStealthScripts } from './providers/flow-adapter.ts';
 
 export class MediaSyncService {
   private outputManager: OutputManager;
@@ -62,18 +63,8 @@ export class MediaSyncService {
       if (activeContext) {
         context = activeContext;
       } else {
-        context = await chromium.launchPersistentContext(targetSession.profileDir, {
-          headless: false,
-          viewport: { width: 1440, height: 900 },
-          args: [
-            '--disable-blink-features=AutomationControlled',
-            '--no-sandbox',
-            '--disable-dev-shm-usage',
-          ],
-          ignoreDefaultArgs: ['--enable-automation'],
-          userAgent:
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-        });
+        context = await chromium.launchPersistentContext(targetSession.profileDir, getBrowserLaunchOptions(false));
+        await applyStealthScripts(context);
         isOwnContext = true;
       }
 
@@ -434,19 +425,8 @@ export class MediaSyncService {
         context = activeContext;
       } else {
         console.log(`[MediaSync] Launching persistent browser context for session "${targetSession.name}"...`);
-        context = await chromium.launchPersistentContext(targetSession.profileDir, {
-          headless: false,
-          viewport: { width: 1440, height: 900 },
-          args: [
-            '--disable-blink-features=AutomationControlled',
-            '--no-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-web-security',
-          ],
-          ignoreDefaultArgs: ['--enable-automation'],
-          userAgent:
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-        });
+        context = await chromium.launchPersistentContext(targetSession.profileDir, getBrowserLaunchOptions(false));
+        await applyStealthScripts(context);
         isOwnContext = true;
       }
       this.activeContext = context;

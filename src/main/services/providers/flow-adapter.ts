@@ -17,18 +17,124 @@ export function getBrowserLaunchOptions(headless = false) {
   return {
     ...(hasChrome ? { channel: 'chrome' as const } : {}),
     headless,
-    viewport: { width: 1280, height: 850 },
+    viewport: { width: 1366, height: 768 },
     args: [
       '--disable-blink-features=AutomationControlled',
+      '--disable-infobars',
       '--no-sandbox',
       '--disable-dev-shm-usage',
-      '--disable-web-security',
       '--disable-features=VizDisplayCompositor',
+      '--lang=vi-VN,vi,en-US,en',
     ],
     ignoreDefaultArgs: ['--enable-automation'],
     userAgent:
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
   };
+}
+
+/**
+ * Injects anti-bot detection evasions into the browser context.
+ * Masks navigator.webdriver, mocks chrome runtime, sets realistic plugins/languages.
+ */
+export async function applyStealthScripts(context: BrowserContext) {
+  try {
+    await context.addInitScript(() => {
+      // 1. Remove navigator.webdriver flag
+      try {
+        Object.defineProperty(navigator, 'webdriver', {
+          get: () => undefined,
+          configurable: true,
+        });
+        const proto = Object.getPrototypeOf(navigator);
+        if (proto && 'webdriver' in proto) {
+          delete (proto as any).webdriver;
+        }
+      } catch {}
+
+      // 2. Mock authentic Google Chrome environment
+      try {
+        const win = window as any;
+        if (!win.chrome) {
+          win.chrome = {};
+        }
+        if (!win.chrome.runtime) {
+          win.chrome.runtime = {
+            PlatformOs: { MAC: 'mac', WIN: 'win', ANDROID: 'android', CROS: 'cros', LINUX: 'linux', OPENBSD: 'openbsd' },
+            PlatformArch: { ARM: 'arm', X86_32: 'x86-32', X86_64: 'x86-64', MIPS: 'mips', MIPS64: 'mips64' },
+            PlatformNaclArch: { ARM: 'arm', X86_32: 'x86-32', X86_64: 'x86-64', MIPS: 'mips', MIPS64: 'mips64' },
+            connect: () => {},
+            sendMessage: () => {},
+          };
+        }
+        if (!win.chrome.loadTimes) {
+          win.chrome.loadTimes = () => ({
+            requestTime: performance.now(),
+            startLoadTime: performance.now(),
+            commitLoadTime: performance.now(),
+            finishDocumentLoadTime: performance.now(),
+            finishLoadTime: performance.now(),
+            firstPaintTime: performance.now(),
+            firstPaintAfterLoadTime: 0,
+            navigationType: 'Other',
+            wasFetchedViaSpdy: false,
+            wasNpnNegotiated: false,
+            npnNegotiatedProtocol: 'unknown',
+            wasAlternateProtocolAvailable: false,
+            connectionInfo: 'h2',
+          });
+        }
+        if (!win.chrome.csi) {
+          win.chrome.csi = () => ({
+            startE: Date.now(),
+            onloadT: Date.now(),
+            pageT: performance.now(),
+            tran: 15,
+          });
+        }
+      } catch {}
+
+      // 3. Mock navigator.plugins & mimeTypes so browser doesn't look like a headless/bot environment
+      try {
+        if (!navigator.plugins || navigator.plugins.length === 0) {
+          const fakePlugins = [
+            { name: 'PDF Viewer', filename: 'internal-pdf-viewer', description: 'Portable Document Format' },
+            { name: 'Chrome PDF Viewer', filename: 'internal-pdf-viewer', description: 'Portable Document Format' },
+            { name: 'Chromium PDF Viewer', filename: 'internal-pdf-viewer', description: 'Portable Document Format' },
+            { name: 'Microsoft Edge PDF Viewer', filename: 'internal-pdf-viewer', description: 'Portable Document Format' },
+            { name: 'WebKit built-in PDF', filename: 'internal-pdf-viewer', description: 'Portable Document Format' },
+          ];
+          Object.defineProperty(navigator, 'plugins', {
+            get: () => fakePlugins,
+            configurable: true,
+          });
+        }
+      } catch {}
+
+      // 4. Mock navigator.languages
+      try {
+        if (!navigator.languages || navigator.languages.length === 0) {
+          Object.defineProperty(navigator, 'languages', {
+            get: () => ['vi-VN', 'vi', 'en-US', 'en'],
+            configurable: true,
+          });
+        }
+      } catch {}
+
+      // 5. Ensure Notification permissions query doesn't betray automated environment
+      try {
+        const win = window as any;
+        if (win.navigator?.permissions?.query) {
+          const origQuery = win.navigator.permissions.query;
+          win.navigator.permissions.query = (param: any) =>
+            param && param.name === 'notifications'
+              ? Promise.resolve({ state: Notification.permission })
+              : origQuery(param);
+        }
+      } catch {}
+    });
+  } catch (e) {
+    console.warn('[FlowAdapter] [Stealth] Không thể khởi tạo stealth script:', e);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -94,20 +200,23 @@ export const FLOW_SELECTORS = {
     'button:has-text("Tác nhân")',
   ],
   quotaExhaustedIndicators: [
-    ':text("hết tín dụng")',
-    ':text("dùng hết tín dụng")',
-    ':text("tín dụng Google Flow")',
-    ':text("nâng cấp để nhận thêm tín dụng")',
-    ':text("hạn mức được làm mới")',
-    ':text("Hết hạn ngạch")',
-    ':text("đã đạt giới hạn")',
-    ':text("quota exceeded")',
-    ':text("reached your limit")',
-    ':text("Out of credits")',
-    ':text("out of credits")',
+    '[role="dialog"]:has-text("hết tín dụng")',
+    '[role="dialog"]:has-text("dùng hết tín dụng")',
+    '[role="dialog"]:has-text("out of credits")',
+    '[role="alert"]:has-text("hết tín dụng")',
+    '[role="alert"]:has-text("dùng hết tín dụng")',
+    '[role="alert"]:has-text("out of credits")',
+    '.mat-mdc-snack-bar-container:has-text("hết tín dụng")',
+    '.mat-mdc-snack-bar-container:has-text("dùng hết tín dụng")',
+    '.mat-mdc-snack-bar-container:has-text("out of credits")',
+    ':text("Bạn đã dùng hết hạn mức tín dụng")',
+    ':text("Bạn đã dùng hết tín dụng")',
+    ':text("You are out of credits")',
+    ':text("You\'re out of credits")',
     ':text("Daily limit reached")',
-    ':text("usage limit")',
-    ':text("try again tomorrow")',
+    ':text("0 / 100 tín dụng")',
+    ':text("0 tín dụng còn lại")',
+    ':text("0 credits remaining")',
     '[data-testid="quota-exhausted"]',
   ],
 
@@ -541,24 +650,37 @@ async function isQuotaExhausted(page: Page): Promise<boolean> {
   try {
     for (const sel of FLOW_SELECTORS.quotaExhaustedIndicators) {
       try {
-        const isVis = await page.locator(sel).first().isVisible({ timeout: 600 }).catch(() => false);
-        if (isVis) return true;
+        const isVis = await page.locator(sel).first().isVisible({ timeout: 350 }).catch(() => false);
+        if (isVis) {
+          console.warn(`[FlowAdapter] Quota indicator visible matching: ${sel}`);
+          return true;
+        }
       } catch {}
     }
 
-    const hasQuotaText = await page.evaluate(() => {
-      const txt = (document.body.innerText || '').toLowerCase();
-      return (
-        txt.includes('hết tín dụng') ||
-        txt.includes('dùng hết tín dụng') ||
-        txt.includes('tín dụng google flow') ||
-        txt.includes('out of credits') ||
-        txt.includes('quota exceeded') ||
-        txt.includes('daily limit reached')
-      );
+    // Check modal overlays / snackbars / alerts specifically — NOT arbitrary body innerText!
+    const hasModalQuota = await page.evaluate(() => {
+      const overlays = Array.from(document.querySelectorAll('[role="dialog"], [role="alert"], .mat-mdc-snack-bar-container, mat-snack-bar-container, .cdk-overlay-container'));
+      for (const el of overlays) {
+        const txt = ((el as HTMLElement).innerText || '').toLowerCase();
+        if (
+          txt.includes('bạn đã dùng hết hạn mức tín dụng') ||
+          txt.includes('bạn đã dùng hết tín dụng') ||
+          txt.includes('dùng hết tín dụng hôm nay') ||
+          txt.includes('out of credits') ||
+          txt.includes('daily limit reached') ||
+          txt.includes('you are out of credits') ||
+          txt.includes('you\'re out of credits') ||
+          txt.includes('0 tín dụng còn lại') ||
+          txt.includes('0 credits remaining')
+        ) {
+          return true;
+        }
+      }
+      return false;
     }).catch(() => false);
 
-    if (hasQuotaText) return true;
+    if (hasModalQuota) return true;
   } catch {}
   return false;
 }
@@ -694,7 +816,7 @@ export class GoogleFlowAdapter implements FlowProvider {
   private outputManager: OutputManager;
   private flowUrl: string;
   private batchProjectUrls: Map<string, string> = new Map();
-  private activeBatch: ActiveBatchSession | null = null;
+  private activeBatches: Map<string, ActiveBatchSession> = new Map();
 
   constructor(outputManager: OutputManager, flowUrl: string = FLOW_URLS.primary) {
     this.outputManager = outputManager;
@@ -713,13 +835,29 @@ export class GoogleFlowAdapter implements FlowProvider {
     this.batchProjectUrls.set(batchId, url);
   }
 
-  public async closeActiveSession(): Promise<void> {
-    if (this.activeBatch) {
-      console.log(`[FlowAdapter] Đóng cửa sổ trình duyệt lô [${this.activeBatch.batchId}]`);
+  public async closeActiveSession(sessionId?: string): Promise<void> {
+    if (sessionId) {
+      await this.closeSessionBatch(sessionId);
+      return;
+    }
+    for (const [sId, batch] of this.activeBatches.entries()) {
+      console.log(`[FlowAdapter] Đóng cửa sổ trình duyệt lô [${batch.batchId}] cho phiên [${sId}]`);
       try {
-        await this.activeBatch.context.close();
+        await batch.context.close();
       } catch {}
-      this.activeBatch = null;
+    }
+    this.activeBatches.clear();
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+  }
+
+  public async closeSessionBatch(sessionId: string): Promise<void> {
+    const batch = this.activeBatches.get(sessionId);
+    if (batch) {
+      console.log(`[FlowAdapter] Đóng cửa sổ trình duyệt lô [${batch.batchId}] cho phiên [${sessionId}]`);
+      try {
+        await batch.context.close();
+      } catch {}
+      this.activeBatches.delete(sessionId);
       await new Promise((resolve) => setTimeout(resolve, 1500));
     }
   }
@@ -744,21 +882,21 @@ export class GoogleFlowAdapter implements FlowProvider {
     let page: Page | null = null;
     let isReusingActiveBatch = false;
 
+    const existingBatch = this.activeBatches.get(session.id);
     if (
       isBatchJob &&
       batchId &&
-      this.activeBatch &&
-      this.activeBatch.batchId === batchId &&
-      this.activeBatch.sessionId === session.id &&
-      !this.activeBatch.page.isClosed()
+      existingBatch &&
+      existingBatch.batchId === batchId &&
+      !existingBatch.page.isClosed()
     ) {
-      context = this.activeBatch.context;
-      page = this.activeBatch.page;
+      context = existingBatch.context;
+      page = existingBatch.page;
       isReusingActiveBatch = true;
-      console.log(`[FlowAdapter] [BATCH REUSE] Tiếp tục tạo ${job.type === 'video' ? 'video' : 'ảnh'} trên cùng Project đang mở (Batch: ${batchId}, #${job.metadata?.batchIndex || '?'}/${job.metadata?.batchTotal || '?'})`);
+      console.log(`[FlowAdapter] [BATCH REUSE] Tiếp tục tạo ${job.type === 'video' ? 'video' : 'ảnh'} trên cùng Project đang mở (Phiên: ${session.name}, Batch: ${batchId}, #${job.metadata?.batchIndex || '?'}/${job.metadata?.batchTotal || '?'})`);
     } else {
-      if (this.activeBatch) {
-        await this.closeActiveSession();
+      if (existingBatch) {
+        await this.closeSessionBatch(session.id);
       }
     }
 
@@ -766,6 +904,7 @@ export class GoogleFlowAdapter implements FlowProvider {
       if (!isReusingActiveBatch) {
         onProgress({ progress: 8, stage: 'starting', message: `Đang khởi động trình duyệt cho phiên [${session.name}]...` });
         context = await chromium.launchPersistentContext(session.profileDir, getBrowserLaunchOptions(false));
+        await applyStealthScripts(context);
         page = context.pages().length > 0 ? context.pages()[0] : await context.newPage();
 
         // ── Navigate to Google Flow (reuse batch project URL if known) ──
@@ -912,9 +1051,9 @@ export class GoogleFlowAdapter implements FlowProvider {
 
         // ── Remember active batch session so next jobs in this batch stay in this EXACT project ──
         if (isBatchJob && batchId && context && page && !page.isClosed()) {
-          this.activeBatch = { context, page, sessionId: session.id, batchId };
+          this.activeBatches.set(session.id, { context, page, sessionId: session.id, batchId });
           this.batchProjectUrls.set(batchId, page.url());
-          console.log(`[FlowAdapter] [BATCH ESTABLISHED] Dự án chung cho batch [${batchId}] đã sẵn sàng tại: ${page.url()}`);
+          console.log(`[FlowAdapter] [BATCH ESTABLISHED] Dự án chung cho batch [${batchId}] (Phiên [${session.name}]) đã sẵn sàng tại: ${page.url()}`);
         }
       } else {
         // ── Reusing already open project page from previous job of this batch ──
@@ -936,16 +1075,6 @@ export class GoogleFlowAdapter implements FlowProvider {
         return {
           success: false,
           error: `Không thể kết nối hoặc khởi tạo trang làm việc trên Google Flow cho phiên "${session.name}".`,
-        };
-      }
-
-      // ── Check quota state immediately inside project workspace ──────────
-      const quotaExhausted = await isQuotaExhausted(page);
-      if (quotaExhausted) {
-        return {
-          success: false,
-          isQuotaExhausted: true,
-          error: `Quota Google Flow đã hết cho phiên "${session.name}". Bạn đã dùng hết hạn mức tín dụng tạo nội dung Google Flow hàng ngày.`,
         };
       }
 
@@ -1019,24 +1148,39 @@ export class GoogleFlowAdapter implements FlowProvider {
         await this.configureSettings(page, 1, job.aspectRatio);
       }
 
-      // ── Enter the prompt ─────────────────────────────────────────────────
+      // ── Enter the prompt (with Human-like Stealth Interaction) ───────────
       onProgress({ progress: 55, stage: 'submitting', message: 'Đang nhập prompt...' });
+
+      // Move mouse naturally towards the prompt field before clicking
+      const promptBox = await promptField.boundingBox().catch(() => null);
+      if (promptBox) {
+        const targetX = promptBox.x + Math.min(promptBox.width * 0.25, 40) + (Math.random() * 15 - 7);
+        const targetY = promptBox.y + promptBox.height * 0.5 + (Math.random() * 8 - 4);
+        await page.mouse.move(targetX, targetY, { steps: 5 + Math.floor(Math.random() * 5) }).catch(() => {});
+        await page.waitForTimeout(150 + Math.floor(Math.random() * 150));
+      }
+
       await promptField.click({ timeout: 5000 });
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(150 + Math.floor(Math.random() * 150));
+
       // Select all existing text and delete it
       await page.keyboard.press('Control+a');
-      await page.waitForTimeout(100);
+      await page.waitForTimeout(80 + Math.floor(Math.random() * 80));
       await page.keyboard.press('Delete');
-      await page.waitForTimeout(100);
+      await page.waitForTimeout(100 + Math.floor(Math.random() * 100));
 
       // Typing via keyboard.insertText creates native ProseMirror transaction
       await page.keyboard.insertText(job.prompt);
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(300 + Math.floor(Math.random() * 200));
 
       // Trigger change/input event fallbacks
       await promptField.dispatchEvent('input').catch(() => {});
       await promptField.dispatchEvent('change').catch(() => {});
-      await page.waitForTimeout(400);
+
+      // ── Stealth Human Pause: Simulate user reviewing prompt before clicking Generate ──
+      const reviewPauseMs = 1200 + Math.floor(Math.random() * 1200);
+      console.log(`[FlowAdapter] [Stealth] Giả lập người dùng xem lại prompt (${reviewPauseMs}ms)...`);
+      await page.waitForTimeout(reviewPauseMs);
 
       // ── Submit generation ────────────────────────────────────────────────
       onProgress({ progress: 65, stage: 'generating', message: 'Đang gửi yêu cầu tạo...' });
@@ -1062,6 +1206,15 @@ export class GoogleFlowAdapter implements FlowProvider {
       const preGenerateUrl = page.url();
       console.log(`[FlowAdapter] Pre-generate: ${preSnapshot.count} existing results, URL: ${preGenerateUrl}`);
 
+      // Move mouse naturally to the Generate button before clicking
+      const btnBox = await generateBtn.boundingBox().catch(() => null);
+      if (btnBox) {
+        const targetX = btnBox.x + btnBox.width * 0.5 + (Math.random() * 8 - 4);
+        const targetY = btnBox.y + btnBox.height * 0.5 + (Math.random() * 6 - 3);
+        await page.mouse.move(targetX, targetY, { steps: 6 + Math.floor(Math.random() * 6) }).catch(() => {});
+        await page.waitForTimeout(160 + Math.floor(Math.random() * 200));
+      }
+
       await generateBtn.click({ timeout: 5000 });
       // Short wait for page to react to click (may navigate or show queue)
       await page.waitForTimeout(2000);
@@ -1073,7 +1226,7 @@ export class GoogleFlowAdapter implements FlowProvider {
       onProgress({ progress: 75, stage: 'generating', message: 'Đang chờ Google Flow tạo nội dung...' });
       const generationResult = await this.waitForGeneration(page, job.type, preSnapshot, onProgress);
       if (!generationResult.success) {
-        if (isBatchJob) await this.closeActiveSession();
+        if (isBatchJob) await this.closeSessionBatch(session.id);
         return generationResult;
       }
 
@@ -1083,7 +1236,7 @@ export class GoogleFlowAdapter implements FlowProvider {
       const downloadResult = await this.downloadResult(page, job, targetDir, preSnapshot);
 
       if (!downloadResult.success || !downloadResult.outputFile) {
-        if (isBatchJob) await this.closeActiveSession();
+        if (isBatchJob) await this.closeSessionBatch(session.id);
         return {
           success: false,
           error: downloadResult.error || 'Tải xuống đầu ra từ Google Flow thất bại.',
@@ -1105,7 +1258,7 @@ export class GoogleFlowAdapter implements FlowProvider {
         Number(job.metadata.batchIndex) >= Number(job.metadata.batchTotal)
       ) {
         console.log(`[FlowAdapter] Batch [${batchId}] đã hoàn thành tất cả các mục (${job.metadata.batchIndex}/${job.metadata.batchTotal}). Đang đóng phiên làm việc...`);
-        await this.closeActiveSession();
+        await this.closeSessionBatch(session.id);
       }
 
       return {
@@ -1124,7 +1277,7 @@ export class GoogleFlowAdapter implements FlowProvider {
     } catch (err: any) {
       console.error('[FlowAdapter] Unhandled error during generation:', err);
       if (isBatchJob) {
-        await this.closeActiveSession();
+        await this.closeSessionBatch(session.id);
       }
       const isClosed =
         err.message?.includes('Target page, context or browser has been closed') ||
@@ -1467,7 +1620,29 @@ export class GoogleFlowAdapter implements FlowProvider {
           const errLoc = page.locator(errSel).first();
           if (await errLoc.isVisible({ timeout: 300 }).catch(() => false)) {
             const text = (await errLoc.textContent().catch(() => '')) || '';
-            if (text.length < 300 && !text.toLowerCase().includes('cookie') && !text.toLowerCase().includes('notice')) {
+            const textLower = text.toLowerCase();
+            if (text.length < 300 && !textLower.includes('cookie') && !textLower.includes('notice')) {
+              // "Unusual activity" = Google has soft-blocked this account session.
+              // Treat exactly like quota exhausted: pause all remaining jobs immediately
+              // instead of retrying 3 times and then moving on.
+              const isUnusualActivity =
+                textLower.includes('hoạt động bất thường') ||
+                textLower.includes('bất thường nào đó') ||
+                textLower.includes('unusual activity') ||
+                textLower.includes('unusual behavior') ||
+                textLower.includes('tiện ích trình duyệt sửa đổi trang') ||
+                textLower.includes('extensions that modify the page') ||
+                textLower.includes('truy cập vào trung tâm trợ giúp');
+
+              if (isUnusualActivity) {
+                console.warn(`[FlowAdapter] Unusual activity detected on page. Text: ${text.slice(0, 120)}`);
+                return {
+                  success: false,
+                  isRateLimited: true,
+                  error: `Google Flow báo hoạt động bất thường (yêu cầu quá nhanh hoặc nghi ngờ tự động). Tạm dừng hàng đợi để bảo vệ tài khoản.`,
+                };
+              }
+
               return {
                 success: false,
                 error: `Google Flow báo lỗi: ${text.trim().slice(0, 200)}`,

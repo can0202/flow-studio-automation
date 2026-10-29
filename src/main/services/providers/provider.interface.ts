@@ -14,6 +14,7 @@ export interface GenerationResult {
   error?: string;
   isTransient?: boolean;
   isQuotaExhausted?: boolean;
+  isRateLimited?: boolean;
   isAuthRequired?: boolean;
   metadata?: Record<string, any>;
 }

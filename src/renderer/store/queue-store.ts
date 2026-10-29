@@ -18,6 +18,9 @@ interface QueueState {
   clearCompleted: () => Promise<void>;
   clearAll: () => Promise<void>;
   retryFailed: () => Promise<void>;
+  transferSessionJobs: (fromSessionId: string, toSessionId: string) => Promise<{ success: boolean; count: number }>;
+  pauseSessionJobs: (sessionId: string) => Promise<{ success: boolean; count: number }>;
+  resumeSessionJobs: (sessionId: string, toSessionId?: string) => Promise<{ success: boolean; count: number }>;
   setSelectedJob: (job: Job | null) => void;
   setStatusFilter: (filter: string) => void;
   setSearchQuery: (query: string) => void;
@@ -126,6 +129,39 @@ export const useQueueStore = create<QueueState>((set, get) => ({
       await get().loadJobs();
     } catch (err) {
       console.error('Failed to retry failed jobs:', err);
+    }
+  },
+
+  transferSessionJobs: async (fromSessionId: string, toSessionId: string) => {
+    try {
+      const res = await window.api.transferSessionJobs(fromSessionId, toSessionId);
+      await get().loadJobs();
+      return res;
+    } catch (err) {
+      console.error('Failed to transfer session jobs:', err);
+      return { success: false, count: 0 };
+    }
+  },
+
+  pauseSessionJobs: async (sessionId: string) => {
+    try {
+      const res = await window.api.pauseSessionJobs(sessionId);
+      await get().loadJobs();
+      return res;
+    } catch (err) {
+      console.error('Failed to pause session jobs:', err);
+      return { success: false, count: 0 };
+    }
+  },
+
+  resumeSessionJobs: async (sessionId: string, toSessionId?: string) => {
+    try {
+      const res = await window.api.resumeSessionJobs(sessionId, toSessionId);
+      await get().loadJobs();
+      return res;
+    } catch (err) {
+      console.error('Failed to resume session jobs:', err);
+      return { success: false, count: 0 };
     }
   },
 

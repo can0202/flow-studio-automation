@@ -35,6 +35,12 @@ const api: IElectronAPI = {
   pauseQueue: () => ipcRenderer.invoke('queue:pause'),
   resumeQueue: () => ipcRenderer.invoke('queue:resume'),
   isQueueRunning: () => ipcRenderer.invoke('queue:isRunning'),
+  transferSessionJobs: (fromSessionId: string, toSessionId: string) =>
+    ipcRenderer.invoke('queue:transferSessionJobs', { fromSessionId, toSessionId }),
+  pauseSessionJobs: (sessionId: string) =>
+    ipcRenderer.invoke('queue:pauseSessionJobs', { sessionId }),
+  resumeSessionJobs: (sessionId: string, toSessionId?: string) =>
+    ipcRenderer.invoke('queue:resumeSessionJobs', { sessionId, toSessionId }),
 
   // Outputs
   getOutputs: (projectName?: string) => ipcRenderer.invoke('outputs:list', projectName),
@@ -75,6 +81,11 @@ const api: IElectronAPI = {
     const handler = (_event: any, progress: any) => callback(progress);
     ipcRenderer.on('sync:progress', handler);
     return () => ipcRenderer.removeListener('sync:progress', handler);
+  },
+  onQuotaExhausted: (callback: (data: { sessionId: string; sessionName: string; pendingCount: number; jobName: string }) => void) => {
+    const handler = (_event: any, data: any) => callback(data);
+    ipcRenderer.on('queue:quotaExhausted', handler);
+    return () => ipcRenderer.removeListener('queue:quotaExhausted', handler);
   },
 };
 

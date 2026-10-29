@@ -90,6 +90,8 @@ export interface Settings {
   simulationMode: boolean;
   defaultProjectName: string;
   flowUrl: string;
+  strictSessionBinding?: boolean;
+  accountConcurrency?: boolean;
   geminiApiKey?: string;
   openaiApiKey?: string;
   claudeApiKey?: string;
@@ -223,6 +225,9 @@ export interface IElectronAPI {
   pauseQueue: () => Promise<void>;
   resumeQueue: () => Promise<void>;
   isQueueRunning: () => Promise<boolean>;
+  transferSessionJobs: (fromSessionId: string, toSessionId: string) => Promise<{ success: boolean; count: number }>;
+  pauseSessionJobs: (sessionId: string) => Promise<{ success: boolean; count: number }>;
+  resumeSessionJobs: (sessionId: string, toSessionId?: string) => Promise<{ success: boolean; count: number }>;
 
   // Outputs
   getOutputs: (projectName?: string) => Promise<OutputFileItem[]>;
@@ -244,6 +249,7 @@ export interface IElectronAPI {
   onSessionUpdated: (callback: (session: Session) => void) => () => void;
   onNotification: (callback: (notification: { type: 'info' | 'success' | 'warning' | 'error'; message: string }) => void) => () => void;
   onSyncProgress: (callback: (progress: SyncProgress) => void) => () => void;
+  onQuotaExhausted: (callback: (data: { sessionId: string; sessionName: string; pendingCount: number; jobName: string }) => void) => () => void;
 }
 
 declare global {

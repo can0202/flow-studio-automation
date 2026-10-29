@@ -9,6 +9,7 @@ export interface QueueEvents {
   onStatsUpdated?: (stats: QueueStats) => void;
   onSessionUpdated?: (session: Session) => void;
   onNotification?: (notification: { type: 'info' | 'success' | 'warning' | 'error'; message: string }) => void;
+  onQuotaExhausted?: (data: { sessionId: string; sessionName: string; pendingCount: number; jobName: string }) => void;
 }
 
 export class JobQueue {
@@ -194,15 +195,32 @@ export class JobQueue {
   }
 
   private findAvailableSession(job: Job, sessions: Session[]): Session | undefined {
+    const settings = this.db.getSettings();
+    const strictBinding = settings.strictSessionBinding !== false;
+
     // If job has a specific session requested
     if (job.sessionId) {
       const s = sessions.find((item) => item.id === job.sessionId);
+      
+      // If target session is ready and not currently busy, use it!
       if (s && s.status === 'ready' && !this.busySessions.has(s.id)) {
         return s;
       }
 
-      // NẾU phiên được chỉ định không sẵn sàng (hết quota, tạm dừng, lỗi xác thực...)
-      // Tự động chuyển giao (fallback) sang bất kỳ phiên nào khác đang READY để không bao giờ làm nghẽn hàng đợi!
+      // If target session is currently busy with another job, this job MUST WAIT for its turn.
+      // Do NOT start another job on the same session (prevent profile lock!)
+      // and do NOT switch sessions if strict binding is on!
+      if (s && this.busySessions.has(s.id)) {
+        return undefined;
+      }
+
+      // If target session is not ready (quota_exhausted, auth_required, paused, etc.)
+      if (strictBinding) {
+        // Strict mode: Never auto-fallback! User must manually transfer or resolve session status.
+        return undefined;
+      }
+
+      // Fallback only if strict binding is explicitly turned off
       const fallback = sessions.find((item) => item.status === 'ready' && !this.busySessions.has(item.id));
       if (fallback) {
         console.log(`[JobQueue] Phiên chỉ định "${s?.name || job.sessionId}" không sẵn sàng (${s?.status || 'không tồn tại'}). Tự động chuyển giao sang phiên sẵn sàng "${fallback.name}".`);
@@ -309,6 +327,13 @@ export class JobQueue {
             type: 'success',
             message: `Tác vụ đã hoàn thành: "${job.name}" (${job.type})`,
           });
+
+          // Human-like stealth cooldown between consecutive generations on the same session
+          if (!settings.simulationMode) {
+            const cooldownMs = 2500 + Math.floor(Math.random() * 2000);
+            console.log(`[JobQueue] [Stealth] Giãn cách an toàn ${Math.round(cooldownMs / 1000)}s cho phiên "${session.name}" trước tác vụ tiếp theo...`);
+            await new Promise((resolve) => setTimeout(resolve, cooldownMs));
+          }
         }
       } else {
         await this.handleJobFailure(job, session, result);
@@ -325,45 +350,96 @@ export class JobQueue {
   private async handleJobFailure(job: Job, session: Session, result: GenerationResult) {
     const errorMsg = result.error || 'Lỗi tạo nội dung không xác định';
 
-    // 1. Quota Exhausted: Mark session exhausted, failover to other ready session if available!
+    // 1. Quota Exhausted: Immediately pause ALL remaining pending jobs of this session
+    //    so the queue loop never picks them up and runs them one-by-one into quota errors.
     if (result.isQuotaExhausted) {
       this.sessionManager.updateStatus(session.id, 'quota_exhausted', errorMsg);
       const updatedSession = this.sessionManager.getSessionById(session.id);
       if (updatedSession) this.emitSession(updatedSession);
 
-      // Check if there is another ready session we can automatically hand off to
-      const allSessions = this.db.getSessions();
-      const otherReadySession = allSessions.find(
-        (s) => s.id !== session.id && s.status === 'ready' && !this.busySessions.has(s.id)
-      );
-
-      if (otherReadySession) {
-        console.log(`[JobQueue] Session "${session.name}" hết quota. Tự động chuyển job "${job.name}" sang phiên "${otherReadySession.name}".`);
-        const transferredJob = this.db.updateJob(job.id, {
-          status: 'pending',
-          sessionId: null as any,
-          progress: 0,
-          errorMessage: undefined,
-        })!;
-        this.emitJob(transferredJob);
-
-        this.emitNotification({
-          type: 'warning',
-          message: `Phiên "${session.name}" đã hết quota. Đang tự động chuyển tiếp tác vụ "${job.name}" sang phiên "${otherReadySession.name}".`,
-        });
-        return;
+      // Cleanly close the browser context of this exhausted session
+      if ('closeSessionBatch' in (this.flowAdapter as any)) {
+        await (this.flowAdapter as any).closeSessionBatch(session.id);
       }
 
+      // CRITICAL FIX: Bulk-pause ALL pending jobs of this session RIGHT NOW
+      // before the queue loop can pick any of them up.
+      const pausedCount = this.db.pauseSessionJobs(session.id);
+
+      // Emit each paused job so UI updates immediately
+      if (pausedCount > 0) {
+        const pausedJobs = this.db.getJobs().filter(
+          (j) => j.sessionId === session.id && j.status === 'paused'
+        );
+        for (const pj of pausedJobs) {
+          this.emitJob(pj);
+        }
+      }
+
+      // Mark the currently-failing job as failed with a descriptive message
       const failedJob = this.db.updateJob(job.id, {
         status: 'failed',
-        errorMessage: `Hết hạn ngạch quota: ${errorMsg}. Không còn phiên nào sẵn sàng.`,
+        errorMessage: `Tài khoản "${session.name}" đã hết quota hôm nay. ${pausedCount} tác vụ còn lại đã được tạm dừng — chọn tài khoản khác để chạy tiếp.`,
       })!;
       this.emitJob(failedJob);
 
       this.emitNotification({
-        type: 'error',
-        message: `Hết hạn ngạch quota cho phiên "${session.name}". Không còn phiên nào khác sẵn sàng. Worker đã dừng.`,
+        type: 'warning',
+        message: `Tài khoản "${session.name}" hết quota! Đã tạm dừng ${pausedCount} tác vụ còn lại. Vui lòng chọn tài khoản khác để tiếp tục.`,
       });
+
+      // Notify UI to open Quota Confirmation Modal
+      if (this.events.onQuotaExhausted) {
+        this.events.onQuotaExhausted({
+          sessionId: session.id,
+          sessionName: session.name,
+          pendingCount: pausedCount,
+          jobName: job.name,
+        });
+      }
+      return;
+    }
+
+    // 1b. Rate Limited / Unusual Activity: Google temporarily throttled this account
+    //     Pause remaining jobs safely without falsely marking quota as exhausted!
+    if (result.isRateLimited) {
+      this.sessionManager.updateStatus(session.id, 'paused', errorMsg);
+      const updatedSession = this.sessionManager.getSessionById(session.id);
+      if (updatedSession) this.emitSession(updatedSession);
+
+      if ('closeSessionBatch' in (this.flowAdapter as any)) {
+        await (this.flowAdapter as any).closeSessionBatch(session.id);
+      }
+
+      const pausedCount = this.db.pauseSessionJobs(session.id);
+      if (pausedCount > 0) {
+        const pausedJobs = this.db.getJobs().filter(
+          (j) => j.sessionId === session.id && j.status === 'paused'
+        );
+        for (const pj of pausedJobs) {
+          this.emitJob(pj);
+        }
+      }
+
+      const failedJob = this.db.updateJob(job.id, {
+        status: 'failed',
+        errorMessage: `Tài khoản "${session.name}" bị Google tạm giới hạn do yêu cầu quá nhanh. Đã tạm dừng ${pausedCount} tác vụ còn lại.`,
+      })!;
+      this.emitJob(failedJob);
+
+      this.emitNotification({
+        type: 'warning',
+        message: `Tài khoản "${session.name}" bị Google tạm giới hạn tốc độ (hoạt động bất thường). Đã tạm dừng ${pausedCount} tác vụ còn lại.`,
+      });
+
+      if (this.events.onQuotaExhausted) {
+        this.events.onQuotaExhausted({
+          sessionId: session.id,
+          sessionName: session.name,
+          pendingCount: pausedCount,
+          jobName: job.name,
+        });
+      }
       return;
     }
 

@@ -31,6 +31,8 @@ export const SettingsView: React.FC = () => {
 
   const [concurrency, setConcurrency] = useState(1);
   const [maxRetries, setMaxRetries] = useState(3);
+  const [strictSessionBinding, setStrictSessionBinding] = useState(true);
+  const [accountConcurrency, setAccountConcurrency] = useState(true);
   const [outputDir, setOutputDir] = useState('');
   const [projectName, setProjectName] = useState('FlowStudioProject');
   const [flowUrl, setFlowUrl] = useState('');
@@ -68,6 +70,8 @@ export const SettingsView: React.FC = () => {
     if (settings) {
       setConcurrency(settings.concurrencyLimit);
       setMaxRetries(settings.defaultMaxRetries);
+      setStrictSessionBinding(settings.strictSessionBinding !== false);
+      setAccountConcurrency(settings.accountConcurrency !== false);
       setOutputDir(settings.outputDir);
       setProjectName(settings.defaultProjectName);
       setFlowUrl(settings.flowUrl);
@@ -88,6 +92,8 @@ export const SettingsView: React.FC = () => {
     await updateSettings({
       concurrencyLimit: concurrency,
       defaultMaxRetries: maxRetries,
+      strictSessionBinding,
+      accountConcurrency,
       outputDir: outputDir.trim(),
       defaultProjectName: projectName.trim(),
       flowUrl: flowUrl.trim(),
@@ -200,6 +206,51 @@ export const SettingsView: React.FC = () => {
             <span className="text-[11px] text-slate-500 mt-1 block">
               Thử lại với exponential backoff khi gặp lỗi tạm thời (mạng, timeout).
             </span>
+          </div>
+
+          {/* Multi-thread and Session Binding Controls */}
+          <div className="sm:col-span-2 p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3">
+            <span className="text-xs font-bold text-slate-200 block uppercase tracking-wider">
+              Cơ chế Điều phối Đa luồng & Quota (Multi-threading Rules)
+            </span>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {/* Strict Session Binding */}
+              <label className="flex items-start gap-3 p-3 rounded-lg bg-slate-950/70 border border-slate-800/80 cursor-pointer hover:border-slate-700 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={strictSessionBinding}
+                  onChange={(e) => setStrictSessionBinding(e.target.checked)}
+                  className="mt-0.5 rounded text-indigo-600 focus:ring-0"
+                />
+                <div className="space-y-0.5">
+                  <span className="text-xs font-semibold text-slate-200 block">
+                    Cố định tài khoản (Strict Session Binding)
+                  </span>
+                  <span className="text-[11px] text-slate-400 block">
+                    Tác vụ của tài khoản nào chỉ chạy trên tài khoản đó. Không tự ý nhảy tài khoản làm lẫn lộn dự án.
+                  </span>
+                </div>
+              </label>
+
+              {/* Account-based Concurrency */}
+              <label className="flex items-start gap-3 p-3 rounded-lg bg-slate-950/70 border border-slate-800/80 cursor-pointer hover:border-slate-700 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={accountConcurrency}
+                  onChange={(e) => setAccountConcurrency(e.target.checked)}
+                  className="mt-0.5 rounded text-indigo-600 focus:ring-0"
+                />
+                <div className="space-y-0.5">
+                  <span className="text-xs font-semibold text-slate-200 block">
+                    Đa luồng theo từng tài khoản (1 Luồng / 1 Tài khoản)
+                  </span>
+                  <span className="text-[11px] text-slate-400 block">
+                    Mỗi tài khoản tại một thời điểm chỉ mở tối đa 1 trình duyệt. Triệt tiêu 100% lỗi xung đột Chromium file lock.
+                  </span>
+                </div>
+              </label>
+            </div>
           </div>
 
           {/* Default Project Name */}

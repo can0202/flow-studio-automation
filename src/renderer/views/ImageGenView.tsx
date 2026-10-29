@@ -13,6 +13,8 @@ import {
   RefreshCw,
   ExternalLink,
   CheckCircle2,
+  Pin,
+  PinOff,
 } from 'lucide-react';
 
 const ASPECT_RATIOS = [
@@ -61,6 +63,8 @@ export const ImageGenView: React.FC = () => {
   const [projectName, setProjectName] = useState('FlowStudioProject');
   const [referenceImageUrl, setReferenceImageUrl] = useState('');
   const [selectedSessionId, setSelectedSessionId] = useState('');
+  const [pinSession, setPinSession] = useState(false);
+  const [lastAddedInfo, setLastAddedInfo] = useState<{ count: number; sessionName: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const promptLines = prompt
@@ -98,16 +102,22 @@ export const ImageGenView: React.FC = () => {
         }));
 
         await createBatchJobs(batchInputs);
+        const sessionName = selectedSessionId
+          ? (sessions.find((s) => s.id === selectedSessionId)?.name ?? selectedSessionId)
+          : 'Tự động';
         addNotification({
           type: 'success',
-          message: `Đã thêm ${batchInputs.length} job tạo ảnh vào hàng đợi SQLite (sẽ tạo chung 1 project)!`,
+          message: `Đã thêm ${batchInputs.length} job vào hàng đợi → ${sessionName}!`,
         });
+        setLastAddedInfo({ count: batchInputs.length, sessionName });
 
         if (generateNow) {
           setActiveTab('queue');
         } else {
           setPrompt('');
           setName('');
+          // If not pinning, reset session so user must re-select intentionally
+          if (!pinSession) setSelectedSessionId('');
         }
       } finally {
         setIsSubmitting(false);
@@ -157,11 +167,16 @@ export const ImageGenView: React.FC = () => {
         message: `Đã thêm ${batchCount} job tạo ảnh vào hàng đợi.`,
       });
 
+      const sessionName = selectedSessionId
+        ? (sessions.find((s) => s.id === selectedSessionId)?.name ?? selectedSessionId)
+        : 'Tự động';
+      setLastAddedInfo({ count: batchCount, sessionName });
       if (generateNow) {
         setActiveTab('queue');
       } else {
         setPrompt('');
         setName('');
+        if (!pinSession) setSelectedSessionId('');
       }
     } finally {
       setIsSubmitting(false);
@@ -386,12 +401,39 @@ export const ImageGenView: React.FC = () => {
                 />
               </div>
 
-              <div className="sm:col-span-2">
-                <label className="text-xs font-semibold text-slate-400 block mb-1.5">Phiên Google Flow (Session)</label>
+              <div className="sm:col-span-2 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-400 block">
+                    👤 Tài khoản phụ trách (Session)
+                  </label>
+                  {/* Pin session toggle */}
+                  <button
+                    type="button"
+                    title={pinSession ? 'Đang ghim tài khoản — click để bỏ ghim' : 'Ghim tài khoản này cho lô tiếp theo'}
+                    onClick={() => {
+                      const next = !pinSession;
+                      setPinSession(next);
+                      if (!next) setLastAddedInfo(null);
+                    }}
+                    className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-medium transition-all ${
+                      pinSession
+                        ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/50 hover:bg-indigo-500/30'
+                        : 'bg-slate-800 text-slate-500 border border-slate-700 hover:text-slate-300'
+                    }`}
+                  >
+                    {pinSession ? <Pin size={11} /> : <PinOff size={11} />}
+                    {pinSession ? 'Đã ghim' : 'Ghim tài khoản'}
+                  </button>
+                </div>
+
                 <select
                   value={selectedSessionId}
-                  onChange={(e) => setSelectedSessionId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
+                  onChange={(e) => { setSelectedSessionId(e.target.value); setLastAddedInfo(null); }}
+                  className={`w-full px-3 py-2 rounded-xl bg-slate-900 text-sm text-slate-100 focus:outline-none transition-all ${
+                    pinSession && selectedSessionId
+                      ? 'border border-indigo-500/70 ring-1 ring-indigo-500/30'
+                      : 'border border-slate-800 focus:border-indigo-500'
+                  }`}
                 >
                   <option value="">Tự động chọn phiên sẵn sàng (Auto-assign)</option>
                   {sessions.map((s) => (
@@ -400,6 +442,34 @@ export const ImageGenView: React.FC = () => {
                     </option>
                   ))}
                 </select>
+
+                {/* Last-added confirmation banner */}
+                {lastAddedInfo && (
+                  <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-[11px]">
+                    <CheckCircle2 size={13} className="text-emerald-400 mt-0.5 shrink-0" />
+                    <span className="text-emerald-300 leading-snug">
+                      ✅ Đã thêm <strong>{lastAddedInfo.count} ảnh</strong> vào{' '}
+                      <strong>{lastAddedInfo.sessionName}</strong>.{' '}
+                      {pinSession
+                        ? 'Tài khoản đang được ghim — dán lô tiếp theo và bấm thêm vào queue.'
+                        : 'Chọn tài khoản khác để thêm lô tiếp theo.'}
+                    </span>
+                  </div>
+                )}
+
+                {isBatchMode && !lastAddedInfo && (
+                  <p className="text-[11px] text-slate-400">
+                    {selectedSessionId ? (
+                      <span className="text-emerald-400 flex items-center gap-1">
+                        <span>✓</span> Lô {promptLines.length} ảnh này sẽ gắn cố định với tài khoản đã chọn và tạo tuần tự trong cùng 1 project Google Flow.
+                      </span>
+                    ) : (
+                      <span className="text-amber-400/90 flex items-center gap-1">
+                        <span>ℹ️</span> Khuyên dùng: Chọn cố định 1 tài khoản cho lô ảnh này để chạy đa luồng an toàn.
+                      </span>
+                    )}
+                  </p>
+                )}
               </div>
             </div>
 

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQueueStore } from '../store/queue-store.ts';
 import { useAppStore } from '../store/app-store.ts';
+import { useSessionStore } from '../store/session-store.ts';
 import type { Job, CreateJobInput, JobType } from '../../shared/types.ts';
 import { JOB_STATUS_NAMES } from '../../shared/types.ts';
 import {
@@ -19,6 +20,9 @@ import {
   X,
   FileText,
   FolderOpen,
+  Cpu,
+  Layers,
+  ArrowRightLeft,
 } from 'lucide-react';
 
 export const QueueView: React.FC = () => {
@@ -32,12 +36,49 @@ export const QueueView: React.FC = () => {
     clearAll,
     retryFailed,
     createBatchJobs,
+    transferSessionJobs,
+    pauseSessionJobs,
+    resumeSessionJobs,
   } = useQueueStore();
   const { isQueueRunning, toggleQueue, settings, updateSettings, addNotification } = useAppStore();
+  const { sessions } = useSessionStore();
 
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [search, setSearch] = useState<string>('');
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+
+  // Quota exhausted modal state
+  const [quotaExhaustedModal, setQuotaExhaustedModal] = useState<{
+    isOpen: boolean;
+    sessionId: string;
+    sessionName: string;
+    pendingCount: number;
+    jobName: string;
+  } | null>(null);
+  const [quotaAction, setQuotaAction] = useState<'transfer' | 'pause'>('transfer');
+  const [targetSessionId, setTargetSessionId] = useState<string>('');
+  const [bannerTargetMap, setBannerTargetMap] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (window.api?.onQuotaExhausted) {
+      const unsub = window.api.onQuotaExhausted((data) => {
+        setQuotaExhaustedModal({
+          isOpen: true,
+          ...data,
+        });
+        setQuotaAction('transfer');
+        setTargetSessionId('');
+      });
+      return unsub;
+    }
+  }, []);
+
+  const runningJobs = jobs.filter((j) => j.status === 'running' || j.status === 'downloading');
+
+  // Sessions that are quota_exhausted or paused AND have paused jobs awaiting transfer
+  const quotaAlertSessions = sessions.filter(
+    (s) => (s.status === 'quota_exhausted' || s.status === 'paused') && jobs.some((j) => j.sessionId === s.id && j.status === 'paused')
+  );
 
   // Batch import modal state
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -292,6 +333,141 @@ export const QueueView: React.FC = () => {
         </div>
       </div>
 
+      {/* Multi-Worker Active Lanes */}
+      {runningJobs.length > 0 && (
+        <div className="p-5 rounded-2xl bg-gradient-to-br from-[#0e172a] to-[#0d1322] border border-indigo-500/30 shadow-lg space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+              </span>
+              <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                <Cpu className="w-4 h-4 text-indigo-400" />
+                <span>Các Luồng Đang Hoạt Động Song Song ({runningJobs.length}/{settings?.concurrencyLimit || 1} Luồng)</span>
+              </h3>
+            </div>
+            <span className="text-[11px] font-medium text-slate-400">
+              1 tài khoản = 1 luồng riêng biệt
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {runningJobs.map((rJob, idx) => {
+              const sessionObj = sessions.find((s) => s.id === rJob.sessionId);
+              return (
+                <div
+                  key={rJob.id}
+                  className="p-3.5 rounded-xl bg-slate-900/90 border border-indigo-500/20 space-y-2 hover:border-indigo-500/40 transition-all"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                      LUỒNG #{idx + 1}
+                    </span>
+                    <span className="text-[11px] font-bold text-emerald-400 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                      {rJob.progress || 10}%
+                    </span>
+                  </div>
+
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-white truncate">
+                      <span>👤</span>
+                      <span className="truncate">{sessionObj?.name || 'Tài khoản chưa định danh'}</span>
+                    </div>
+                    <div className="text-[11px] text-slate-400 truncate flex items-center gap-1">
+                      <span className="text-slate-500">Dự án:</span>
+                      <span className="text-slate-300 font-medium">{rJob.metadata?.projectName || 'FlowStudioProject'}</span>
+                    </div>
+                    <div className="text-[11px] text-slate-300 truncate font-semibold">
+                      {rJob.name}
+                    </div>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-indigo-500 to-emerald-400 transition-all duration-300"
+                      style={{ width: `${rJob.progress || 10}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Quota Alert Banners — persistent for all sessions with quota_exhausted + paused jobs */}
+      {quotaAlertSessions.map((s) => {
+        const pausedCount = jobs.filter((j) => j.sessionId === s.id && j.status === 'paused').length;
+        const bannerTarget = bannerTargetMap[s.id] || '';
+        const availableSessions = sessions.filter((x) => x.id !== s.id && x.status === 'ready');
+        return (
+          <div
+            key={s.id}
+            className="p-4 rounded-2xl bg-gradient-to-br from-amber-950/60 to-orange-950/50 border border-amber-500/50 shadow-lg"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="flex items-start gap-3 flex-1 min-w-0">
+                <div className="p-2 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/30 shrink-0">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-amber-300">
+                    {s.status === 'quota_exhausted'
+                      ? `⛔ Tài khoản "${s.name}" đã hết Quota hôm nay`
+                      : `⚠️ Tài khoản "${s.name}" tạm dừng (Google phát hiện tần suất nhanh)`}
+                  </p>
+                  <p className="text-xs text-amber-200/70 mt-0.5">
+                    <span className="font-bold text-white">{pausedCount} tác vụ</span> đang bị tạm dừng.
+                    Chọn tài khoản khác để chạy tiếp, hoặc chờ để tiếp tục.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                {availableSessions.length > 0 ? (
+                  <>
+                    <select
+                      value={bannerTarget}
+                      onChange={(e) => setBannerTargetMap((prev) => ({ ...prev, [s.id]: e.target.value }))}
+                      className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500 min-w-[160px]"
+                    >
+                      <option value="">-- Chọn tài khoản --</option>
+                      {availableSessions.map((x) => (
+                        <option key={x.id} value={x.id}>
+                          {x.name} (Sẵn sàng)
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      disabled={!bannerTarget}
+                      onClick={async () => {
+                        const res = await resumeSessionJobs(s.id, bannerTarget);
+                        addNotification({
+                          type: 'success',
+                          message: `Đã chuyển ${res.count} tác vụ từ "${s.name}" sang tài khoản mới. Hàng đợi tiếp tục!`,
+                        });
+                        setBannerTargetMap((prev) => ({ ...prev, [s.id]: '' }));
+                      }}
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-all"
+                    >
+                      <ArrowRightLeft className="w-3.5 h-3.5" />
+                      Chạy tiếp
+                    </button>
+                  </>
+                ) : (
+                  <span className="text-xs text-slate-500 italic px-2">
+                    Không có tài khoản sẵn sàng
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+
       {/* Status Filter Tabs & Search Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
@@ -346,6 +522,7 @@ export const QueueView: React.FC = () => {
                 <tr className="border-b border-slate-800 bg-slate-900/60 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                   <th className="py-3 px-4">Loại</th>
                   <th className="py-3 px-4">Tên & Prompt</th>
+                  <th className="py-3 px-4">Tài khoản</th>
                   <th className="py-3 px-4">Trạng thái & Tiến độ</th>
                   <th className="py-3 px-4">Thử lại</th>
                   <th className="py-3 px-4">Tạo lúc</th>
@@ -382,6 +559,17 @@ export const QueueView: React.FC = () => {
                           <span className="text-[10px] text-cyan-400 font-mono">
                             ↳ Liên kết với job cha {job.dependencyJobId}
                           </span>
+                        )}
+                      </td>
+
+                      {/* Session / Account */}
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        {job.sessionId ? (
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700/80">
+                            👤 {sessions.find((s) => s.id === job.sessionId)?.name || 'Phiên #' + job.sessionId.slice(-4)}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-slate-500 italic">Tự động chọn</span>
                         )}
                       </td>
 
@@ -682,6 +870,116 @@ export const QueueView: React.FC = () => {
                 className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300"
               >
                 Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quota Exhausted Confirmation Modal */}
+      {quotaExhaustedModal?.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
+          <div className="w-full max-w-md bg-[#0d1322] border border-amber-500/40 rounded-2xl shadow-2xl p-6 space-y-5">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/30 shrink-0">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-sm font-bold text-white">Tài khoản hết Quota hôm nay</h3>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Tài khoản <span className="font-bold text-amber-300">"{quotaExhaustedModal.sessionName}"</span> đã dùng hết hạn mức tín dụng Google Flow.
+                </p>
+                <p className="text-xs text-slate-400">
+                  Hiện còn <span className="font-bold text-white">{quotaExhaustedModal.pendingCount} tác vụ</span> của chủ đề này trong hàng đợi.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3 p-4 rounded-xl bg-slate-900 border border-slate-800 text-xs">
+              <label className="font-semibold text-slate-300 block">
+                Chọn phương án xử lý:
+              </label>
+
+              <div className="space-y-2">
+                <label className="flex items-start gap-2.5 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="quotaAction"
+                    checked={quotaAction === 'transfer'}
+                    onChange={() => setQuotaAction('transfer')}
+                    className="mt-0.5 text-indigo-600 focus:ring-0"
+                  />
+                  <div className="space-y-1 flex-1">
+                    <span className="font-bold text-white block">Chuyển sang tài khoản khác</span>
+                    <span className="text-[11px] text-slate-400 block">
+                      Tiếp tục chạy các tác vụ còn lại trên một tài khoản sẵn sàng khác.
+                    </span>
+                    {quotaAction === 'transfer' && (
+                      <select
+                        value={targetSessionId}
+                        onChange={(e) => setTargetSessionId(e.target.value)}
+                        className="w-full mt-2 px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
+                      >
+                        <option value="">-- Chọn tài khoản chuyển giao --</option>
+                        {sessions
+                          .filter((s) => s.id !== quotaExhaustedModal.sessionId && s.status === 'ready')
+                          .map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name} (Sẵn sàng)
+                            </option>
+                          ))}
+                      </select>
+                    )}
+                  </div>
+                </label>
+
+                <label className="flex items-start gap-2.5 cursor-pointer pt-2 border-t border-slate-800/80">
+                  <input
+                    type="radio"
+                    name="quotaAction"
+                    checked={quotaAction === 'pause'}
+                    onChange={() => setQuotaAction('pause')}
+                    className="mt-0.5 text-indigo-600 focus:ring-0"
+                  />
+                  <div>
+                    <span className="font-bold text-white block">Tạm dừng các tác vụ này</span>
+                    <span className="text-[11px] text-slate-400 block">
+                      Giữ nguyên dự án, để mai khi tài khoản hồi quota thì bấm chạy tiếp.
+                    </span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                onClick={() => setQuotaExhaustedModal(null)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white"
+              >
+                Đóng
+              </button>
+              <button
+                disabled={quotaAction === 'transfer' && !targetSessionId}
+                onClick={async () => {
+                  if (quotaAction === 'transfer' && targetSessionId) {
+                    // Jobs are already 'paused' — resumeSessionJobs sets them back to pending on new account
+                    const res = await resumeSessionJobs(quotaExhaustedModal!.sessionId, targetSessionId);
+                    addNotification({
+                      type: 'success',
+                      message: `Đã chuyển ${res.count} tác vụ sang tài khoản mới. Hàng đợi tiếp tục!`,
+                    });
+                  } else if (quotaAction === 'pause') {
+                    // Jobs are already paused by the queue system — just inform user
+                    addNotification({
+                      type: 'info',
+                      message: `${quotaExhaustedModal!.pendingCount} tác vụ của "${quotaExhaustedModal!.sessionName}" đang tạm dừng. Dùng banner cảnh báo ở trên để chuyển tài khoản bất cứ lúc nào.`,
+                    });
+                  }
+                  setQuotaExhaustedModal(null);
+                }}
+                className="px-5 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                Xác nhận thực hiện
               </button>
             </div>
           </div>

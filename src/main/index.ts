@@ -105,6 +105,9 @@ function initApp() {
     onNotification: (notif) => {
       mainWindow?.webContents.send('app:notification', notif);
     },
+    onQuotaExhausted: (data) => {
+      mainWindow?.webContents.send('queue:quotaExhausted', data);
+    },
   });
 
   registerIpcHandlers();
@@ -241,6 +244,27 @@ function registerIpcHandlers() {
 
   ipcMain.handle('queue:isRunning', async () => {
     return jobQueue.isQueueRunning();
+  });
+
+  ipcMain.handle('queue:transferSessionJobs', async (_e, { fromSessionId, toSessionId }: { fromSessionId: string; toSessionId: string }) => {
+    const count = db.transferSessionJobs(fromSessionId, toSessionId);
+    jobQueue.processQueue();
+    jobQueue.emitStats();
+    return { success: true, count };
+  });
+
+  ipcMain.handle('queue:pauseSessionJobs', async (_e, { sessionId }: { sessionId: string }) => {
+    const count = db.pauseSessionJobs(sessionId);
+    jobQueue.emitStats();
+    return { success: true, count };
+  });
+
+  ipcMain.handle('queue:resumeSessionJobs', async (_e, { sessionId, toSessionId }: { sessionId: string; toSessionId?: string }) => {
+    const count = db.resumeSessionJobs(sessionId, toSessionId);
+    // Kick the queue loop so it picks up newly-pending jobs
+    jobQueue.processQueue();
+    jobQueue.emitStats();
+    return { success: true, count };
   });
 
   // Outputs
