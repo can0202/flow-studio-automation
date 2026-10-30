@@ -153,11 +153,11 @@ export const ImageGenView: React.FC = () => {
           repeatCount,
           metadata: singleBatchId
             ? {
-                batchId: singleBatchId,
-                batchIndex: i + 1,
-                batchTotal: batchCount,
-                isBatch: true,
-              }
+              batchId: singleBatchId,
+              batchIndex: i + 1,
+              batchTotal: batchCount,
+              isBatch: true,
+            }
             : undefined,
         });
       }
@@ -195,25 +195,23 @@ export const ImageGenView: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsBatchMode(false)}
-              className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all ${
-                !isBatchMode
-                  ? 'bg-indigo-600 text-white shadow-md'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
+              className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all ${!isBatchMode
+                ? 'bg-indigo-600 text-white shadow-md'
+                : 'text-slate-400 hover:text-slate-200'
+                }`}
             >
-              Tạo đơn lẻ (Single Prompt)
+              Tạo Đơn Lẻ
             </button>
             <button
               type="button"
               onClick={() => setIsBatchMode(true)}
-              className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-2 ${
-                isBatchMode
-                  ? 'bg-indigo-600 text-white shadow-md'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
+              className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-2 ${isBatchMode
+                ? 'bg-indigo-600 text-white shadow-md'
+                : 'text-slate-400 hover:text-slate-200'
+                }`}
             >
               <Layers className="w-3.5 h-3.5" />
-              <span>Tạo hàng loạt (Dán 100+ Prompts)</span>
+              <span>Tạo Hàng Loạt</span>
             </button>
           </div>
 
@@ -285,11 +283,10 @@ export const ImageGenView: React.FC = () => {
                   <button
                     key={ratio.id}
                     onClick={() => setAspectRatio(ratio.id)}
-                    className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all ${
-                      isSelected
-                        ? 'bg-indigo-600/15 border-indigo-500 text-indigo-400 shadow-sm'
-                        : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
-                    }`}
+                    className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all ${isSelected
+                      ? 'bg-indigo-600/15 border-indigo-500 text-indigo-400 shadow-sm'
+                      : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                      }`}
                   >
                     <div className="h-9 flex items-center justify-center text-current">
                       <div className={ratio.icon} />
@@ -321,11 +318,10 @@ export const ImageGenView: React.FC = () => {
                     key={cnt}
                     type="button"
                     onClick={() => setRepeatCount(cnt)}
-                    className={`py-3 px-4 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all ${
-                      isSelected
-                        ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300 shadow-sm'
-                        : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
-                    }`}
+                    className={`py-3 px-4 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all ${isSelected
+                      ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300 shadow-sm'
+                      : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                      }`}
                   >
                     <span className="text-base font-bold font-mono">x{cnt}</span>
                     <span className="text-[10px] text-slate-400">
@@ -415,11 +411,10 @@ export const ImageGenView: React.FC = () => {
                       setPinSession(next);
                       if (!next) setLastAddedInfo(null);
                     }}
-                    className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-medium transition-all ${
-                      pinSession
-                        ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/50 hover:bg-indigo-500/30'
-                        : 'bg-slate-800 text-slate-500 border border-slate-700 hover:text-slate-300'
-                    }`}
+                    className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-medium transition-all ${pinSession
+                      ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/50 hover:bg-indigo-500/30'
+                      : 'bg-slate-800 text-slate-500 border border-slate-700 hover:text-slate-300'
+                      }`}
                   >
                     {pinSession ? <Pin size={11} /> : <PinOff size={11} />}
                     {pinSession ? 'Đã ghim' : 'Ghim tài khoản'}
@@ -429,11 +424,10 @@ export const ImageGenView: React.FC = () => {
                 <select
                   value={selectedSessionId}
                   onChange={(e) => { setSelectedSessionId(e.target.value); setLastAddedInfo(null); }}
-                  className={`w-full px-3 py-2 rounded-xl bg-slate-900 text-sm text-slate-100 focus:outline-none transition-all ${
-                    pinSession && selectedSessionId
-                      ? 'border border-indigo-500/70 ring-1 ring-indigo-500/30'
-                      : 'border border-slate-800 focus:border-indigo-500'
-                  }`}
+                  className={`w-full px-3 py-2 rounded-xl bg-slate-900 text-sm text-slate-100 focus:outline-none transition-all ${pinSession && selectedSessionId
+                    ? 'border border-indigo-500/70 ring-1 ring-indigo-500/30'
+                    : 'border border-slate-800 focus:border-indigo-500'
+                    }`}
                 >
                   <option value="">Tự động chọn phiên sẵn sàng (Auto-assign)</option>
                   {sessions.map((s) => (
@@ -529,13 +523,12 @@ export const ImageGenView: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-semibold text-slate-200 truncate">{job.name}</span>
                       <span
-                        className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
-                          job.status === 'completed'
-                            ? 'bg-emerald-500/10 text-emerald-400'
-                            : job.status === 'running'
+                        className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${job.status === 'completed'
+                          ? 'bg-emerald-500/10 text-emerald-400'
+                          : job.status === 'running'
                             ? 'bg-indigo-500/10 text-indigo-400 animate-pulse'
                             : 'bg-slate-800 text-slate-400'
-                        }`}
+                          }`}
                       >
                         {JOB_STATUS_NAMES[job.status] || job.status}
                       </span>

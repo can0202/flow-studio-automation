@@ -446,9 +446,6 @@ export const OutputsView: React.FC = () => {
           >
             <CloudDownload className="w-4 h-4 animate-bounce" />
             <span>Đồng bộ từ Google Flow</span>
-            <span className="text-[10px] bg-white/20 px-1.5 py-0.2 rounded font-extrabold uppercase">
-              Web Sync
-            </span>
           </button>
         </div>
       </div>
@@ -463,11 +460,10 @@ export const OutputsView: React.FC = () => {
               <button
                 key={t}
                 onClick={() => setFilterType(t)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all ${
-                  isActive
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all ${isActive
                     ? 'bg-indigo-600 text-white shadow-sm'
                     : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
-                }`}
+                  }`}
               >
                 {t === 'all' ? 'Tất cả' : t === 'image' ? 'Ảnh' : 'Video'}
               </button>
@@ -502,22 +498,20 @@ export const OutputsView: React.FC = () => {
           <div className="flex items-center p-0.5 rounded-lg bg-slate-900 border border-slate-800">
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded-md transition-all ${
-                viewMode === 'grid'
+              className={`p-1.5 rounded-md transition-all ${viewMode === 'grid'
                   ? 'bg-indigo-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200'
-              }`}
+                }`}
               title="Chế độ Lưới (Grid)"
             >
               <LayoutGrid className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`p-1.5 rounded-md transition-all ${
-                viewMode === 'list'
+              className={`p-1.5 rounded-md transition-all ${viewMode === 'list'
                   ? 'bg-indigo-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200'
-              }`}
+                }`}
               title="Chế độ Danh sách (List)"
             >
               <List className="w-3.5 h-3.5" />
@@ -582,11 +576,10 @@ export const OutputsView: React.FC = () => {
                   )}
 
                   <span
-                    className={`absolute top-2 left-2 text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider backdrop-blur-md ${
-                      isImage
+                    className={`absolute top-2 left-2 text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider backdrop-blur-md ${isImage
                         ? 'bg-indigo-950/80 text-indigo-300 border border-indigo-500/30'
                         : 'bg-violet-950/80 text-violet-300 border border-violet-500/30'
-                    }`}
+                      }`}
                   >
                     {item.type}
                   </span>
@@ -709,11 +702,10 @@ export const OutputsView: React.FC = () => {
                       {/* Type Badge */}
                       <td className="py-2.5 px-4">
                         <span
-                          className={`text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider ${
-                            isImage
+                          className={`text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider ${isImage
                               ? 'bg-indigo-950/80 text-indigo-300 border border-indigo-500/30'
                               : 'bg-violet-950/80 text-violet-300 border border-violet-500/30'
-                          }`}
+                            }`}
                         >
                           {item.type}
                         </span>
@@ -831,10 +823,10 @@ export const OutputsView: React.FC = () => {
                       s.status === 'ready'
                         ? '🟢 Sẵn sàng (Đã đăng nhập)'
                         : s.status === 'paused'
-                        ? '⏸️ Đã tạm dừng'
-                        : s.status === 'auth_required'
-                        ? '⚠️ Cần đăng nhập'
-                        : s.status;
+                          ? '⏸️ Đã tạm dừng'
+                          : s.status === 'auth_required'
+                            ? '⚠️ Cần đăng nhập'
+                            : s.status;
                     return (
                       <option key={s.id} value={s.id}>
                         {s.name} — {statusText}
@@ -869,11 +861,10 @@ export const OutputsView: React.FC = () => {
                   <button
                     disabled={isSyncing}
                     onClick={() => setSyncScope('all_projects')}
-                    className={`p-3 rounded-xl border text-left transition-all ${
-                      syncScope === 'all_projects'
+                    className={`p-3 rounded-xl border text-left transition-all ${syncScope === 'all_projects'
                         ? 'bg-indigo-600/10 border-indigo-500/50 text-indigo-300'
                         : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
-                    }`}
+                      }`}
                   >
                     <div className="text-xs font-bold flex items-center gap-1.5">
                       <Layers className="w-3.5 h-3.5 text-indigo-400" />
@@ -887,11 +878,10 @@ export const OutputsView: React.FC = () => {
                   <button
                     disabled={isSyncing}
                     onClick={() => setSyncScope('current_project')}
-                    className={`p-3 rounded-xl border text-left transition-all ${
-                      syncScope === 'current_project'
+                    className={`p-3 rounded-xl border text-left transition-all ${syncScope === 'current_project'
                         ? 'bg-indigo-600/10 border-indigo-500/50 text-indigo-300'
                         : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
-                    }`}
+                      }`}
                   >
                     <div className="text-xs font-bold flex items-center gap-1.5">
                       <FolderSync className="w-3.5 h-3.5 text-indigo-400" />
@@ -991,17 +981,15 @@ export const OutputsView: React.FC = () => {
                               <button
                                 key={proj.name}
                                 onClick={() => toggleProjectSelection(proj.name)}
-                                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all text-left ${
-                                  isSelected
+                                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all text-left ${isSelected
                                     ? 'bg-indigo-600/15 border border-indigo-500/30 text-indigo-200'
                                     : 'bg-slate-950/50 border border-slate-800/60 text-slate-400 hover:text-slate-200 hover:border-slate-700'
-                                }`}
+                                  }`}
                               >
-                                <div className={`w-4 h-4 rounded flex-shrink-0 flex items-center justify-center border transition-all ${
-                                  isSelected
+                                <div className={`w-4 h-4 rounded flex-shrink-0 flex items-center justify-center border transition-all ${isSelected
                                     ? 'bg-indigo-600 border-indigo-500'
                                     : 'border-slate-600 bg-transparent'
-                                }`}>
+                                  }`}>
                                   {isSelected && <Check className="w-2.5 h-2.5 text-white" />}
                                 </div>
                                 <span className="text-xs font-medium truncate flex-1">{proj.name}</span>
@@ -1317,11 +1305,10 @@ export const OutputsView: React.FC = () => {
             <div className="p-4 border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span
-                  className={`text-[10px] px-2 py-0.5 rounded uppercase font-extrabold ${
-                    selectedItem.type === 'video'
+                  className={`text-[10px] px-2 py-0.5 rounded uppercase font-extrabold ${selectedItem.type === 'video'
                       ? 'bg-violet-500/10 text-violet-400 border border-violet-500/20'
                       : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
-                  }`}
+                    }`}
                 >
                   {selectedItem.type}
                 </span>

@@ -25,6 +25,7 @@ export type StatusUpdateCallback = (status: {
 interface DailyAiUsage {
   date: string;
   gemini: number;
+  groq: number;
   openai: number;
   claude: number;
 }
@@ -38,6 +39,7 @@ function getTodayString(): string {
 
 export function getAiUsageToday(): {
   gemini: number;
+  groq: number;
   openai: number;
   claude: number;
   total: number;
@@ -48,18 +50,23 @@ export function getAiUsageToday(): {
     if (raw) {
       const parsed: DailyAiUsage = JSON.parse(raw);
       if (parsed.date === today) {
+        const gemini = parsed.gemini || 0;
+        const groq = parsed.groq || 0;
+        const openai = parsed.openai || 0;
+        const claude = parsed.claude || 0;
         return {
-          gemini: parsed.gemini || 0,
-          openai: parsed.openai || 0,
-          claude: parsed.claude || 0,
-          total: (parsed.gemini || 0) + (parsed.openai || 0) + (parsed.claude || 0),
+          gemini,
+          groq,
+          openai,
+          claude,
+          total: gemini + groq + openai + claude,
         };
       }
     }
   } catch {
     // Ignore storage errors
   }
-  return { gemini: 0, openai: 0, claude: 0, total: 0 };
+  return { gemini: 0, groq: 0, openai: 0, claude: 0, total: 0 };
 }
 
 export function incrementAiUsage(provider: AiPromptProvider): void {
@@ -69,6 +76,7 @@ export function incrementAiUsage(provider: AiPromptProvider): void {
     const updated: DailyAiUsage = {
       date: today,
       gemini: provider === 'gemini' ? current.gemini + 1 : current.gemini,
+      groq: provider === 'groq' ? current.groq + 1 : current.groq,
       openai: provider === 'openai' ? current.openai + 1 : current.openai,
       claude: provider === 'claude' ? current.claude + 1 : current.claude,
     };
@@ -311,6 +319,62 @@ async function callClaude(
 
   throw lastError || new Error('Không thể kết nối với Claude API.');
 }
+
+// ─── Groq API (LPU Inference - Llama 3.3 70B & Llama 3.1 8B) ────────────────
+const GROQ_MODELS = [
+  'llama-3.3-70b-versatile',
+  'llama-3.1-8b-instant',
+];
+
+async function callGroq(
+  apiKey: string,
+  systemPrompt: string,
+  userContent: string
+): Promise<string> {
+  let lastError: Error | null = null;
+
+  for (const model of GROQ_MODELS) {
+    try {
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey.trim()}`,
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userContent },
+          ],
+          temperature: 0.7,
+        }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        const errMsg = err?.error?.message || `HTTP ${response.status} ${response.statusText}`;
+        if (response.status === 404 && model !== GROQ_MODELS[GROQ_MODELS.length - 1]) {
+          lastError = new Error(`Groq ${model}: ${errMsg}`);
+          continue;
+        }
+        throw new Error(errMsg);
+      }
+
+      const data = await response.json();
+      const text = data?.choices?.[0]?.message?.content;
+      if (!text) throw new Error('Groq không trả về nội dung text.');
+      return text;
+    } catch (err: any) {
+      lastError = err;
+      throw err;
+    }
+  }
+
+  throw lastError || new Error('Không thể kết nối với Groq API.');
+}
+
+
 
 // ─── Quota Checking Methods ───────────────────────────────────────────────────
 
@@ -574,12 +638,103 @@ export async function checkClaudeQuota(apiKey: string): Promise<AiQuotaInfo> {
   }
 }
 
+export async function checkGroqQuota(apiKey: string): Promise<AiQuotaInfo> {
+  const usage = getAiUsageToday();
+  const trimmed = apiKey.trim();
+  if (!trimmed) {
+    return {
+      provider: 'groq',
+      name: 'Groq (Llama 70B - Free)',
+      hasKey: false,
+      status: 'unconfigured',
+      statusText: 'Chưa cấu hình API Key',
+      tierLimit: '1,000 req/ngày (100k token/ngày)',
+      usedToday: usage.groq,
+    };
+  }
+
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/models', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${trimmed}`,
+      },
+    });
+
+    if (res.ok) {
+      const remainingReq = res.headers.get('x-ratelimit-remaining-requests');
+      const limitReq = res.headers.get('x-ratelimit-limit-requests');
+      const remainingTokens = res.headers.get('x-ratelimit-remaining-tokens');
+      const limitTokens = res.headers.get('x-ratelimit-limit-tokens');
+
+      return {
+        provider: 'groq',
+        name: 'Groq (Llama 70B - Free)',
+        hasKey: true,
+        status: 'active',
+        statusText: 'Đang hoạt động (Key hợp lệ)',
+        tierLimit: limitReq ? `${limitReq} RPM / 1000 RPD` : '1,000 req/ngày',
+        remainingRequests: remainingReq ? `~${remainingReq} RPM` : 'Sẵn sàng',
+        limitRequests: limitReq || '1000 RPD',
+        remainingTokens: remainingTokens || undefined,
+        limitTokens: limitTokens || undefined,
+        usedToday: usage.groq,
+        lastChecked: new Date().toLocaleTimeString('vi-VN'),
+      };
+    }
+
+    const err = await res.json().catch(() => ({}));
+    const message = err?.error?.message || `Lỗi HTTP ${res.status}`;
+
+    if (res.status === 429 || message.toLowerCase().includes('rate') || message.toLowerCase().includes('quota')) {
+      return {
+        provider: 'groq',
+        name: 'Groq (Llama 70B - Free)',
+        hasKey: true,
+        status: 'out_of_quota',
+        statusText: 'Hết Quota / Vượt Rate Limit',
+        tierLimit: '1,000 req/ngày',
+        usedToday: usage.groq,
+        errorDetail: message,
+        lastChecked: new Date().toLocaleTimeString('vi-VN'),
+      };
+    }
+
+    return {
+      provider: 'groq',
+      name: 'Groq (Llama 70B - Free)',
+      hasKey: true,
+      status: 'invalid_key',
+      statusText: 'Key không hợp lệ',
+      tierLimit: '1,000 req/ngày',
+      usedToday: usage.groq,
+      errorDetail: message,
+      lastChecked: new Date().toLocaleTimeString('vi-VN'),
+    };
+  } catch (err: any) {
+    return {
+      provider: 'groq',
+      name: 'Groq (Llama 70B - Free)',
+      hasKey: true,
+      status: 'error',
+      statusText: 'Không thể kết nối đến Groq API',
+      tierLimit: '1,000 req/ngày',
+      usedToday: usage.groq,
+      errorDetail: err.message,
+      lastChecked: new Date().toLocaleTimeString('vi-VN'),
+    };
+  }
+}
+
+
+
 export async function checkAllAiQuotas(settings?: Settings | null): Promise<AiQuotaInfo[]> {
   const geminiPromise = checkGeminiQuota(settings?.geminiApiKey || '');
+  const groqPromise = checkGroqQuota(settings?.groqApiKey || '');
   const openAiPromise = checkOpenAiQuota(settings?.openaiApiKey || '');
   const claudePromise = checkClaudeQuota(settings?.claudeApiKey || '');
 
-  return Promise.all([geminiPromise, openAiPromise, claudePromise]);
+  return Promise.all([geminiPromise, groqPromise, openAiPromise, claudePromise]);
 }
 
 // ─── Provider Definitions & Auto Failover Orchestrator ─────────────────────────
@@ -597,6 +752,12 @@ const ALL_PROVIDERS: ProviderInfo[] = [
     name: 'Google Gemini',
     getKey: (s) => (s?.geminiApiKey || '').trim(),
     call: callGemini,
+  },
+  {
+    id: 'groq',
+    name: 'Groq (Llama 70B - Free)',
+    getKey: (s) => (s?.groqApiKey || '').trim(),
+    call: callGroq,
   },
   {
     id: 'openai',
@@ -640,7 +801,7 @@ export async function generatePromptWithFailover(options: {
 
   if (configuredProviders.length === 0) {
     throw new Error(
-      'Chưa cấu hình API Key nào (Gemini, ChatGPT hoặc Claude). Vui lòng vào Cài đặt để thêm ít nhất 1 API key.'
+      'Chưa cấu hình API Key nào (Gemini, Groq, ChatGPT hoặc Claude). Vui lòng vào Cài đặt để thêm ít nhất 1 API key.'
     );
   }
 

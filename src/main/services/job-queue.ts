@@ -169,6 +169,27 @@ export class JobQueue {
             job.referenceImageUrl = parent.outputFile;
           }
         }
+
+        // Pass session from parent to child to guarantee child runs in the same account/session
+        if (!job.sessionId && parent.sessionId) {
+          this.db.updateJob(job.id, { sessionId: parent.sessionId });
+          job.sessionId = parent.sessionId;
+          console.log(`[JobQueue] Gán phiên "${parent.sessionId}" từ job cha sang job con "${job.name}"`);
+        }
+
+        // Pass project URL and batchId from parent to child so video generates in the SAME project
+        const parentProjectUrl = parent.metadata?.flowProjectUrl;
+        const parentBatchId = parent.metadata?.batchId;
+        if (parentProjectUrl || parentBatchId) {
+          const updatedMeta = {
+            ...(job.metadata || {}),
+            ...(parentProjectUrl && !job.metadata?.flowProjectUrl ? { flowProjectUrl: parentProjectUrl } : {}),
+            ...(parentBatchId && !job.metadata?.batchId ? { batchId: parentBatchId } : {}),
+          };
+          this.db.updateJob(job.id, { metadata: updatedMeta });
+          job.metadata = updatedMeta;
+          console.log(`[JobQueue] Đã truyền flowProjectUrl (${parentProjectUrl}) và batchId (${parentBatchId}) từ job cha sang job con "${job.name}"`);
+        }
       }
 
       // Find available session
@@ -256,10 +277,12 @@ export class JobQueue {
     this.emitJob(updatedJob);
     this.emitStats();
 
-    // Restore batch project URL from sibling jobs if needed
+    // Restore batch project URL from job metadata or sibling jobs if needed
     if (job.metadata?.batchId && 'getBatchProjectUrl' in (provider as any)) {
       const adapter = provider as any;
-      if (!adapter.getBatchProjectUrl(job.metadata.batchId)) {
+      if (job.metadata?.flowProjectUrl) {
+        adapter.setBatchProjectUrl(job.metadata.batchId, job.metadata.flowProjectUrl);
+      } else if (!adapter.getBatchProjectUrl(job.metadata.batchId)) {
         const sibling = this.db.getJobs().find(
           (j) => j.metadata?.batchId === job.metadata?.batchId && j.metadata?.flowProjectUrl
         );

@@ -351,6 +351,10 @@ export const FLOW_SELECTORS = {
     'button[aria-label*="bắt đầu tạo" i]',
     'button:has(i:has-text("arrow_forward"))',
     'button:has(span:has-text("arrow_forward"))',
+    'button:has(mat-icon:has-text("arrow_forward"))',
+    'button:has(mat-icon:has-text("videocam"))',
+    'button:has(mat-icon:has-text("play_arrow"))',
+    'button:has-text("Tạo video")',
     'button:has-text("Generate")',
     'button:has-text("Tạo")',
     'button:has-text("Chạy")',
@@ -366,7 +370,7 @@ export const FLOW_SELECTORS = {
   loadingIndicators: [
     '.tile-row:has-text("%")',
     '.virtual-item-container:has-text("%")',
-    'div:has-text("%")',
+    '.generation-card:has-text("%")',
     'mat-progress-bar',
     '.mat-mdc-progress-bar',
     '[role="progressbar"]',
@@ -711,6 +715,7 @@ async function waitForPromptInput(page: Page, maxWaitMs = 15000) {
 export interface MediaSnapshot {
   urls: string[];
   count: number;
+  cardCount?: number; // Number of result cards (useful for video which may not have <video src> in DOM until clicked)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -764,11 +769,36 @@ export async function getMediaSnapshot(page: Page): Promise<MediaSnapshot> {
         });
       });
 
+      // Also count result cards separately (Google Flow may show video thumbnails as <img> inside
+      // result cards, not as <video src> until user clicks the card).
+      // cardCount is tracked independently from urls to avoid polluting the URL diff logic.
+      const resultCardSelectors = [
+        '.tile-row',
+        '.virtual-item-container',
+        '[data-generation-id]',
+        '[data-result-id]',
+        '.generation-card',
+        '.result-card',
+        '.output-card',
+        '.grid-item:has(img)',
+        '.gallery-item:has(img)',
+      ];
+      let cardCount = 0;
+      for (const sel of resultCardSelectors) {
+        try {
+          const cards = document.querySelectorAll(sel);
+          if (cards.length > 0) {
+            cardCount = cards.length;
+            break;
+          }
+        } catch {}
+      }
+
       const urlList = Array.from(urls);
-      return { urls: urlList, count: urlList.length };
+      return { urls: urlList, count: urlList.length, cardCount };
     });
   } catch {
-    return { urls: [], count: 0 };
+    return { urls: [], count: 0, cardCount: 0 };
   }
 }
 
@@ -882,13 +912,20 @@ export class GoogleFlowAdapter implements FlowProvider {
     let page: Page | null = null;
     let isReusingActiveBatch = false;
 
+    // Pipeline video jobs (image→video) must NOT reuse the image batch page.
+    // In Google Flow, "Cảnh" (video) mode has a completely separate canvas from "Hình ảnh" mode.
+    // The reference image is NOT automatically carried over when switching modes.
+    // For pipeline video: close the old batch, open a fresh browser navigating to the SAME project URL.
+    const isPipelineVideo = job.type === 'video' && Boolean(job.metadata?.isPipeline);
+
     const existingBatch = this.activeBatches.get(session.id);
     if (
       isBatchJob &&
       batchId &&
       existingBatch &&
       existingBatch.batchId === batchId &&
-      !existingBatch.page.isClosed()
+      !existingBatch.page.isClosed() &&
+      !isPipelineVideo
     ) {
       context = existingBatch.context;
       page = existingBatch.page;
@@ -896,6 +933,7 @@ export class GoogleFlowAdapter implements FlowProvider {
       console.log(`[FlowAdapter] [BATCH REUSE] Tiếp tục tạo ${job.type === 'video' ? 'video' : 'ảnh'} trên cùng Project đang mở (Phiên: ${session.name}, Batch: ${batchId}, #${job.metadata?.batchIndex || '?'}/${job.metadata?.batchTotal || '?'})`);
     } else {
       if (existingBatch) {
+        console.log(`[FlowAdapter] ${isPipelineVideo ? '[Pipeline Video] Đóng batch ảnh cũ để mở fresh browser cho video...' : 'Đóng batch cũ...'}`);
         await this.closeSessionBatch(session.id);
       }
     }
@@ -907,8 +945,11 @@ export class GoogleFlowAdapter implements FlowProvider {
         await applyStealthScripts(context);
         page = context.pages().length > 0 ? context.pages()[0] : await context.newPage();
 
-        // ── Navigate to Google Flow (reuse batch project URL if known) ──
-        const targetUrl = (batchId ? this.batchProjectUrls.get(batchId) : undefined) || FLOW_URLS.primary;
+        // ── Navigate to Google Flow (reuse project URL if known) ──
+        const targetUrl =
+          (job.metadata?.flowProjectUrl as string) ||
+          (batchId ? this.batchProjectUrls.get(batchId) : undefined) ||
+          FLOW_URLS.primary;
         onProgress({
           progress: 15,
           stage: 'starting',
@@ -1068,6 +1109,12 @@ export class GoogleFlowAdapter implements FlowProvider {
           stage: 'starting',
           message: `Đang tạo tiếp ${job.type === 'video' ? 'video' : 'ảnh'} trên cùng dự án (#${job.metadata?.batchIndex || 1}/${job.metadata?.batchTotal || '?'})...`,
         });
+        // Dismiss any image preview lightbox, modal, or context menu left from previous step
+        await page.keyboard.press('Escape').catch(() => {});
+        await page.waitForTimeout(300);
+        await page.keyboard.press('Escape').catch(() => {});
+        await page.waitForTimeout(400);
+        await dismissModals(page);
         await page.waitForTimeout(500);
       }
 
@@ -1116,21 +1163,141 @@ export class GoogleFlowAdapter implements FlowProvider {
           // New projects default to image mode — proceed even if mode check is uncertain
           console.warn('[FlowAdapter] Image mode not confirmed but proceeding (new projects default to image).');
         } else {
-          return {
-            success: false,
-            error: `Không thể chuyển sang chế độ tạo Video trên Google Flow. Vui lòng kiểm tra lại giao diện dự án.`,
-          };
+          // For video, do not hard-abort if mode check is uncertain; attempt generation as UI may already be ready
+          console.warn('[FlowAdapter] Video mode not strictly confirmed, but attempting generation to avoid blocking.');
+        }
+      }
+
+      // ── Re-acquire promptField after mode switch (UI DOM may have changed) ──────────
+      // Especially for video mode: switching tabs/modes fully re-renders the bottom bar.
+      let activePromptField = promptField;
+      if (job.type === 'video') {
+        await page.waitForTimeout(800); // Give SPA time to re-render after mode switch
+        const freshPromptField = await waitForPromptInput(page, 8000);
+        if (freshPromptField) {
+          activePromptField = freshPromptField;
+          console.log('[FlowAdapter] Re-acquired fresh promptField after video mode switch.');
+        } else {
+          console.warn('[FlowAdapter] Could not re-acquire promptField after video mode switch, using original (may be stale).');
         }
       }
 
       // ── Attach reference image if provided ──────────────────────────────
+      // NOTE: In Google Flow, "Cảnh" (video) mode has a SEPARATE canvas from "Hình ảnh" (image) mode.
+      // Even when reusing the same project, the reference image MUST be explicitly attached.
+      // The image generated in "Hình ảnh" mode does NOT automatically appear in the "Cảnh" canvas.
       if (job.referenceImageUrl && fs.existsSync(job.referenceImageUrl)) {
         onProgress({ progress: 50, stage: 'submitting', message: 'Đang đính kèm ảnh tham chiếu...' });
+        let attached = false;
         try {
-          const fileInput = page.locator(FLOW_SELECTORS.referenceFileInput).first();
-          if ((await fileInput.count()) > 0) {
-            await fileInput.setInputFiles(job.referenceImageUrl);
-            await page.waitForTimeout(500);
+          // For video (Cảnh mode): try broader file input selectors since Cảnh accepts image/video sources
+          const fileInputSelectors =
+            job.type === 'video'
+              ? [
+                  'input[type="file"][accept*="image"]',
+                  'input[type="file"][accept*="video"]',
+                  'input[type="file"]',
+                ]
+              : ['input[type="file"][accept*="image"]'];
+
+          for (const selector of fileInputSelectors) {
+            const fileInputs = page.locator(selector);
+            const count = await fileInputs.count().catch(() => 0);
+            if (count > 0) {
+              await fileInputs.first().setInputFiles(job.referenceImageUrl);
+              attached = true;
+              console.log(`[FlowAdapter] Attached reference image via ${selector}: ${job.referenceImageUrl}`);
+              await page.waitForTimeout(1500);
+              break;
+            }
+          }
+
+          // For video (Cảnh) mode: if no file input found yet, try clicking the drop-zone / canvas area
+          // to trigger the file picker (Google Flow Cảnh mode often shows a blank canvas with a click-to-add zone)
+          if (!attached && job.type === 'video') {
+            const dropZoneSelectors = [
+              '[class*="drop-zone"]',
+              '[class*="dropzone"]',
+              '[class*="canvas-empty"]',
+              '.scene-canvas',
+              '[class*="empty-state"]',
+              'div:has-text("Bắt đầu tạo hoặc thả nội dung")',
+              'div:has-text("Start creating or drop")',
+              '[class*="media-placeholder"]',
+              '[class*="upload-area"]',
+            ];
+            for (const dzSel of dropZoneSelectors) {
+              const dz = page.locator(dzSel).first();
+              if (await dz.isVisible({ timeout: 800 }).catch(() => false)) {
+                console.log(`[FlowAdapter] Found drop zone (${dzSel}), attempting file chooser trigger via click...`);
+                try {
+                  const [fileChooser] = await Promise.all([
+                    page.waitForEvent('filechooser', { timeout: 3000 }),
+                    dz.click({ timeout: 2000 }),
+                  ]);
+                  await fileChooser.setFiles(job.referenceImageUrl);
+                  attached = true;
+                  console.log(`[FlowAdapter] Attached reference image via drop zone click (${dzSel})`);
+                  await page.waitForTimeout(1500);
+                  break;
+                } catch {
+                  // Drop zone click did not open file chooser — try setInputFiles on any revealed input
+                  for (const sel of fileInputSelectors) {
+                    const fi = page.locator(sel);
+                    const fc = await fi.count().catch(() => 0);
+                    if (fc > 0) {
+                      await fi.first().setInputFiles(job.referenceImageUrl);
+                      attached = true;
+                      console.log(`[FlowAdapter] Attached reference image via input after drop zone click (${sel})`);
+                      await page.waitForTimeout(1500);
+                      break;
+                    }
+                  }
+                  if (attached) break;
+                }
+              }
+            }
+          }
+
+          // If direct file input wasn't present, try clicking Add Media button to trigger file chooser
+          if (!attached) {
+            const addMediaSelectors = [
+              'button[aria-label*="Thêm phương tiện" i]',
+              'button[aria-label*="Add media" i]',
+              'button[aria-label*="Thêm ảnh" i]',
+              'button[aria-label*="Tải ảnh" i]',
+              'button[aria-label*="Add image" i]',
+              'button[aria-label*="source" i]',
+              '[aria-label*="Tải lên" i]',
+              'button[aria-label*="Upload" i]',
+              'button:has(mat-icon:has-text("add_photo_alternate"))',
+              'button:has(mat-icon:has-text("add_a_photo"))',
+              'button:has(mat-icon:has-text("image"))',
+              'button:has(mat-icon:has-text("upload"))',
+              'button:has(i:has-text("add_photo_alternate"))',
+              'button:has(i:has-text("image"))',
+              '.add-media-button',
+            ];
+            for (const bSel of addMediaSelectors) {
+              const btn = page.locator(bSel).first();
+              if (await btn.isVisible({ timeout: 800 }).catch(() => false)) {
+                try {
+                  const [fileChooser] = await Promise.all([
+                    page.waitForEvent('filechooser', { timeout: 3000 }),
+                    btn.click({ timeout: 2000 }),
+                  ]);
+                  await fileChooser.setFiles(job.referenceImageUrl);
+                  attached = true;
+                  console.log(`[FlowAdapter] Attached reference image via file chooser (${bSel})`);
+                  await page.waitForTimeout(1000);
+                  break;
+                } catch {}
+              }
+            }
+          }
+
+          if (!attached) {
+            console.warn(`[FlowAdapter] Could not attach reference image (no suitable file input or button found): ${job.referenceImageUrl}`);
           }
         } catch (e) {
           console.warn('[FlowAdapter] Could not attach reference image:', e);
@@ -1152,7 +1319,7 @@ export class GoogleFlowAdapter implements FlowProvider {
       onProgress({ progress: 55, stage: 'submitting', message: 'Đang nhập prompt...' });
 
       // Move mouse naturally towards the prompt field before clicking
-      const promptBox = await promptField.boundingBox().catch(() => null);
+      const promptBox = await activePromptField.boundingBox().catch(() => null);
       if (promptBox) {
         const targetX = promptBox.x + Math.min(promptBox.width * 0.25, 40) + (Math.random() * 15 - 7);
         const targetY = promptBox.y + promptBox.height * 0.5 + (Math.random() * 8 - 4);
@@ -1160,7 +1327,7 @@ export class GoogleFlowAdapter implements FlowProvider {
         await page.waitForTimeout(150 + Math.floor(Math.random() * 150));
       }
 
-      await promptField.click({ timeout: 5000 });
+      await activePromptField.click({ timeout: 5000 });
       await page.waitForTimeout(150 + Math.floor(Math.random() * 150));
 
       // Select all existing text and delete it
@@ -1174,8 +1341,8 @@ export class GoogleFlowAdapter implements FlowProvider {
       await page.waitForTimeout(300 + Math.floor(Math.random() * 200));
 
       // Trigger change/input event fallbacks
-      await promptField.dispatchEvent('input').catch(() => {});
-      await promptField.dispatchEvent('change').catch(() => {});
+      await activePromptField.dispatchEvent('input').catch(() => {});
+      await activePromptField.dispatchEvent('change').catch(() => {});
 
       // ── Stealth Human Pause: Simulate user reviewing prompt before clicking Generate ──
       const reviewPauseMs = 1200 + Math.floor(Math.random() * 1200);
@@ -1192,13 +1359,50 @@ export class GoogleFlowAdapter implements FlowProvider {
         };
       }
 
-      // Wait up to 4s for Angular to remove disabled class after input
-      for (let w = 0; w < 10; w++) {
-        const isDisabled = await generateBtn.evaluate((b: HTMLButtonElement) => {
+      // Wait up to 5s for Angular to remove disabled class after input
+      let isStillDisabled = true;
+      for (let w = 0; w < 12; w++) {
+        isStillDisabled = await generateBtn.evaluate((b: HTMLButtonElement) => {
           return b.disabled || b.classList.contains('mat-mdc-button-disabled') || b.getAttribute('aria-disabled') === 'true';
         }).catch(() => false);
-        if (!isDisabled) break;
+        if (!isStillDisabled) break;
         await page.waitForTimeout(400);
+      }
+
+      // If still disabled, Angular may not have registered the input event: perform aggressive focus & trigger fallback
+      if (isStillDisabled) {
+        console.warn('[FlowAdapter] Generate button still disabled after typing prompt, attempting re-focus & change trigger...');
+        await activePromptField.focus().catch(() => {});
+        await page.keyboard.press('End').catch(() => {});
+        await page.keyboard.press('Space').catch(() => {});
+        await page.waitForTimeout(100);
+        await page.keyboard.press('Backspace').catch(() => {});
+        await page.waitForTimeout(200);
+        await activePromptField.evaluate((el: HTMLElement) => {
+          el.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+          el.dispatchEvent(new Event('blur', { bubbles: true }));
+        }).catch(() => {});
+        await page.waitForTimeout(1000);
+
+        isStillDisabled = await generateBtn.evaluate((b: HTMLButtonElement) => {
+          return b.disabled || b.classList.contains('mat-mdc-button-disabled') || b.getAttribute('aria-disabled') === 'true';
+        }).catch(() => false);
+      }
+
+      if (isStillDisabled) {
+        const btnState = await generateBtn.evaluate((b) => ({
+          disabled: b.disabled,
+          ariaDisabled: b.getAttribute('aria-disabled'),
+          classList: Array.from(b.classList),
+          innerText: b.innerText,
+        })).catch(() => null);
+        console.error('[FlowAdapter] Nút Tạo vẫn bị vô hiệu hóa (disabled):', btnState);
+        if (isBatchJob) await this.closeSessionBatch(session.id);
+        return {
+          success: false,
+          error: 'Nút Tạo trên Google Flow bị vô hiệu hóa (disabled). Vui lòng kiểm tra prompt hoặc trạng thái dự án trên Google Flow.',
+        };
       }
 
       // Record baseline media snapshot before clicking generate
@@ -1325,6 +1529,31 @@ export class GoogleFlowAdapter implements FlowProvider {
       return true;
     }
 
+    // Check if direct mode switch buttons are visible directly on the prompt toolbar
+    const directSelectors = type === 'video'
+      ? [
+          'button:has-text("Video")',
+          'button:has-text("Veo")',
+          '[role="tab"]:has-text("Video")',
+          '[role="tab"]:has-text("Veo")',
+        ]
+      : [
+          'button:has-text("Hình ảnh")',
+          'button:has-text("Image")',
+          'button:has-text("Nano Banana")',
+          '[role="tab"]:has-text("Hình ảnh")',
+          '[role="tab"]:has-text("Image")',
+        ];
+    for (const dSel of directSelectors) {
+      const dBtn = page.locator(dSel).first();
+      if (await dBtn.isVisible({ timeout: 500 }).catch(() => false)) {
+        console.log(`[FlowAdapter] Direct mode button visible (${dSel}), clicking...`);
+        await dBtn.click({ timeout: 2000 }).catch(() => {});
+        await page.waitForTimeout(600);
+        if (await this.isModeActive(page, type)) return true;
+      }
+    }
+
     // ── Step 1: Find and click the settings trigger button ─────────────────
     const triggerSelectors = [
       '.settings-trigger-button',
@@ -1332,6 +1561,11 @@ export class GoogleFlowAdapter implements FlowProvider {
       'button[aria-label*="cài đặt" i]',
       'button[aria-label*="settings" i]',
       'button:has-text("Nano Banana")',
+      'button:has-text("Imagen 3")',
+      'button:has-text("Imagen")',
+      'button:has-text("Veo")',
+      'button:has-text("Veo 2")',
+      'button:has-text("Veo 3")',
       'button:has-text("Video")',
       'button:has-text("Hình ảnh")',
       'button:has-text("Image")',
@@ -1342,9 +1576,7 @@ export class GoogleFlowAdapter implements FlowProvider {
     const trigger = await findFirstVisible(page, triggerSelectors, 5000);
     if (!trigger) {
       console.warn('[FlowAdapter] Settings trigger button not found — attempting to proceed anyway.');
-      // If we cannot find settings trigger at all, maybe mode is already correct or UI changed
-      // Return true to not block generation (mode might default to image on new projects)
-      return type === 'image'; // New projects likely default to image mode
+      return type === 'image';
     }
 
     const triggerText = (await trigger.innerText().catch(() => '')).trim();
@@ -1369,10 +1601,31 @@ export class GoogleFlowAdapter implements FlowProvider {
 
     const videoToggleSelectors = [
       '.cdk-overlay-container mat-button-toggle:has-text("Video")',
+      '.cdk-overlay-container mat-button-toggle:has-text("Veo")',
+      '.cdk-overlay-container mat-button-toggle:has-text("Veo 3")',
+      '.cdk-overlay-container mat-button-toggle:has-text("Veo 2")',
+      '.cdk-overlay-container button:has-text("Video")',
+      '.cdk-overlay-container button:has-text("Veo")',
+      '.cdk-overlay-container button:has-text("Veo 3")',
+      '.cdk-overlay-container button:has-text("Veo 2")',
       '.cdk-overlay-container button[role="radio"]:has-text("Video")',
+      '.cdk-overlay-container button[role="radio"]:has-text("Veo")',
       '.cdk-overlay-container .toggle-text:has-text("Video")',
+      '.cdk-overlay-container .toggle-text:has-text("Veo")',
+      '.cdk-overlay-container [role="tab"]:has-text("Video")',
+      '.cdk-overlay-container [role="tab"]:has-text("Veo")',
+      '.cdk-overlay-container [role="menuitem"]:has-text("Video")',
+      '.cdk-overlay-container [role="menuitem"]:has-text("Veo")',
+      '.cdk-overlay-container .mat-mdc-menu-item:has-text("Video")',
+      '.cdk-overlay-container .mat-mdc-menu-item:has-text("Veo")',
       'mat-button-toggle:has-text("Video")',
+      'mat-button-toggle:has-text("Veo")',
       '[role="radio"]:has-text("Video")',
+      '[role="radio"]:has-text("Veo")',
+      '[role="tab"]:has-text("Video")',
+      '[role="tab"]:has-text("Veo")',
+      'button:has-text("Video")',
+      'button:has-text("Veo")',
     ];
 
     const toggleSelectors = type === 'image' ? imageToggleSelectors : videoToggleSelectors;
@@ -1429,11 +1682,11 @@ export class GoogleFlowAdapter implements FlowProvider {
           const text = (await btn.innerText().catch(() => '')).trim().toLowerCase();
           console.log(`[FlowAdapter] isModeActive trigger text (${sel}): "${text}"`);
           if (type === 'video') {
-            if (text.includes('video') || text.includes('veo') || text.includes('giây') || text.includes('sec')) return true;
+            if (text.includes('video') || text.includes('veo') || text.includes('giây') || text.includes('sec') || text.includes('cảnh')) return true;
             if (text.includes('banana') || text.includes('hình ảnh') || text.includes('ảnh') || text.includes('image') || text.includes('imagen')) return false;
           } else {
             if (text.includes('banana') || text.includes('hình ảnh') || text.includes('ảnh') || text.includes('image') || text.includes('imagen')) return true;
-            if (text.includes('video') || text.includes('veo') || text.includes('giây') || text.includes('sec')) return false;
+            if (text.includes('video') || text.includes('veo') || text.includes('giây') || text.includes('sec') || text.includes('cảnh')) return false;
           }
           // Text found but couldn't classify — don't return false yet
           break;
@@ -1581,8 +1834,10 @@ export class GoogleFlowAdapter implements FlowProvider {
       // Check if new results appeared
       const current = await getMediaSnapshot(page);
       const newUrls = current.urls.filter((u) => !baseline.urls.includes(u));
-      if ((newUrls.length > 0 || current.count > baseline.count) && (Date.now() - startTime >= minGenerationTimeMs)) {
-        console.log(`[FlowAdapter] New results appeared: ${newUrls.length} new items`);
+      // For video: also check card count increase (Google Flow shows video thumbnail in card, not <video src>)
+      const cardIncrease = type === 'video' && (current.cardCount ?? 0) > (baseline.cardCount ?? 0);
+      if ((newUrls.length > 0 || current.count > baseline.count || cardIncrease) && (Date.now() - startTime >= minGenerationTimeMs)) {
+        console.log(`[FlowAdapter] New results appeared early: ${newUrls.length} new items, cardIncrease=${cardIncrease}`);
         return { success: true };
       }
 
@@ -1591,7 +1846,14 @@ export class GoogleFlowAdapter implements FlowProvider {
     }
 
     if (!generationStarted) {
-      console.warn('[FlowAdapter] No explicit loading spinner detected — generation may be running without spinner or finished.');
+      console.warn('[FlowAdapter] No explicit loading spinner detected after initial wait. Checking if generate button needs re-click...');
+      const genBtn = await findFirstVisible(page, FLOW_SELECTORS.generateButton, 1000);
+      const isStillEnabled = genBtn ? await genBtn.evaluate((b: HTMLButtonElement) => !b.disabled && !b.classList.contains('mat-mdc-button-disabled') && b.getAttribute('aria-disabled') !== 'true').catch(() => false) : false;
+      if (isStillEnabled) {
+        console.warn('[FlowAdapter] Generate button appears to still be active/unclicked. Attempting re-click...');
+        await genBtn?.click({ timeout: 3000 }).catch(() => {});
+        await page.waitForTimeout(1500);
+      }
     }
 
     // Phase 2: Poll for completion
@@ -1663,10 +1925,38 @@ export class GoogleFlowAdapter implements FlowProvider {
         } catch {}
       }
 
+      // For video: also check if there's a video-specific "generating" signal in the page
+      // (e.g., the generate button appears busy or a card shows a loading state)
+      if (!stillLoading && type === 'video') {
+        const videoStillGenerating = await page.evaluate(() => {
+          // Check for percentage text in result cards (e.g. "45%" during video render)
+          const cards = document.querySelectorAll('.tile-row, .virtual-item-container, .generation-card');
+          for (const card of Array.from(cards)) {
+            const text = card.textContent || '';
+            if (/\d{1,3}%/.test(text) || text.includes('Đang tạo') || text.includes('Generating') || text.includes('Processing')) {
+              return true;
+            }
+          }
+          // Check if generate button is still disabled (still processing)
+          const btns = Array.from(document.querySelectorAll('button'));
+          const genBtn = btns.find((b) => {
+            const t = (b.textContent || '').trim().toLowerCase();
+            return t === 'generate' || t === 'tạo' || t === 'chạy';
+          });
+          if (genBtn && (genBtn.disabled || genBtn.getAttribute('aria-busy') === 'true' || genBtn.getAttribute('aria-disabled') === 'true')) {
+            return true;
+          }
+          return false;
+        }).catch(() => false);
+        if (videoStillGenerating) stillLoading = true;
+      }
+
       // Check media snapshot
       const current = await getMediaSnapshot(page);
       const newUrls = current.urls.filter((u) => !baseline.urls.includes(u));
-      const hasNewResults = newUrls.length > 0 || current.count > baseline.count;
+      // For video: card count increase is a valid completion signal (thumbnail = video rendered)
+      const cardIncrease = type === 'video' && (current.cardCount ?? 0) > (baseline.cardCount ?? 0);
+      const hasNewResults = newUrls.length > 0 || current.count > baseline.count || cardIncrease;
 
       const elapsed = Math.round((Date.now() - startTime) / 1000);
 
@@ -1691,9 +1981,11 @@ export class GoogleFlowAdapter implements FlowProvider {
         });
       }
 
+      console.log(`[FlowAdapter] Poll [${elapsed}s]: hasNewResults=${hasNewResults}, cardIncrease=${cardIncrease}, stillLoading=${stillLoading}, newUrls=${newUrls.length}, cards=${current.cardCount ?? 0}/${baseline.cardCount ?? 0}`);
+
       // If new results exist and loading is done and minimum time passed
       if (hasNewResults && !stillLoading && (Date.now() - startTime >= minGenerationTimeMs)) {
-        console.log(`[FlowAdapter] Generation complete: ${newUrls.length} new items found, total ${current.count}`);
+        console.log(`[FlowAdapter] Generation complete: ${newUrls.length} new items found, total ${current.count}, cardCount=${current.cardCount ?? 0}`);
         // Allow 2 seconds for high-res render in Chromium DOM
         await page.waitForTimeout(2000);
         return { success: true };
@@ -1811,28 +2103,48 @@ export class GoogleFlowAdapter implements FlowProvider {
           const dlBtn = await findFirstVisible(page, modalDlSelectors, 3000);
           if (dlBtn) {
             console.log('[FlowAdapter] Clicking modal download menu trigger...');
-            await dlBtn.click({ timeout: 3000 }).catch(() => {});
-            await page.waitForTimeout(600);
-
-            // Click resolution option: 720p / Original / Gốc
-            const resolutionSelectors = [
-              'button:has-text("720p")',
-              '[role="menuitem"]:has-text("720p")',
-              'button:has-text("gốc")',
-              'button:has-text("Original")',
-              '.mat-mdc-menu-item:has-text("720p")',
-              '.mat-mdc-menu-item:not(.mat-mdc-menu-item-disabled):has-text("gốc")',
-              'button:has-text("1080p")',
-            ];
-
-            const resOpt = await findFirstVisible(page, resolutionSelectors, 3000);
-            if (resOpt) {
-              console.log('[FlowAdapter] Clicking resolution option to start download...');
-              const [download] = await Promise.all([
-                page.waitForEvent('download', { timeout: 30000 }),
-                resOpt.click({ timeout: 3000 }),
+            let download: any = null;
+            try {
+              const [directDl] = await Promise.all([
+                page.waitForEvent('download', { timeout: 3500 }),
+                dlBtn.click({ timeout: 3000 }),
               ]);
+              download = directDl;
+              console.log('[FlowAdapter] Direct download triggered from modal download button.');
+            } catch {
+              // Direct download didn't fire; popup resolution menu was likely opened
+            }
 
+            if (!download) {
+              await page.waitForTimeout(600);
+
+              // Click resolution option: 720p / Original / Gốc / MP4
+              const resolutionSelectors = [
+                'button:has-text("720p")',
+                '[role="menuitem"]:has-text("720p")',
+                '.mat-mdc-menu-item:has-text("720p")',
+                'button:has-text("gốc")',
+                'button:has-text("Original")',
+                '.mat-mdc-menu-item:not(.mat-mdc-menu-item-disabled):has-text("gốc")',
+                '.mat-mdc-menu-item:not(.mat-mdc-menu-item-disabled):has-text("Original")',
+                'button:has-text("1080p")',
+                '[role="menuitem"]:has-text("1080p")',
+                'button:has-text("MP4")',
+                '[role="menuitem"]:has-text("MP4")',
+              ];
+
+              const resOpt = await findFirstVisible(page, resolutionSelectors, 3000);
+              if (resOpt) {
+                console.log('[FlowAdapter] Clicking resolution option to start download...');
+                const [menuDl] = await Promise.all([
+                  page.waitForEvent('download', { timeout: 30000 }),
+                  resOpt.click({ timeout: 3000 }),
+                ]);
+                download = menuDl;
+              }
+            }
+
+            if (download) {
               await download.saveAs(filePath);
               console.log(`[FlowAdapter] Video downloaded to: ${filePath} (${fs.statSync(filePath).size} bytes)`);
 
@@ -1865,7 +2177,7 @@ export class GoogleFlowAdapter implements FlowProvider {
                 }
               }
             } else {
-              console.warn('[FlowAdapter] Resolution option (720p) not found in download menu.');
+              console.warn('[FlowAdapter] Could not trigger download via modal button or resolution menu.');
             }
           } else {
             console.warn('[FlowAdapter] Modal download button not found.');
@@ -2167,7 +2479,10 @@ export class GoogleFlowAdapter implements FlowProvider {
           for (let i = count - 1; i >= 0; i--) {
             const loc = locs.nth(i);
             if (await loc.isVisible({ timeout: 1000 }).catch(() => false)) {
-              const src = await loc.getAttribute('src').catch(() => null);
+              let src = await loc.getAttribute('src').catch(() => null);
+              if (!src) {
+                src = await loc.locator('source').first().getAttribute('src').catch(() => null);
+              }
               if (src && (src.startsWith('http') || src.startsWith('blob:'))) {
                 const saved = await page.evaluate(async (url: string) => {
                   try {

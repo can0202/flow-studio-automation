@@ -238,29 +238,24 @@ export const VideoGenView: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsBatchMode(false)}
-              className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all ${
-                !isBatchMode
-                  ? 'bg-violet-600 text-white shadow-md shadow-violet-600/30'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
+              className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all ${!isBatchMode
+                ? 'bg-violet-600 text-white shadow-md shadow-violet-600/30'
+                : 'text-slate-400 hover:text-slate-200'
+                }`}
             >
               <PlaySquare className="w-3.5 h-3.5" />
-              <span>Tạo 1 Video (Đơn lẻ)</span>
+              <span>Tạo Đơn Lẻ</span>
             </button>
             <button
               type="button"
               onClick={() => setIsBatchMode(true)}
-              className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all ${
-                isBatchMode
-                  ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md shadow-violet-600/30'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
+              className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all ${isBatchMode
+                ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md shadow-violet-600/30'
+                : 'text-slate-400 hover:text-slate-200'
+                }`}
             >
               <ListPlus className="w-3.5 h-3.5" />
-              <span>Tạo Video Hàng Loạt &amp; Nối Cảnh (Chaining)</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded font-mono bg-violet-400/20 text-violet-200 border border-violet-400/30">
-                MỚI
-              </span>
+              <span>Tạo Hàng Loạt</span>
             </button>
           </div>
 
@@ -319,11 +314,10 @@ export const VideoGenView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsChaining(!isChaining)}
-                  className={`px-3.5 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shrink-0 ${
-                    isChaining
-                      ? 'bg-violet-600 text-white shadow-md shadow-violet-600/30'
-                      : 'bg-slate-800 text-slate-400 hover:text-slate-200'
-                  }`}
+                  className={`px-3.5 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shrink-0 ${isChaining
+                    ? 'bg-violet-600 text-white shadow-md shadow-violet-600/30'
+                    : 'bg-slate-800 text-slate-400 hover:text-slate-200'
+                    }`}
                 >
                   {isChaining ? (
                     <>
@@ -425,11 +419,10 @@ export const VideoGenView: React.FC = () => {
                     <button
                       key={ratio.id}
                       onClick={() => setAspectRatio(ratio.id)}
-                      className={`p-3.5 rounded-xl border text-left transition-all ${
-                        isSelected
-                          ? 'bg-violet-600/15 border-violet-500 text-violet-400 shadow-sm'
-                          : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
-                      }`}
+                      className={`p-3.5 rounded-xl border text-left transition-all ${isSelected
+                        ? 'bg-violet-600/15 border-violet-500 text-violet-400 shadow-sm'
+                        : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                        }`}
                     >
                       <span className="text-sm font-bold block">{ratio.label}</span>
                       <span className="text-[11px] text-slate-400 block mt-0.5">{ratio.desc}</span>
@@ -450,11 +443,10 @@ export const VideoGenView: React.FC = () => {
                   <button
                     key={sec}
                     onClick={() => setDuration(sec)}
-                    className={`flex-1 py-2.5 px-2 rounded-xl border text-center font-bold text-sm transition-all ${
-                      duration === sec
-                        ? 'bg-violet-600/15 border-violet-500 text-violet-400'
-                        : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200'
-                    }`}
+                    className={`flex-1 py-2.5 px-2 rounded-xl border text-center font-bold text-sm transition-all ${duration === sec
+                      ? 'bg-violet-600/15 border-violet-500 text-violet-400'
+                      : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200'
+                      }`}
                   >
                     {sec}s
                   </button>
@@ -474,11 +466,10 @@ export const VideoGenView: React.FC = () => {
                     <button
                       key={count}
                       onClick={() => setRepeatCount(count)}
-                      className={`flex-1 py-2.5 px-2 rounded-xl border text-center font-bold text-sm transition-all ${
-                        repeatCount === count
-                          ? 'bg-violet-600/15 border-violet-500 text-violet-400'
-                          : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200'
-                      }`}
+                      className={`flex-1 py-2.5 px-2 rounded-xl border text-center font-bold text-sm transition-all ${repeatCount === count
+                        ? 'bg-violet-600/15 border-violet-500 text-violet-400'
+                        : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200'
+                        }`}
                     >
                       x{count}
                     </button>
@@ -633,13 +624,12 @@ export const VideoGenView: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-semibold text-slate-200 truncate">{job.name}</span>
                       <span
-                        className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
-                          job.status === 'completed'
-                            ? 'bg-emerald-500/10 text-emerald-400'
-                            : job.status === 'running'
+                        className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${job.status === 'completed'
+                          ? 'bg-emerald-500/10 text-emerald-400'
+                          : job.status === 'running'
                             ? 'bg-violet-500/10 text-violet-400 animate-pulse'
                             : 'bg-slate-800 text-slate-400'
-                        }`}
+                          }`}
                       >
                         {JOB_STATUS_NAMES[job.status] || job.status}
                       </span>

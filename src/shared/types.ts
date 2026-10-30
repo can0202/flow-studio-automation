@@ -81,7 +81,7 @@ export interface Session {
 }
 
 
-export type AiPromptProvider = 'gemini' | 'openai' | 'claude';
+export type AiPromptProvider = 'gemini' | 'groq' | 'openai' | 'claude';
 
 export interface Settings {
   concurrencyLimit: number;
@@ -94,6 +94,7 @@ export interface Settings {
   accountConcurrency?: boolean;
   geminiApiKey?: string;
   openaiApiKey?: string;
+  groqApiKey?: string;
   claudeApiKey?: string;
   preferredAiProvider?: AiPromptProvider;
 }

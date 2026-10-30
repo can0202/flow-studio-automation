@@ -257,7 +257,7 @@ Output chỉ gồm danh sách prompt theo mẫu:
 
     if (configuredProviders.length === 0) {
       setError(
-        'Chưa cấu hình API Key nào (Gemini, ChatGPT hoặc Claude). Vui lòng vào Cài đặt để thêm key.'
+        'Chưa cấu hình API Key nào (Gemini, Groq, ChatGPT hoặc Claude). Vui lòng vào Cài đặt để thêm key.'
       );
       return;
     }
@@ -564,14 +564,14 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
             </div>
             <div>
               <h2 className="text-sm font-bold text-white">Tạo Prompt từ SRT</h2>
-              <p className="text-[11px] text-slate-400">Dùng Gemini AI để chuyển phụ đề thành image prompts</p>
+              <p className="text-[11px] text-slate-400">Dùng AI (Gemini, Groq Llama 70B...) để chuyển phụ đề thành image prompts</p>
             </div>
           </div>
         </div>
 
         <div className="flex-1 px-5 py-5 space-y-5 overflow-y-auto">
           {/* AI Providers Status Banner */}
-          {configuredProviders.length === 0 ? (
+          {/* {configuredProviders.length === 0 ? (
             <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-amber-950/40 border border-amber-500/30">
               <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
@@ -584,7 +584,7 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
                   >
                     Cài đặt
                   </button>
-                  {' '}để thêm ít nhất một API Key (Gemini, ChatGPT hoặc Claude).
+                  {' '}để thêm ít nhất một API Key (Gemini, Groq, ChatGPT hoặc Claude).
                 </p>
               </div>
             </div>
@@ -593,7 +593,7 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-violet-400" />
-                  AI Providers & Quota ({configuredProviders.length}/3 sẵn sàng)
+                  AI Providers & Quota ({configuredProviders.length}/4 sẵn sàng)
                 </span>
                 <div className="flex items-center gap-2">
                   <button
@@ -616,7 +616,7 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {availableProviders.map((p) => {
                   const qInfo = quotas?.find((q) => q.provider === p.id);
                   const usage = getAiUsageToday()[p.id];
@@ -657,9 +657,11 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
                           <span className="font-medium text-slate-300">
                             {p.id === 'gemini'
                               ? '1,500/ngày'
-                              : p.id === 'openai'
-                                ? (qInfo?.remainingRequests ? `${qInfo.remainingRequests} RPM` : 'Payg')
-                                : (qInfo?.remainingRequests ? `${qInfo.remainingRequests}` : 'Credits')}
+                              : p.id === 'groq'
+                                ? '1,000/ngày'
+                                : p.id === 'openai'
+                                    ? (qInfo?.remainingRequests ? `${qInfo.remainingRequests} RPM` : 'Payg')
+                                    : (qInfo?.remainingRequests ? `${qInfo.remainingRequests}` : 'Credits')}
                           </span>
                         </div>
                         <div className="flex justify-between text-slate-500">
@@ -684,7 +686,7 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
                 )}
               </div>
             </div>
-          )}
+          )} */}
 
           {/* SRT Input */}
           <div className="space-y-2">
@@ -731,11 +733,10 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
                     key={opt.size}
                     type="button"
                     onClick={() => setGroupingSize(opt.size)}
-                    className={`py-1.5 px-2 rounded-lg text-[10px] font-semibold border transition-all ${
-                      groupingSize === opt.size
+                    className={`py-1.5 px-2 rounded-lg text-[10px] font-semibold border transition-all ${groupingSize === opt.size
                         ? 'bg-violet-600 border-violet-500 text-white shadow-sm'
                         : 'bg-slate-950/50 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
-                    }`}
+                      }`}
                   >
                     {opt.label}
                   </button>
@@ -788,11 +789,10 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
             <button
               type="button"
               onClick={() => setUseCustomFormula((v) => !v)}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 transition-colors ${
-                useCustomFormula
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 transition-colors ${useCustomFormula
                   ? 'bg-amber-950/40 border-b border-amber-800/50'
                   : 'bg-slate-900/60 hover:bg-slate-900'
-              }`}
+                }`}
             >
               <span className="flex items-center gap-2 text-xs font-semibold">
                 <FlaskConical className={`w-3.5 h-3.5 ${useCustomFormula ? 'text-amber-400' : 'text-slate-500'}`} />
@@ -1054,7 +1054,7 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
                 <Sparkles className="w-8 h-8 text-violet-400 animate-pulse" />
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-slate-300">Gemini đang phân tích SRT...</h3>
+                <h3 className="text-sm font-semibold text-slate-300">AI đang phân tích SRT...</h3>
                 <p className="text-xs text-slate-500 mt-1">Quá trình này thường mất 5–20 giây.</p>
               </div>
               <div className="flex gap-1">
@@ -1077,8 +1077,8 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
                   <div
                     key={item.index}
                     className={`rounded-xl border transition-all ${isSelected
-                        ? 'border-violet-500/40 bg-violet-950/20'
-                        : 'border-slate-800 bg-[#0d1322] opacity-60'
+                      ? 'border-violet-500/40 bg-violet-950/20'
+                      : 'border-slate-800 bg-[#0d1322] opacity-60'
                       }`}
                   >
                     {/* Card Header */}

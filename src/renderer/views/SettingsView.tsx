@@ -19,12 +19,14 @@ import {
   Activity,
   AlertTriangle,
   XCircle,
+  Cpu,
 } from 'lucide-react';
 import {
   checkAllAiQuotas,
   AiQuotaInfo,
   getAiUsageToday,
 } from '../services/ai-prompt-service';
+import { AiPromptProvider } from '@shared/types.ts';
 
 export const SettingsView: React.FC = () => {
   const { settings, updateSettings, addNotification } = useAppStore();
@@ -39,11 +41,13 @@ export const SettingsView: React.FC = () => {
   const [simulationMode, setSimulationMode] = useState(true);
   const [geminiApiKey, setGeminiApiKey] = useState('');
   const [showGeminiKey, setShowGeminiKey] = useState(false);
+  const [groqApiKey, setGroqApiKey] = useState('');
+  const [showGroqKey, setShowGroqKey] = useState(false);
   const [openaiApiKey, setOpenaiApiKey] = useState('');
   const [showOpenaiKey, setShowOpenaiKey] = useState(false);
   const [claudeApiKey, setClaudeApiKey] = useState('');
   const [showClaudeKey, setShowClaudeKey] = useState(false);
-  const [preferredAiProvider, setPreferredAiProvider] = useState<'gemini' | 'openai' | 'claude'>('gemini');
+  const [preferredAiProvider, setPreferredAiProvider] = useState<AiPromptProvider>('gemini');
 
   // Quota checking state
   const [quotas, setQuotas] = useState<AiQuotaInfo[] | null>(null);
@@ -55,6 +59,7 @@ export const SettingsView: React.FC = () => {
       const q = await checkAllAiQuotas({
         ...settings,
         geminiApiKey,
+        groqApiKey,
         openaiApiKey,
         claudeApiKey,
       } as any);
@@ -77,12 +82,13 @@ export const SettingsView: React.FC = () => {
       setFlowUrl(settings.flowUrl);
       setSimulationMode(settings.simulationMode);
       setGeminiApiKey(settings.geminiApiKey || '');
+      setGroqApiKey(settings.groqApiKey || '');
       setOpenaiApiKey(settings.openaiApiKey || '');
       setClaudeApiKey(settings.claudeApiKey || '');
       setPreferredAiProvider(settings.preferredAiProvider || 'gemini');
 
       // Tự động kiểm tra quota nếu đã có key
-      if (settings.geminiApiKey || settings.openaiApiKey || settings.claudeApiKey) {
+      if (settings.geminiApiKey || settings.groqApiKey || settings.openaiApiKey || settings.claudeApiKey) {
         checkAllAiQuotas(settings).then(setQuotas).catch(() => { });
       }
     }
@@ -99,6 +105,7 @@ export const SettingsView: React.FC = () => {
       flowUrl: flowUrl.trim(),
       simulationMode,
       geminiApiKey: geminiApiKey.trim(),
+      groqApiKey: groqApiKey.trim(),
       openaiApiKey: openaiApiKey.trim(),
       claudeApiKey: claudeApiKey.trim(),
       preferredAiProvider,
@@ -350,7 +357,44 @@ export const SettingsView: React.FC = () => {
               </span>
             </div>
 
-            {/* 2. OpenAI ChatGPT */}
+            {/* 2. Groq (Llama 3.3 70B - Free) */}
+            <div className="p-3.5 rounded-xl bg-slate-900/40 border border-slate-800/90 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                  <Zap className="w-3.5 h-3.5 text-orange-400" />
+                  Groq API Key (Llama 3.3 70B - Miễn phí)
+                  {groqApiKey && <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-400 border border-emerald-800/50">Đã thiết lập</span>}
+                </label>
+                <button
+                  type="button"
+                  onClick={() => window.api.openExternal('https://console.groq.com/keys')}
+                  className="text-[11px] text-orange-400 hover:text-orange-300 hover:underline flex items-center gap-1"
+                >
+                  Lấy key miễn phí tại Groq Console ↗
+                </button>
+              </div>
+              <div className="relative">
+                <input
+                  type={showGroqKey ? 'text' : 'password'}
+                  value={groqApiKey}
+                  onChange={(e) => setGroqApiKey(e.target.value)}
+                  placeholder="gsk_..."
+                  className="w-full px-3.5 py-2.5 pr-10 rounded-xl bg-slate-900 border border-slate-800 text-sm font-mono text-slate-100 focus:outline-none focus:border-orange-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowGroqKey(!showGroqKey)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                >
+                  {showGroqKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              <span className="text-[11px] text-slate-500 block">
+                Tốc độ xử lý siêu tốc LPU (~300 tokens/s). Miễn phí 1,000 lượt gọi/ngày với model Llama 3.3 70B Versatile.
+              </span>
+            </div>
+
+            {/* 3. OpenAI ChatGPT */}
             <div className="p-3.5 rounded-xl bg-slate-900/40 border border-slate-800/90 space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
@@ -447,9 +491,10 @@ export const SettingsView: React.FC = () => {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
                 {(quotas || [
                   { provider: 'gemini', name: 'Google Gemini', hasKey: Boolean(geminiApiKey), status: geminiApiKey ? 'checking' : 'unconfigured', statusText: geminiApiKey ? 'Đang tải...' : 'Chưa cấu hình', tierLimit: '1,500 requests/ngày', usedToday: getAiUsageToday().gemini },
+                  { provider: 'groq', name: 'Groq (Llama 70B - Free)', hasKey: Boolean(groqApiKey), status: groqApiKey ? 'checking' : 'unconfigured', statusText: groqApiKey ? 'Đang tải...' : 'Chưa cấu hình', tierLimit: '1,000 req/ngày', usedToday: getAiUsageToday().groq },
                   { provider: 'openai', name: 'OpenAI (ChatGPT)', hasKey: Boolean(openaiApiKey), status: openaiApiKey ? 'checking' : 'unconfigured', statusText: openaiApiKey ? 'Đang tải...' : 'Chưa cấu hình', tierLimit: 'Pay-as-you-go', usedToday: getAiUsageToday().openai },
                   { provider: 'claude', name: 'Anthropic (Claude)', hasKey: Boolean(claudeApiKey), status: claudeApiKey ? 'checking' : 'unconfigured', statusText: claudeApiKey ? 'Đang tải...' : 'Chưa cấu hình', tierLimit: 'Credits Tier', usedToday: getAiUsageToday().claude },
                 ]).map((q) => {
