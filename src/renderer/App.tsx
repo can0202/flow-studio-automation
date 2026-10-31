@@ -13,6 +13,7 @@ import { SessionsView } from './views/SessionsView.tsx';
 import { OutputsView } from './views/OutputsView.tsx';
 import { SettingsView } from './views/SettingsView.tsx';
 import { PromptGenView } from './views/PromptGenView.tsx';
+import { TTSGenView } from './views/TTSGenView.tsx';
 
 export const App: React.FC = () => {
   const { activeTab, loadSettings, loadStats, addNotification } = useAppStore();
@@ -75,6 +76,8 @@ export const App: React.FC = () => {
         return <SettingsView />;
       case 'prompt-gen':
         return <PromptGenView />;
+      case 'tts':
+        return <TTSGenView />;
       default:
         return <DashboardView />;
     }

@@ -1,0 +1,422 @@
+[
+  {
+    "id": "Hữu Phước",
+    "name": "Hữu Phước",
+    "label": "⭐ Hữu Phước — Nam · Bắc · Mộc mạc",
+    "desc": "Giọng nam đứng tuổi, mộc mạc",
+    "gender": "male",
+    "region": "Miền Bắc",
+    "tags": [
+      "Đứng tuổi",
+      "Mộc mạc"
+    ],
+    "isStar": true,
+    "initials": "HP",
+    "lang": "vi"
+  },
+  {
+    "id": "Trúc Ly",
+    "name": "Trúc Ly",
+    "label": "Trúc Ly — Nữ · Bắc · Tự nhiên",
+    "desc": "Nữ · Bắc · Phong cách tự nhiên dịu dàng",
+    "gender": "female",
+    "region": "Miền Bắc",
+    "tags": [
+      "Tự nhiên",
+      "Dịu dàng"
+    ],
+    "isStar": true,
+    "initials": "TL",
+    "lang": "vi"
+  },
+  {
+    "id": "Anh Khôi",
+    "name": "Anh Khôi",
+    "label": "Anh Khôi — Nam · Bắc · Kể chuyện",
+    "desc": "Nam · Bắc · Phong cách kể chuyện trầm ấm",
+    "gender": "male",
+    "region": "Miền Bắc",
+    "tags": [
+      "Kể chuyện",
+      "Trầm ấm"
+    ],
+    "isStar": true,
+    "initials": "AK",
+    "lang": "vi"
+  },
+  {
+    "id": "Mai Anh",
+    "name": "Mai Anh",
+    "label": "Mai Anh — Nữ · Bắc · Tin tức",
+    "desc": "Nữ · Bắc · Phong cách tin tức rõ ràng",
+    "gender": "female",
+    "region": "Miền Bắc",
+    "tags": [
+      "Tin tức",
+      "Rõ ràng"
+    ],
+    "isStar": true,
+    "initials": "MA",
+    "lang": "vi"
+  },
+  {
+    "id": "Minh Quân Pro",
+    "name": "Minh Quân Pro",
+    "label": "Minh Quân Pro — Nam · Bắc · Tự nhiên",
+    "desc": "Nam · Bắc · Phong cách tự nhiên tươi sáng",
+    "gender": "male",
+    "region": "Miền Bắc",
+    "tags": [
+      "Tự nhiên",
+      "Tươi sáng"
+    ],
+    "isStar": true,
+    "initials": "MQ",
+    "lang": "vi"
+  },
+  {
+    "id": "Thùy Dung",
+    "name": "Thùy Dung",
+    "label": "Thùy Dung — Nữ · Nam · Tin tức",
+    "desc": "Nữ · Nam · Phong cách tin tức chuyên nghiệp",
+    "gender": "female",
+    "region": "Miền Nam",
+    "tags": [
+      "Tin tức",
+      "Chuyên nghiệp"
+    ],
+    "isStar": true,
+    "initials": "TD",
+    "lang": "vi"
+  },
+  {
+    "id": "Thái Sơn",
+    "name": "Thái Sơn",
+    "label": "Thái Sơn — Nam · Nam · Kể chuyện",
+    "desc": "Nam · Nam · Phong cách kể chuyện ấm áp dày giọng",
+    "gender": "male",
+    "region": "Miền Nam",
+    "tags": [
+      "Kể chuyện",
+      "Ấm áp"
+    ],
+    "isStar": true,
+    "initials": "TS",
+    "lang": "vi"
+  },
+  {
+    "id": "Thiền Tâm Đức",
+    "name": "Thiền Tâm Đức",
+    "label": "Thiền Tâm Đức — Nam · Bắc · Kể chuyện",
+    "desc": "Nam · Bắc · Phong cách kể chuyện sâu lắng thiền định",
+    "gender": "male",
+    "region": "Miền Bắc",
+    "tags": [
+      "Kể chuyện",
+      "Sâu lắng"
+    ],
+    "isStar": true,
+    "initials": "TĐ",
+    "lang": "vi"
+  },
+  {
+    "id": "Ngọc Huyền",
+    "name": "Ngọc Huyền",
+    "label": "Ngọc Huyền — Nữ · Bắc · Tự nhiên",
+    "desc": "Nữ · Bắc · Giọng đọc tự nhiên trong trẻo",
+    "gender": "female",
+    "region": "Miền Bắc",
+    "tags": [
+      "Tự nhiên",
+      "Trong trẻo"
+    ],
+    "isStar": true,
+    "initials": "NH",
+    "lang": "vi"
+  },
+  {
+    "id": "Quang Sơn",
+    "name": "Quang Sơn",
+    "label": "Quang Sơn — Nam · Trung · Tự nhiên",
+    "desc": "Nam · Trung · Phong cách tự nhiên chất phác",
+    "gender": "male",
+    "region": "Miền Trung",
+    "tags": [
+      "Tự nhiên",
+      "Ấm áp"
+    ],
+    "isStar": true,
+    "initials": "QS",
+    "lang": "vi"
+  },
+  {
+    "id": "Ngọc Trân",
+    "name": "Ngọc Trân",
+    "label": "Ngọc Trân — Nữ · Trung · Tự nhiên",
+    "desc": "Nữ · Trung · Phong cách tự nhiên ngọt ngào",
+    "gender": "female",
+    "region": "Miền Trung",
+    "tags": [
+      "Tự nhiên",
+      "Ngọt ngào"
+    ],
+    "isStar": true,
+    "initials": "NT",
+    "lang": "vi"
+  },
+  {
+    "id": "Minh Đức",
+    "name": "Minh Đức",
+    "label": "Minh Đức — Nam · Bắc · Tin tức",
+    "desc": "Nam · Bắc · Phong cách tin tức dõng dạc trang trọng",
+    "gender": "male",
+    "region": "Miền Bắc",
+    "tags": [
+      "Tin tức",
+      "Dõng dạc"
+    ],
+    "isStar": true,
+    "initials": "MĐ",
+    "lang": "vi"
+  },
+  {
+    "id": "Phạm Tuyên",
+    "name": "Phạm Tuyên",
+    "label": "Phạm Tuyên — Nam · Bắc · Tự nhiên",
+    "desc": "Nam · Bắc · Phong cách tự nhiên mộc mạc",
+    "gender": "male",
+    "region": "Miền Bắc",
+    "tags": [
+      "Tự nhiên",
+      "Mộc mạc"
+    ],
+    "isStar": true,
+    "initials": "PT",
+    "lang": "vi"
+  },
+  {
+    "id": "Xuân Vĩnh",
+    "name": "Xuân Vĩnh",
+    "label": "⭐ Xuân Vĩnh — Nam · Bắc · Tự nhiên",
+    "desc": "Nam · Bắc · Phong cách tự nhiên nhẹ nhàng",
+    "gender": "male",
+    "region": "Miền Bắc",
+    "tags": [
+      "Tự nhiên",
+      "Nhẹ nhàng"
+    ],
+    "isStar": true,
+    "initials": "XV",
+    "lang": "vi"
+  },
+  {
+    "id": "Thanh Bình",
+    "name": "Thanh Bình",
+    "label": "Thanh Bình — Nam · Bắc · Kể chuyện",
+    "desc": "Nam · Bắc · Phong cách kể chuyện hào sảng truyền cảm",
+    "gender": "male",
+    "region": "Miền Bắc",
+    "tags": [
+      "Kể chuyện",
+      "Hào sảng"
+    ],
+    "isStar": true,
+    "initials": "TB",
+    "lang": "vi"
+  },
+  {
+    "id": "Ngọc Linh",
+    "name": "Ngọc Linh",
+    "label": "Ngọc Linh — Nữ · Bắc · Kể chuyện",
+    "desc": "Nữ · Bắc · Phong cách kể chuyện cảm xúc sâu sắc",
+    "gender": "female",
+    "region": "Miền Bắc",
+    "tags": [
+      "Kể chuyện",
+      "Cảm xúc"
+    ],
+    "isStar": true,
+    "initials": "NL",
+    "lang": "vi"
+  },
+  {
+    "id": "Đoan Trang",
+    "name": "Đoan Trang",
+    "label": "Đoan Trang — Nữ · Bắc · Tự nhiên",
+    "desc": "Nữ · Bắc · Phong cách tự nhiên chững chạc êm ái",
+    "gender": "female",
+    "region": "Miền Bắc",
+    "tags": [
+      "Tự nhiên",
+      "Êm ái"
+    ],
+    "isStar": true,
+    "initials": "ĐT",
+    "lang": "vi"
+  },
+  {
+    "id": "Thục Đoan",
+    "name": "Thục Đoan",
+    "label": "Thục Đoan — Nữ · Nam · Kể chuyện",
+    "desc": "Nữ · Nam · Phong cách kể chuyện dịu dàng lôi cuốn",
+    "gender": "female",
+    "region": "Miền Nam",
+    "tags": [
+      "Kể chuyện",
+      "Dịu dàng"
+    ],
+    "isStar": true,
+    "initials": "TĐ",
+    "lang": "vi"
+  },
+  {
+    "id": "Minh Triết",
+    "name": "Minh Triết",
+    "label": "Minh Triết — Nam · Nam · Tin tức",
+    "desc": "Nam · Nam · Phong cách tin tức hiện đại mạch lạc",
+    "gender": "male",
+    "region": "Miền Nam",
+    "tags": [
+      "Tin tức",
+      "Mạch lạc"
+    ],
+    "isStar": true,
+    "initials": "MT",
+    "lang": "vi"
+  },
+  {
+    "id": "Mỹ Duyên",
+    "name": "Mỹ Duyên",
+    "label": "Mỹ Duyên — Nữ · Nam · Đọc truyện",
+    "desc": "Nữ · Nam · Phong cách đọc truyện ngọt ngào",
+    "gender": "female",
+    "region": "Miền Nam",
+    "tags": [
+      "Đọc truyện",
+      "Ngọt ngào"
+    ],
+    "isStar": true,
+    "initials": "MD",
+    "lang": "vi"
+  },
+  {
+    "id": "Quỳnh Anh",
+    "name": "Quỳnh Anh",
+    "label": "Quỳnh Anh — Nữ · Bắc · Đọc truyện",
+    "desc": "Nữ · Bắc · Phong cách đọc truyện du dương truyền cảm",
+    "gender": "female",
+    "region": "Miền Bắc",
+    "tags": [
+      "Đọc truyện",
+      "Du dương"
+    ],
+    "isStar": true,
+    "initials": "QA",
+    "lang": "vi"
+  },
+  {
+    "id": "Đức Trí",
+    "name": "Đức Trí",
+    "label": "Đức Trí — Nam · Nam · Đọc truyện",
+    "desc": "Nam · Nam · Phong cách đọc truyện trầm ấm lôi cuốn",
+    "gender": "male",
+    "region": "Miền Nam",
+    "tags": [
+      "Đọc truyện",
+      "Lôi cuốn"
+    ],
+    "isStar": true,
+    "initials": "ĐT",
+    "lang": "vi"
+  },
+  {
+    "id": "Kim Thanh",
+    "name": "Kim Thanh",
+    "label": "Kim Thanh — Nữ · Nam · Đọc truyện",
+    "desc": "Nữ · Nam · Phong cách đọc truyện sâu lắng truyền cảm",
+    "gender": "female",
+    "region": "Miền Nam",
+    "tags": [
+      "Đọc truyện",
+      "Sâu lắng"
+    ],
+    "isStar": true,
+    "initials": "KT",
+    "lang": "vi"
+  },
+  {
+    "id": "Adam",
+    "name": "Adam",
+    "label": "Adam — Nam · Nam · Tự nhiên",
+    "desc": "Nam · Nam · Giọng đọc tự nhiên trẻ trung năng động",
+    "gender": "male",
+    "region": "Miền Nam",
+    "tags": [
+      "Tự nhiên",
+      "Năng động"
+    ],
+    "isStar": true,
+    "initials": "AD",
+    "lang": "vi"
+  },
+  {
+    "id": "Mạnh Dũng",
+    "name": "Mạnh Dũng",
+    "label": "Mạnh Dũng — Nam · Bắc · Tự nhiên",
+    "desc": "Nam · Bắc · Phong cách tự nhiên nam tính mạnh mẽ",
+    "gender": "male",
+    "region": "Miền Bắc",
+    "tags": [
+      "Tự nhiên",
+      "Mạnh mẽ"
+    ],
+    "isStar": true,
+    "initials": "MD",
+    "lang": "vi"
+  },
+  {
+    "id": "Adam bựa",
+    "name": "Adam bựa",
+    "label": "Adam bựa — Nam · Bắc · Tấu hề",
+    "desc": "Nam · Bắc · Phong cách tự nhiên hài hước tấu hề",
+    "gender": "male",
+    "region": "Miền Bắc",
+    "tags": [
+      "Hài hước",
+      "Tấu hề"
+    ],
+    "isStar": true,
+    "initials": "AB",
+    "lang": "vi"
+  },
+  {
+    "id": "en_echo",
+    "name": "Echo",
+    "label": "⭐ Echo — Nam · English (US)",
+    "desc": "English US · Deep Male Narrative",
+    "gender": "male",
+    "region": "US",
+    "tags": [
+      "Kể chuyện",
+      "Trầm ấm"
+    ],
+    "isStar": true,
+    "initials": "EC",
+    "lang": "en"
+  },
+  {
+    "id": "en_serena",
+    "name": "Serena",
+    "label": "⭐ Serena — Nữ · English (US)",
+    "desc": "English US · Warm Female Natural",
+    "gender": "female",
+    "region": "US",
+    "tags": [
+      "Tự nhiên",
+      "Ấm áp"
+    ],
+    "isStar": true,
+    "initials": "SR",
+    "lang": "en"
+  }
+]

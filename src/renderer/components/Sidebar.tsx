@@ -13,6 +13,7 @@ import {
   Zap,
   AlertTriangle,
   Wand2,
+  Mic,
 } from 'lucide-react';
 import { useAppStore, type TabType } from '../store/app-store.ts';
 import { useQueueStore } from '../store/queue-store.ts';
@@ -40,6 +41,7 @@ export const Sidebar: React.FC = () => {
   const navItems: NavItem[] = [
     { id: 'dashboard', label: 'Bảng điều khiển', icon: LayoutDashboard },
     { id: 'prompt-gen', label: 'Tạo Prompt SRT', icon: Wand2 },
+    { id: 'tts', label: 'Giọng đọc (TTS)', icon: Mic },
     { id: 'image', label: 'Tạo ảnh', icon: ImageIcon },
     { id: 'video', label: 'Tạo video', icon: VideoIcon },
     { id: 'image-to-video', label: 'Ảnh → Video', icon: Film, badge: reviewNeededCount, badgeColor: 'bg-amber-500' },

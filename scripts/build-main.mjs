@@ -48,6 +48,20 @@ async function buildMain() {
     format: 'cjs',
   });
 
+  // Copy python server script to dist/main
+  const pySrc = path.resolve(rootDir, 'src/main/services/vieneu_server.py');
+  const pyDest = path.resolve(distDir, 'vieneu_server.py');
+  if (fs.existsSync(pySrc)) {
+    fs.copyFileSync(pySrc, pyDest);
+  }
+
+  // Copy assets folder (voices catalog) to dist/main
+  const assetsSrc = path.resolve(rootDir, 'src/main/assets');
+  const assetsDest = path.resolve(distDir, 'assets');
+  if (fs.existsSync(assetsSrc)) {
+    fs.cpSync(assetsSrc, assetsDest, { recursive: true });
+  }
+
   console.log('[build-main] Successfully built main and preload scripts.');
 }
 

@@ -51,7 +51,18 @@ const api: IElectronAPI = {
   deleteOutput: (filePath: string) => ipcRenderer.invoke('outputs:delete', filePath),
   deleteOutputs: (filePaths: string[]) => ipcRenderer.invoke('outputs:deleteBatch', filePaths),
 
-  // Media Sync
+  // Local TTS
+  ttsGetVoices: () => ipcRenderer.invoke('tts:getVoices'),
+  ttsGenerate: (options: any) => ipcRenderer.invoke('tts:generate', options),
+  ttsPreviewVoice: (voice: string) => ipcRenderer.invoke('tts:previewVoice', voice),
+  ttsAddVoice: (options: any) => ipcRenderer.invoke('tts:addVoice', options),
+  onTtsProgress: (callback: (progress: { done: number; total: number; percent: number }) => void) => {
+    const handler = (_event: any, progress: any) => callback(progress);
+    ipcRenderer.on('tts:progress', handler);
+    return () => ipcRenderer.removeListener('tts:progress', handler);
+  },
+
+    // Media Sync
   startMediaSync: (options: any) => ipcRenderer.invoke('sync:start', options),
   cancelMediaSync: () => ipcRenderer.invoke('sync:cancel'),
   scanProjects: (sessionId?: string) => ipcRenderer.invoke('sync:scanProjects', sessionId ?? ''),

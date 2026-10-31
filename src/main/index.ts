@@ -8,6 +8,7 @@ import { MockProvider } from './services/providers/mock-provider.ts';
 import { GoogleFlowAdapter } from './services/providers/flow-adapter.ts';
 import { JobQueue } from './services/job-queue.ts';
 import { MediaSyncService } from './services/media-sync.ts';
+import { ttsService } from './services/tts-service.ts';
 import { BatchNamer } from './services/batch-namer.ts';
 import type { CreateJobInput, SessionStatus, Settings, SyncMediaOptions, BatchRenameOptions } from '../shared/types.ts';
 
@@ -327,6 +328,26 @@ function registerIpcHandlers() {
     console.log(`[IPC] sync:scanProjects received sessionId="${sessionId}"`);
     return mediaSyncService.scanProjects(sessionId);
   });
+  // Local TTS Handlers
+  ipcMain.handle('tts:getVoices', async () => {
+    return ttsService.getVoices();
+  });
+
+  ipcMain.handle('tts:previewVoice', async (_e, voice: string) => {
+    return ttsService.previewVoice(voice);
+  });
+
+  ipcMain.handle('tts:addVoice', async (_e, options: any) => {
+    return ttsService.addVoice(options);
+  });
+
+  ipcMain.handle('tts:generate', async (_e, options: any) => {
+    const settings = db.getSettings();
+    const projName = options.projectName || settings.defaultProjectName || 'FlowStudioProject';
+    const outputDir = path.join(settings.outputDir, projName, 'audio');
+    return ttsService.generateAudio(options, outputDir);
+  });
+
 }
 
 function registerProtocolHandlers() {
@@ -388,6 +409,7 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   if (jobQueue) jobQueue.stopLoop();
+  ttsService.stop();
   if (db) db.close();
   if (process.platform !== 'darwin') {
     app.quit();

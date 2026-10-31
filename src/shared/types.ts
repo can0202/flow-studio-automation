@@ -1,3 +1,33 @@
+export interface TTSVoiceItem {
+  id: string;
+  name: string;
+  label: string;
+  desc?: string;
+  gender: 'male' | 'female';
+  region?: string;
+  isStar?: boolean;
+  initials?: string;
+  lang?: 'vi' | 'en';
+  tags?: string[];
+}
+
+export interface TTSGenerateRequest {
+  text: string;
+  voice: string;
+  speed?: number;
+  outputName?: string;
+  refAudioPath?: string;
+  projectName?: string;
+}
+
+export interface TTSGenerateResponse {
+  success: boolean;
+  filePath?: string;
+  srtPath?: string;
+  duration?: number;
+  error?: string;
+}
+
 export type JobStatus =
   | 'pending'
   | 'running'
@@ -238,6 +268,13 @@ export interface IElectronAPI {
   batchRenameOutputs: (options: BatchRenameOptions) => Promise<{ success: boolean; renamedCount: number; message: string }>;
   deleteOutput: (filePath: string) => Promise<boolean>;
   deleteOutputs: (filePaths: string[]) => Promise<{ success: boolean; deletedCount: number }>;
+
+  // Local TTS
+  ttsGetVoices: () => Promise<{ voices: TTSVoiceItem[]; hasGpu: boolean }>;
+  ttsGenerate: (options: TTSGenerateRequest) => Promise<TTSGenerateResponse>;
+  ttsPreviewVoice: (voice: string) => Promise<{ success: boolean; filePath?: string; error?: string }>;
+  ttsAddVoice: (options: { name: string; audioPath: string; gender: 'male' | 'female'; region?: string; style?: string }) => Promise<{ success: boolean; name?: string; desc?: string; error?: string }>;
+  onTtsProgress: (callback: (progress: { done: number; total: number; percent: number }) => void) => () => void;
 
   // Media Sync
   startMediaSync: (options: SyncMediaOptions) => Promise<{ success: boolean; downloaded: number; skipped: number; message: string }>;
