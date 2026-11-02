@@ -86,15 +86,15 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#090d16] text-slate-100">
+    <div className="flex h-screen w-screen overflow-hidden bg-[#111A09] text-[#E8F5D0]">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Header />
         <main className="flex-1 overflow-hidden relative">
           <Suspense fallback={
-            <div className="flex items-center justify-center h-full text-slate-500 text-sm">
+            <div className="flex items-center justify-center h-full text-[#6B7F52] text-sm">
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-[#CFFF74] border-t-transparent rounded-full animate-spin" />
                 <span>Đang tải giao diện...</span>
               </div>
             </div>
