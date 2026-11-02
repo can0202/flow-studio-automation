@@ -296,6 +296,63 @@ def parse_segments(text: str):
         segments.append({'type': 'text', 'value': trailing})
     return segments
 
+def split_text_into_sentences(text: str, max_chars: int = 220):
+    """
+    Split a block of text into natural sentence / clause units of at most max_chars.
+    Preserves natural flow, punctuation, and marks paragraph ends.
+    Handles texts up to 100k+ characters seamlessly.
+    """
+    text = text.replace('\r\n', '\n').replace('\r', '\n')
+    paragraphs = re.split(r'\n+', text)
+    units = []
+
+    for para in paragraphs:
+        para = para.strip()
+        if not para:
+            continue
+
+        # Split by sentence terminators: . ! ? …
+        raw_sentences = re.split(r'(?<=[.!?…])\s+', para)
+        for s in raw_sentences:
+            s = s.strip()
+            if not s:
+                continue
+
+            if len(s) <= max_chars:
+                units.append({'text': s, 'is_para_end': False})
+            else:
+                # Sub-split by clause boundaries: , ; : — -
+                sub_parts = re.split(r'(?<=[,;:—])\s+', s)
+                cur = ''
+                for part in sub_parts:
+                    if len(cur) + len(part) + 1 <= max_chars:
+                        cur = (cur + ' ' + part).strip() if cur else part
+                    else:
+                        if cur:
+                            units.append({'text': cur, 'is_para_end': False})
+                        # If a single clause is still too long, split on word boundaries
+                        if len(part) > max_chars:
+                            words = part.split()
+                            w_cur = ''
+                            for w in words:
+                                if len(w_cur) + len(w) + 1 <= max_chars:
+                                    w_cur = (w_cur + ' ' + w).strip() if w_cur else w
+                                else:
+                                    if w_cur:
+                                        units.append({'text': w_cur, 'is_para_end': False})
+                                    w_cur = w
+                            cur = w_cur
+                        else:
+                            cur = part
+                if cur:
+                    units.append({'text': cur, 'is_para_end': False})
+
+        if units:
+            units[-1]['is_para_end'] = True
+
+    return units
+
+
 
 def make_silence_bytes(duration_sec: float, sample_rate: int = 48000, channels: int = 1) -> bytes:
     """Generate raw PCM silence as 16-bit signed little-endian bytes."""
@@ -437,6 +494,138 @@ def build_srt(srt_cues: list) -> str:
         lines.append('')   # blank line between cues
     return '\n'.join(lines)
 
+def synthesize_and_stream_to_wav(
+    text: str,
+    voice: str,
+    target_file: str,
+    tts_engine,
+    ref_audio_path: str = None,
+    progress_callback = None
+):
+    """
+    Generates audio for long texts (from tens of chars up to 100,000+ chars)
+    by streaming PCM frames directly to the target WAV file on disk.
+    Ensures near-zero RAM footprint and fine-grained real-time progress.
+    Returns: (duration_seconds, srt_cues)
+    """
+    import wave
+    import numpy as np
+
+    sample_rate = getattr(tts_engine, 'sample_rate', 48000)
+    actual_voice = resolve_actual_voice(voice)
+
+    # 1. Tách các tag [pause ...] cấp cao nhất
+    top_segments = parse_segments(text)
+
+    # 2. Xây dựng kế hoạch thực thi từng câu / đoạn ngắn
+    plan = []
+    for seg in top_segments:
+        if seg['type'] == 'pause':
+            plan.append({'type': 'pause', 'sec': seg['value']})
+        else:
+            seg_units = split_text_into_sentences(seg['value'], max_chars=200)
+            for u in seg_units:
+                plan.append({
+                    'type': 'speech',
+                    'text': u['text'],
+                    'is_para_end': u['is_para_end']
+                })
+
+    # Đếm tổng số đoạn cần xử lý giọng đọc để báo tiến độ
+    speech_items = [p for p in plan if p['type'] == 'speech']
+    total_steps = len(speech_items)
+    if total_steps == 0:
+        total_steps = 1
+
+    print(f"[VieNeu] Synthesizing {total_steps} speech segment(s) streaming directly to {target_file}...")
+    start_t = time.time()
+
+    # Tạo file WAV trực tiếp trên ổ cứng
+    with wave.open(target_file, 'wb') as wf:
+        wf.setnchannels(1)
+        wf.setsampwidth(2) # 16-bit PCM
+        wf.setframerate(sample_rate)
+
+        cursor_sec = 0.0
+        cue_index = 1
+        done_steps = 0
+        srt_cues = []
+
+        if progress_callback:
+            progress_callback(0, total_steps)
+
+        for i, item in enumerate(plan):
+            if item['type'] == 'pause':
+                sec = max(0.05, min(float(item['sec']), 15.0))
+                num_samples = int(sample_rate * sec)
+                wf.writeframes(b'\x00\x00' * num_samples)
+                cursor_sec += sec
+            elif item['type'] == 'speech':
+                raw_text = item['text']
+                tts_text = clean_for_tts(raw_text)
+                if not tts_text:
+                    continue
+
+                try:
+                    if ref_audio_path and os.path.exists(ref_audio_path):
+                        audio = tts_engine.infer(tts_text, ref_audio=ref_audio_path)
+                    else:
+                        audio = tts_engine.infer(tts_text, voice=actual_voice)
+
+                    if not isinstance(audio, np.ndarray):
+                        audio = np.array(audio, dtype=np.float32)
+                    if audio.ndim > 1:
+                        audio = audio.mean(axis=0)
+
+                    # Ghi trực tiếp PCM 16-bit vào file WAV
+                    pcm_bytes = (audio * 32767).clip(-32768, 32767).astype(np.int16).tobytes()
+                    wf.writeframes(pcm_bytes)
+
+                    seg_dur = len(audio) / sample_rate
+
+                    # Tạo thẻ phụ đề SRT sạch
+                    clean_srt_text = clean_for_srt(raw_text)
+                    if clean_srt_text:
+                        srt_cues.append({
+                            'index': cue_index,
+                            'start_sec': cursor_sec,
+                            'end_sec': cursor_sec + seg_dur,
+                            'text': clean_srt_text,
+                        })
+                        cue_index += 1
+                    cursor_sec += seg_dur
+
+                except Exception as chunk_err:
+                    print(f"[VieNeu] Warning on speech chunk #{done_steps + 1}: {chunk_err}. Continuing with next chunk.")
+
+                # Tự động chèn khoảng ngắt nhịp tự nhiên nếu phía sau không phải thẻ [pause] chỉ định
+                next_is_pause = (i + 1 < len(plan)) and (plan[i + 1]['type'] == 'pause')
+                if not next_is_pause and (i + 1 < len(plan)):
+                    natural_pause = 0.35 if item.get('is_para_end') else 0.15
+                    num_samples = int(sample_rate * natural_pause)
+                    wf.writeframes(b'\x00\x00' * num_samples)
+                    cursor_sec += natural_pause
+
+                done_steps += 1
+                if progress_callback:
+                    progress_callback(done_steps, total_steps)
+
+                # Thu dọn bộ nhớ định kỳ sau mỗi 20 đoạn để giải phóng RAM/VRAM khi xử lý 100k ký tự
+                if done_steps % 20 == 0:
+                    import gc
+                    gc.collect()
+                    if has_gpu:
+                        try:
+                            import torch
+                            if torch.cuda.is_available():
+                                torch.cuda.empty_cache()
+                        except Exception:
+                            pass
+
+    duration = round(time.time() - start_t, 2)
+    return duration, srt_cues
+
+
 
 class TTSRequestHandler(BaseHTTPRequestHandler):
     def _send_json(self, data, status=200):
@@ -490,33 +679,22 @@ class TTSRequestHandler(BaseHTTPRequestHandler):
                     filename += '.wav'
                 target_file = os.path.join(output_dir, filename)
 
-                actual_voice = resolve_actual_voice(voice)
-
-                segments = parse_segments(text)
-                text_segments = [s for s in segments if s['type'] == 'text']
-                total_steps = max(len(text_segments), 1)
-
-                print(f"[VieNeu] Synthesizing {total_steps} segment(s) with voice: {voice}...")
-                start_t = time.time()
-
-                # Emit 0% progress marker
-                sys.stdout.write(f"[PROGRESS] 0/{total_steps}\n")
-                sys.stdout.flush()
-
                 def progress_cb(done, total):
                     sys.stdout.write(f"[PROGRESS] {done}/{total}\n")
                     sys.stdout.flush()
 
-                if ref_audio_path and os.path.exists(ref_audio_path):
-                    print(f"[VieNeu] Cloning from reference: {ref_audio_path}")
-                    audio = tts_engine.infer(text, ref_audio=ref_audio_path)
-                    tts_engine.save(audio, target_file)
-                    srt_path = None
-                else:
-                    combined, srt_cues = synthesize_with_pauses(text, actual_voice, tts_engine, progress_callback=progress_cb)
-                    tts_engine.save(combined, target_file)
+                duration, srt_cues = synthesize_and_stream_to_wav(
+                    text=text,
+                    voice=voice,
+                    target_file=target_file,
+                    tts_engine=tts_engine,
+                    ref_audio_path=ref_audio_path,
+                    progress_callback=progress_cb
+                )
 
-                    # Build & save SRT alongside WAV
+                # Build & save SRT alongside WAV
+                srt_path = None
+                if srt_cues:
                     srt_content = build_srt(srt_cues)
                     srt_file = os.path.splitext(target_file)[0] + '.srt'
                     with open(srt_file, 'w', encoding='utf-8') as f:
@@ -524,8 +702,7 @@ class TTSRequestHandler(BaseHTTPRequestHandler):
                     srt_path = os.path.abspath(srt_file)
                     print(f"[VieNeu] SRT saved: {srt_file}")
 
-                duration = round(time.time() - start_t, 2)
-                print(f"[VieNeu] Saved {target_file} in {duration}s")
+                print(f"[VieNeu] Finished saving {target_file} in {duration}s")
 
                 self._send_json({
                     'success': True,
@@ -534,6 +711,8 @@ class TTSRequestHandler(BaseHTTPRequestHandler):
                     'duration': duration,
                 })
             except Exception as e:
+                import traceback
+                traceback.print_exc()
                 print(f"[VieNeu] Error during synthesis: {e}")
                 self._send_json({'success': False, 'error': str(e)}, status=500)
 

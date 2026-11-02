@@ -277,6 +277,7 @@ export interface IElectronAPI {
   ttsGenerate: (options: TTSGenerateRequest) => Promise<TTSGenerateResponse>;
   ttsPreviewVoice: (voice: string) => Promise<{ success: boolean; filePath?: string; error?: string }>;
   ttsAddVoice: (options: { name: string; audioPath: string; gender: 'male' | 'female'; region?: string; style?: string }) => Promise<{ success: boolean; name?: string; desc?: string; error?: string }>;
+  ttsCancel: () => Promise<{ success: boolean }>;
   onTtsProgress: (callback: (progress: { done: number; total: number; percent: number }) => void) => () => void;
 
   // Media Sync

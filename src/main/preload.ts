@@ -57,6 +57,7 @@ const api: IElectronAPI = {
   ttsGenerate: (options: any) => ipcRenderer.invoke('tts:generate', options),
   ttsPreviewVoice: (voice: string) => ipcRenderer.invoke('tts:previewVoice', voice),
   ttsAddVoice: (options: any) => ipcRenderer.invoke('tts:addVoice', options),
+  ttsCancel: () => ipcRenderer.invoke('tts:cancel'),
   onTtsProgress: (callback: (progress: { done: number; total: number; percent: number }) => void) => {
     const handler = (_event: any, progress: any) => callback(progress);
     ipcRenderer.on('tts:progress', handler);

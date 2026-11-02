@@ -380,6 +380,10 @@ function registerIpcHandlers() {
     return ttsService.addVoice(options);
   });
 
+  ipcMain.handle('tts:cancel', async () => {
+    return ttsService.cancelGeneration();
+  });
+
   ipcMain.handle('tts:generate', async (_e, options: any) => {
     const settings = db.getSettings();
     const projName = options.projectName || settings.defaultProjectName || 'FlowStudioProject';

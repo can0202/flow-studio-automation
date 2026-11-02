@@ -24,6 +24,7 @@ export interface TTSGenerateOptions {
 export interface TTSGenerateResult {
   success: boolean;
   filePath?: string;
+  srtPath?: string;
   duration?: number;
   error?: string;
 }
@@ -68,7 +69,7 @@ class TTSService {
     // 2. Nếu server đã sẵn sàng, lấy danh sách cập nhật từ server
     if (this.isReady) {
       try {
-        const res = await this.httpRequest('/voices');
+        const res = await this.httpRequest('/voices', 'GET', null, 5000);
         if (res && Array.isArray(res.voices) && res.voices.length > 0) {
           return res;
         }
@@ -88,10 +89,16 @@ class TTSService {
   public async generateAudio(options: TTSGenerateOptions, outputDir: string): Promise<TTSGenerateResult> {
     await this.ensureServerStarted();
     try {
-      const res = await this.httpRequest('/generate', 'POST', {
-        ...options,
-        outputDir,
-      });
+      // /generate can process long text up to 100k+ chars; timeout is disabled (0)
+      const res = await this.httpRequest(
+        '/generate',
+        'POST',
+        {
+          ...options,
+          outputDir,
+        },
+        0 // No timeout for long speech synthesis
+      );
       return res;
     } catch (err: any) {
       console.error('[TTSService] Generate failed:', err.message);
@@ -99,11 +106,10 @@ class TTSService {
     }
   }
 
-  
   public async previewVoice(voice: string): Promise<{ success: boolean; filePath?: string; error?: string }> {
     await this.ensureServerStarted();
     try {
-      const res = await this.httpRequest('/preview', 'POST', { voice });
+      const res = await this.httpRequest('/preview', 'POST', { voice }, 60000);
       return res;
     } catch (err: any) {
       console.error('[TTSService] Preview failed:', err.message);
@@ -120,7 +126,7 @@ class TTSService {
   }): Promise<{ success: boolean; name?: string; desc?: string; error?: string }> {
     await this.ensureServerStarted();
     try {
-      const res = await this.httpRequest('/voices/add', 'POST', options);
+      const res = await this.httpRequest('/voices/add', 'POST', options, 60000);
       return res;
     } catch (err: any) {
       console.error('[TTSService] Add voice failed:', err.message);
@@ -130,11 +136,26 @@ class TTSService {
 
   public async checkHealth(): Promise<{ running: boolean; hasGpu: boolean }> {
     try {
-      const res = await this.httpRequest('/health');
+      const res = await this.httpRequest('/health', 'GET', null, 5000);
       return { running: res.status === 'ok', hasGpu: res.hasGpu || false };
     } catch {
       return { running: false, hasGpu: false };
     }
+  }
+
+  public async cancelGeneration(): Promise<{ success: boolean }> {
+    if (this.serverProcess) {
+      console.log('[TTSService] Cancelling generation by restarting python server...');
+      try {
+        this.serverProcess.kill();
+      } catch {}
+      this.serverProcess = null;
+      this.isReady = false;
+      this.isStarting = false;
+      this.ensureServerStarted().catch(() => {});
+      return { success: true };
+    }
+    return { success: false };
   }
 
   private async ensureServerStarted(): Promise<void> {
@@ -213,39 +234,57 @@ class TTSService {
     throw new Error('VieNeu Python server không thể khởi động sau 60 giây.');
   }
 
-  private httpRequest(endpoint: string, method = 'GET', body?: any): Promise<any> {
+  private httpRequest(endpoint: string, method = 'GET', body?: any, timeoutMs?: number): Promise<any> {
     return new Promise((resolve, reject) => {
       const postData = body ? JSON.stringify(body) : '';
-      const req = http.request(
-        {
-          hostname: '127.0.0.1',
-          port: this.port,
-          path: endpoint,
-          method,
-          headers: {
-            'Content-Type': 'application/json',
-            'Content-Length': Buffer.byteLength(postData),
-          },
-          timeout: 120000, // 2 minutes max for long speech synthesis
+      
+      // Determine timeout:
+      // If timeoutMs is provided (e.g. 0), use it.
+      // 0 means NO timeout (for long generation up to 100k+ chars).
+      let effectiveTimeout = 120000;
+      if (timeoutMs !== undefined) {
+        effectiveTimeout = timeoutMs;
+      } else if (endpoint === '/generate') {
+        effectiveTimeout = 0;
+      } else if (endpoint === '/health') {
+        effectiveTimeout = 10000;
+      }
+
+      const reqOptions: http.RequestOptions = {
+        hostname: '127.0.0.1',
+        port: this.port,
+        path: endpoint,
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(postData),
         },
-        (res) => {
-          let data = '';
-          res.on('data', (chunk) => (data += chunk));
-          res.on('end', () => {
-            try {
-              resolve(JSON.parse(data));
-            } catch {
-              resolve({ text: data });
-            }
-          });
-        }
-      );
+      };
+
+      if (effectiveTimeout > 0) {
+        reqOptions.timeout = effectiveTimeout;
+      }
+
+      const req = http.request(reqOptions, (res) => {
+        let data = '';
+        res.on('data', (chunk) => (data += chunk));
+        res.on('end', () => {
+          try {
+            resolve(JSON.parse(data));
+          } catch {
+            resolve({ text: data });
+          }
+        });
+      });
 
       req.on('error', (err) => reject(err));
-      req.on('timeout', () => {
-        req.destroy();
-        reject(new Error('Yêu cầu xử lý âm thanh quá thời gian (timeout 2 phút).'));
-      });
+
+      if (effectiveTimeout > 0) {
+        req.on('timeout', () => {
+          req.destroy();
+          reject(new Error(`Yêu cầu xử lý ${endpoint} quá thời gian (timeout ${Math.round(effectiveTimeout / 60000)} phút).`));
+        });
+      }
 
       if (postData) {
         req.write(postData);
@@ -266,4 +305,3 @@ class TTSService {
 }
 
 export const ttsService = new TTSService();
-

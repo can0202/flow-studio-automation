@@ -462,6 +462,26 @@ export const TTSGenView: React.FC = () => {
     }
   };
 
+  const handleCancelGenerate = async () => {
+    try {
+      if (window.api.ttsCancel) {
+        await window.api.ttsCancel();
+      }
+      setIsGenerating(false);
+      setProgressMsg('');
+      setProgressPercent(0);
+      setProgressDetail('Đã dừng tạo âm thanh.');
+      addNotification({
+        type: 'info',
+        message: 'Đã dừng quá trình tạo âm thanh.',
+      });
+    } catch (e: any) {
+      console.warn('Error cancelling tts:', e);
+    }
+  };
+
+
+
   const handlePlayToggle = () => {
     if (!audioRef.current || !generatedAudioPath) return;
 
@@ -552,7 +572,10 @@ export const TTSGenView: React.FC = () => {
                 {emotionCount > 0 && (
                   <span className="text-amber-400 font-semibold">{emotionCount} cảm xúc</span>
                 )}
-                <span>{text.length} ký tự</span>
+                <span className="font-mono">{text.length.toLocaleString()} ký tự</span>
+                <span className="px-1.5 py-0.5 rounded bg-emerald-950/60 border border-emerald-800/40 text-emerald-400 text-[10px] font-semibold">
+                  Tối đa 100k+ ký tự
+                </span>
               </div>
             </div>
 
@@ -763,24 +786,38 @@ export const TTSGenView: React.FC = () => {
               />
             </div>
 
-            {/* Generate Button */}
-            <button
-              onClick={handleGenerate}
-              disabled={isGenerating}
-              className="w-full py-3.5 px-4 rounded-xl font-bold text-sm bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-lg shadow-violet-600/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isGenerating ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>Đang tạo âm thanh...</span>
-                </>
-              ) : (
-                <>
-                  <Volume2 className="w-4 h-4" />
-                  <span>Tạo File Giọng Đọc</span>
-                </>
+            {/* Generate Button & Cancel Button */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleGenerate}
+                disabled={isGenerating}
+                className="flex-1 py-3.5 px-4 rounded-xl font-bold text-sm bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-lg shadow-violet-600/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isGenerating ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Đang tạo âm thanh...</span>
+                  </>
+                ) : (
+                  <>
+                    <Volume2 className="w-4 h-4" />
+                    <span>Tạo File Giọng Đọc</span>
+                  </>
+                )}
+              </button>
+
+              {isGenerating && (
+                <button
+                  type="button"
+                  onClick={handleCancelGenerate}
+                  className="py-3.5 px-4 rounded-xl font-bold text-sm bg-rose-950/60 hover:bg-rose-900/80 border border-rose-500/50 text-rose-300 transition-all flex items-center justify-center gap-1.5 shadow-md"
+                  title="Dừng quá trình tạo âm thanh hiện tại"
+                >
+                  <X className="w-4 h-4" />
+                  <span>Dừng</span>
+                </button>
               )}
-            </button>
+            </div>
 
             {/* Progress Bar – hiển thị khi đang tạo */}
             {isGenerating && (
@@ -799,11 +836,10 @@ export const TTSGenView: React.FC = () => {
                     style={{ width: `${progressPercent}%` }}
                   />
                 </div>
-                {progressPercent > 0 && progressPercent < 100 && (
-                  <p className="text-[10px] text-slate-500 text-center">
-                    Mỗi đoạn ~1-3s trên CPU · Văn bản dài hơn cần thêm thời gian
-                  </p>
-                )}
+                <p className="text-[10px] text-slate-400 text-center flex items-center justify-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" />
+                  <span>Đang ghi trực tiếp vào file WAV · Hỗ trợ văn bản không giới hạn đến 100k+ ký tự</span>
+                </p>
               </div>
             )}
           </div>
