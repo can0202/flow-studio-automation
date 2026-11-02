@@ -20,6 +20,16 @@ export interface ToastNotification {
   timestamp: number;
 }
 
+export interface CapCutModalState {
+  isOpen: boolean;
+  initialDraftName?: string;
+  initialSrtText?: string;
+  initialSrtPath?: string;
+  initialAudioPath?: string;
+  initialMediaPaths?: string[];
+  initialMediaFolder?: string;
+}
+
 interface AppState {
   activeTab: TabType;
   settings: Settings | null;
@@ -35,6 +45,8 @@ interface AppState {
   toggleQueue: () => Promise<void>;
   addNotification: (notif: { type: 'info' | 'success' | 'warning' | 'error'; message: string }) => void;
   removeNotification: (id: string) => void;
+  openCapCutModal: (payload?: Partial<Omit<CapCutModalState, 'isOpen'>>) => void;
+  closeCapCutModal: () => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -43,8 +55,27 @@ export const useAppStore = create<AppState>((set, get) => ({
   stats: null,
   isQueueRunning: true,
   notifications: [],
+  capcutModal: {
+    isOpen: false,
+  },
 
   setActiveTab: (tab) => set({ activeTab: tab }),
+
+  openCapCutModal: (payload) =>
+    set({
+      capcutModal: {
+        isOpen: true,
+        ...payload,
+      },
+    }),
+
+  closeCapCutModal: () =>
+    set((state) => ({
+      capcutModal: {
+        ...state.capcutModal,
+        isOpen: false,
+      },
+    })),
 
   loadSettings: async () => {
     try {

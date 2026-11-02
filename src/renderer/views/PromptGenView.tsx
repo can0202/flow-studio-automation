@@ -24,6 +24,7 @@ import {
   RotateCw,
   RotateCcw,
   Play,
+  Film,
 } from 'lucide-react';
 
 // ─── SRT Parser ────────────────────────────────────────────────────────────────
@@ -1018,8 +1019,22 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
               </button>
 
               <button
+                onClick={() => {
+                  useAppStore.getState().openCapCutModal({
+                    initialSrtText: srtInput,
+                    initialDraftName: 'SRT_Draft',
+                  });
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#5F2CFF] to-[#7B52FF] hover:from-[#7B52FF] hover:to-[#9B7AFF] text-xs font-bold text-white shadow shadow-[#5F2CFF]/20 transition-all"
+                title="Đưa phụ đề SRT này sang CapCut để ghép video tự động"
+              >
+                <Film className="w-3.5 h-3.5" />
+                Đưa lên CapCut
+              </button>
+
+              <button
                 onClick={handleSendToQueue}
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-gradient-to-r from-[#5F2CFF] to-[#7B52FF] hover:from-[#7B52FF] hover:to-[#7B52FF] text-xs font-bold text-[#1A0A4A] shadow shadow-[#5F2CFF]/20 transition-all"
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-gradient-to-r from-[#5F2CFF] to-[#7B52FF] hover:from-[#7B52FF] hover:to-[#7B52FF] text-xs font-bold text-white shadow shadow-[#5F2CFF]/20 transition-all"
               >
                 <Send className="w-3.5 h-3.5" />
                 Gửi {selectedIndices.size} vào Queue

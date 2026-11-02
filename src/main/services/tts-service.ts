@@ -174,7 +174,13 @@ class TTSService {
     }
 
     this.isStarting = true;
-    const scriptPath = path.join(__dirname, 'vieneu_server.py');
+    let scriptPath = path.join(__dirname, 'vieneu_server.py');
+    if (scriptPath.includes('app.asar')) {
+      const unpacked = scriptPath.replace('app.asar', 'app.asar.unpacked');
+      if (fs.existsSync(unpacked)) {
+        scriptPath = unpacked;
+      }
+    }
     console.log('[TTSService] Starting VieNeu Python server:', scriptPath);
 
     this.serverProcess = spawn('python', ['-u', scriptPath, '--port', String(this.port)], {

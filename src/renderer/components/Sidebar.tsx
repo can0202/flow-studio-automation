@@ -63,7 +63,7 @@ export const Sidebar: React.FC = () => {
             <h1 className="text-sm font-bold tracking-tight text-white flex items-center gap-1.5">
               Flow Studio
               <span className="text-[10px] px-1.5 py-0.5 rounded font-mono font-medium bg-white/10 text-white/70 border border-white/15">
-                MVP
+                v3.0
               </span>
             </h1>
             <p className="text-[11px] text-white/45 font-medium">Nano Banana & Veo 3</p>

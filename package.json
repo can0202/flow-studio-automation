@@ -1,6 +1,6 @@
 {
   "name": "flow-studio-automation",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "Flow Studio Automation - Tự động hoá Google Flow",
   "main": "dist/main/index.cjs",
   "scripts": {
@@ -35,8 +35,18 @@
     ],
     "win": {
       "target": [
-        { "target": "nsis", "arch": ["x64"] },
-        { "target": "portable", "arch": ["x64"] }
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
       ],
       "icon": "build-assets/icon.ico",
       "artifactName": "${productName}-v${version}-${arch}.${ext}"
@@ -58,6 +68,8 @@
     },
     "asar": true,
     "asarUnpack": [
+      "dist/main/assets/**",
+      "dist/main/vieneu_server.py",
       "node_modules/better-sqlite3/**",
       "node_modules/bindings/**",
       "node_modules/file-uri-to-path/**",

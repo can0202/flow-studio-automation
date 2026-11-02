@@ -22,6 +22,7 @@ import {
   LayoutGrid,
   List,
   Trash2,
+  Film,
 } from 'lucide-react';
 
 const toMediaUrl = (filePath: string) => {
@@ -465,6 +466,22 @@ export const OutputsView: React.FC = () => {
           >
             <Tag className="w-3.5 h-3.5 text-sky-700" />
             <span>Đặt tên hàng loạt</span>
+          </button>
+
+          {/* CapCut Export Button */}
+          <button
+            onClick={() => {
+              const imagePaths = filteredOutputs.filter(o => o.type === 'image').map(o => o.path);
+              useAppStore.getState().openCapCutModal({
+                initialMediaPaths: imagePaths.length > 0 ? imagePaths : undefined,
+                initialDraftName: filterProject !== 'all' ? filterProject : 'FlowStudio_Draft',
+              });
+            }}
+            className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-white hover:bg-[#F0F3FF] text-[#1A0A4A] border border-[#C4CEFF] hover:border-[#5F2CFF] transition-all flex items-center gap-2 shadow-sm"
+            title="Tạo bản nháp CapCut từ các ảnh trong danh sách hiện tại"
+          >
+            <Film className="w-3.5 h-3.5 text-[#5F2CFF]" />
+            <span>Tạo CapCut Draft</span>
           </button>
 
           {/* Sync from Google Flow Button */}

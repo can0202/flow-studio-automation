@@ -239,7 +239,7 @@ export const VideoGenView: React.FC = () => {
               type="button"
               onClick={() => setIsBatchMode(false)}
               className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all ${!isBatchMode
-                ? 'bg-[#7B52FF] text-white shadow-md shadow-[#5F2CFF]/20'
+                ? 'bg-[#5F2CFF] text-white shadow-md shadow-[#5F2CFF]/20'
                 : 'text-[#4A4070] hover:text-[#1A0A4A]'
                 }`}
             >
@@ -263,7 +263,7 @@ export const VideoGenView: React.FC = () => {
           <div className="p-6 rounded-2xl border border-[#E2E6FF] bg-white space-y-4">
             <div className="flex items-center justify-between">
               <label className="text-sm font-bold text-[#1A0A4A] flex items-center gap-2">
-                <Film className="w-4 h-4 text-[#7B52FF]" />
+                <Film className="w-4 h-4 text-[#5F2CFF]" />
                 <span>
                   {isBatchMode
                     ? 'Danh sách Prompt Cảnh Video (Mỗi dòng là 1 cảnh)'
@@ -271,7 +271,7 @@ export const VideoGenView: React.FC = () => {
                 </span>
               </label>
               {isBatchMode ? (
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#7B52FF]/10 text-[#7B52FF] border border-[#7B52FF]/20">
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#5F2CFF] text-white border border-[#7B52FF]/20">
                   {promptLines.length} cảnh (video)
                 </span>
               ) : (
@@ -295,8 +295,8 @@ export const VideoGenView: React.FC = () => {
             {isBatchMode && (
               <div className="p-4 rounded-xl border border-[#7B52FF]/25 bg-gradient-to-r bg-[#F0F3FF] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-[#7B52FF]/20 text-[#7B52FF] mt-0.5 shrink-0">
-                    <Link2 className="w-5 h-5" />
+                  <div className="p-2 rounded-lg bg-[#5F2CFF] text-white mt-0.5 shrink-0">
+                    <Link2 className="w-5 h-5 " />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
@@ -306,7 +306,7 @@ export const VideoGenView: React.FC = () => {
                       </span>
                     </div>
                     <p className="text-[11px] text-[#4A4070] mt-0.5 leading-relaxed">
-                      Tự động trích xuất <span className="text-[#9B7AFF] font-semibold">khung hình cuối (Last Frame)</span> của video trước làm ảnh tham chiếu bắt đầu cho video tiếp theo. Giữ nguyên nhân vật, góc máy và bối cảnh!
+                      Tự động trích xuất <span className="text-[#5F2CFF] font-semibold">khung hình cuối (Last Frame)</span> của video trước làm ảnh tham chiếu bắt đầu cho video tiếp theo. Giữ nguyên nhân vật, góc máy và bối cảnh!
                     </p>
                   </div>
                 </div>
@@ -315,13 +315,13 @@ export const VideoGenView: React.FC = () => {
                   type="button"
                   onClick={() => setIsChaining(!isChaining)}
                   className={`px-3.5 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shrink-0 ${isChaining
-                    ? 'bg-[#7B52FF] text-white shadow-md shadow-[#5F2CFF]/20'
+                    ? 'bg-[#5F2CFF] text-white shadow-md shadow-[#5F2CFF]/20'
                     : 'bg-[#F0F3FF] text-[#4A4070] hover:text-[#1A0A4A]'
                     }`}
                 >
                   {isChaining ? (
                     <>
-                      <CheckCircle2 className="w-3.5 h-3.5 text-[#1A0A4A]" />
+                      <CheckCircle2 className="w-3.5 h-3.5 text-white" />
                       <span>Đang Bật Nối Cảnh</span>
                     </>
                   ) : (
@@ -409,7 +409,7 @@ export const VideoGenView: React.FC = () => {
           <div className="p-6 rounded-2xl border border-[#E2E6FF] bg-white space-y-6">
             <div>
               <label className="text-sm font-bold text-[#1A0A4A] flex items-center gap-2 mb-3">
-                <Layers className="w-4 h-4 text-[#7B52FF]" />
+                <Layers className="w-4 h-4 text-[#5F2CFF]" />
                 <span>Tỷ lệ khung hình (Aspect Ratio)</span>
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -425,7 +425,7 @@ export const VideoGenView: React.FC = () => {
                         }`}
                     >
                       <span className="text-sm font-bold block">{ratio.label}</span>
-                      <span className="text-[11px] text-[#4A4070] block mt-0.5">{ratio.desc}</span>
+                      <span className="text-[11px]  block mt-0.5">{ratio.desc}</span>
                     </button>
                   );
                 })}
@@ -576,7 +576,7 @@ export const VideoGenView: React.FC = () => {
               <button
                 disabled={isSubmitting || (isBatchMode ? promptLines.length === 0 : !prompt.trim())}
                 onClick={() => handleCreate(true)}
-                className="flex-1 py-3 px-4 rounded-xl font-semibold text-sm bg-gradient-to-r from-[#5F2CFF] to-[#7B52FF] hover:from-[#7B52FF] hover:to-[#9B7AFF] text-white shadow-lg shadow-[#5F2CFF]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 py-3 px-4 rounded-xl font-semibold text-sm bg-[#5F2CFF] hover:from-[#7B52FF] hover:to-[#9B7AFF] text-white shadow-lg shadow-[#5F2CFF]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <Send className="w-4 h-4" />
                 <span>

@@ -38,6 +38,7 @@ import {
   Feather,
   Upload,
   Trash2,
+  Film,
 } from 'lucide-react';
 
 // Helper lấy màu avatar theo thương hiệu VieNeu
@@ -881,10 +882,25 @@ export const TTSGenView: React.FC = () => {
               <div className="flex items-center gap-2 pt-1">
                 <button
                   onClick={handlePlayToggle}
-                  className="flex-1 py-2 px-3 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-[#1A0A4A] transition-colors flex items-center justify-center gap-1.5"
+                  className="flex-1 py-2 px-3 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors flex items-center justify-center gap-1.5"
                 >
                   {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                  <span>{isPlaying ? 'Tạm dừng' : 'Nghe thử trực tiếp'}</span>
+                  <span>{isPlaying ? 'Tạm dừng' : 'Nghe thử'}</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    useAppStore.getState().openCapCutModal({
+                      initialAudioPath: generatedAudioPath,
+                      initialSrtPath: generatedSrtPath || undefined,
+                      initialDraftName: projectName || 'TTS_Draft',
+                    });
+                  }}
+                  className="flex-1 py-2 px-3 rounded-lg text-xs font-bold bg-gradient-to-r from-[#5F2CFF] to-[#7B52FF] hover:from-[#7B52FF] hover:to-[#9B7AFF] text-white shadow-sm transition-all flex items-center justify-center gap-1.5"
+                  title="Tạo bản nháp CapCut tự động với file giọng đọc và phụ đề này"
+                >
+                  <Film className="w-4 h-4" />
+                  <span>Đưa lên CapCut</span>
                 </button>
 
                 {generatedSrtPath && (

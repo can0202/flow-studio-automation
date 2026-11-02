@@ -223,6 +223,38 @@ export interface BatchRenameOptions {
   namingConfig: BatchNamingConfig;
 }
 
+
+export interface CapCutDraftOptions {
+  draftName?: string;
+  audioPath?: string;
+  srtContent?: string;
+  srtPath?: string;
+  mediaPaths?: string[];
+  mediaFolder?: string;
+  aspectRatio?: '16:9' | '9:16' | '1:1';
+  subtitleFontSize?: number;
+  copyMediaToDraft?: boolean;
+  openCapCut?: boolean;
+}
+
+export interface CapCutDraftResult {
+  success: boolean;
+  draftName: string;
+  draftPath: string;
+  cueCount: number;
+  mediaCount: number;
+  totalDurationSec: number;
+  message: string;
+  error?: string;
+}
+
+export interface CapCutDetectResult {
+  installed: boolean;
+  draftsPath: string;
+  executablePath?: string;
+  version?: string;
+}
+
 export interface IElectronAPI {
   // App & settings
   getSettings: () => Promise<Settings>;
@@ -284,6 +316,14 @@ export interface IElectronAPI {
   startMediaSync: (options: SyncMediaOptions) => Promise<{ success: boolean; downloaded: number; skipped: number; message: string }>;
   cancelMediaSync: () => Promise<void>;
   scanProjects: (sessionId?: string) => Promise<{ success: boolean; projects: DiscoveredProject[]; message: string }>;
+
+  
+  // CapCut Automation
+  capcutDetect: () => Promise<CapCutDetectResult>;
+  capcutCreateDraft: (options: CapCutDraftOptions) => Promise<CapCutDraftResult>;
+  capcutSelectSrtFile: () => Promise<{ filePath: string; content: string } | null>;
+  capcutOpenDraftFolder: (draftPath: string) => Promise<void>;
+  capcutLaunch: () => Promise<boolean>;
 
   // Event Listeners
   onQueueStatsUpdated: (callback: (stats: QueueStats) => void) => () => void;

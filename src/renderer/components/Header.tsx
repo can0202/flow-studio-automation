@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAppStore, type TabType } from '../store/app-store.ts';
-import { CheckCircle2, AlertCircle, AlertTriangle, Info, X, Zap } from 'lucide-react';
+import { CheckCircle2, AlertCircle, AlertTriangle, Info, X, Zap, Film } from 'lucide-react';
 
 const VIEW_TITLES: Record<TabType, { title: string; desc: string }> = {
   dashboard: { title: 'Bảng điều khiển', desc: 'Tổng quan hệ thống, số liệu tạo nội dung và trạng thái các phiên đang hoạt động' },
@@ -17,7 +17,7 @@ const VIEW_TITLES: Record<TabType, { title: string; desc: string }> = {
 
 
 export const Header: React.FC = () => {
-  const { activeTab, settings, stats, notifications, removeNotification, updateSettings } = useAppStore();
+  const { activeTab, settings, stats, notifications, removeNotification, updateSettings, openCapCutModal } = useAppStore();
   const currentView = VIEW_TITLES[activeTab] || { title: 'Flow Studio', desc: '' };
 
   return (
@@ -35,6 +35,16 @@ export const Header: React.FC = () => {
             <span>Chế độ Giả lập Đang bật</span>
           </div>
         )}
+
+        {/* CapCut Quick Draft button */}
+        <button
+          onClick={() => openCapCutModal()}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#5F2CFF] to-[#7B52FF] hover:from-[#7B52FF] hover:to-[#9B7AFF] text-white text-xs font-bold shadow-sm shadow-[#5F2CFF]/20 transition-all cursor-pointer"
+          title="Tạo nhanh bản nháp CapCut PC (tự động khớp SRT, audio, ảnh)"
+        >
+          <Film className="w-3.5 h-3.5" />
+          <span>CapCut Draft</span>
+        </button>
 
         {/* Quick KPI badge */}
         <div className="flex items-center gap-3 px-3 py-1.5 rounded-lg bg-white border border-[#E2E6FF] shadow-sm text-xs font-mono">

@@ -324,7 +324,7 @@ export const ImageGenView: React.FC = () => {
                       }`}
                   >
                     <span className="text-base font-bold font-mono">x{cnt}</span>
-                    <span className="text-[10px] text-[#4A4070]">
+                    <span className="text-[10px]">
                       {cnt === 1 ? '1 ảnh / prompt' : `${cnt} ảnh / prompt`}
                     </span>
                   </button>

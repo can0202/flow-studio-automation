@@ -69,6 +69,14 @@ const api: IElectronAPI = {
   cancelMediaSync: () => ipcRenderer.invoke('sync:cancel'),
   scanProjects: (sessionId?: string) => ipcRenderer.invoke('sync:scanProjects', sessionId ?? ''),
 
+  
+  // CapCut Automation
+  capcutDetect: () => ipcRenderer.invoke('capcut:detect'),
+  capcutCreateDraft: (options: any) => ipcRenderer.invoke('capcut:createDraft', options),
+  capcutSelectSrtFile: () => ipcRenderer.invoke('capcut:selectSrtFile'),
+  capcutOpenDraftFolder: (draftPath: string) => ipcRenderer.invoke('capcut:openDraftFolder', draftPath),
+  capcutLaunch: () => ipcRenderer.invoke('capcut:launch'),
+
   // Event Listeners
   onQueueStatsUpdated: (callback: (stats: QueueStats) => void) => {
     const handler = (_event: any, stats: QueueStats) => callback(stats);

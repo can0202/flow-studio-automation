@@ -5,6 +5,7 @@ import { useAppStore } from './store/app-store.ts';
 import { useQueueStore } from './store/queue-store.ts';
 import { useSessionStore } from './store/session-store.ts';
 import { DashboardView } from './views/DashboardView.tsx';
+import { CapCutExportModal } from './components/CapCutExportModal.tsx';
 
 // Code-split heavy views with React.lazy to make initial app launch instantaneous
 const ImageGenView = lazy(() => import('./views/ImageGenView.tsx').then((m) => ({ default: m.ImageGenView })));
@@ -18,7 +19,7 @@ const PromptGenView = lazy(() => import('./views/PromptGenView.tsx').then((m) =>
 const TTSGenView = lazy(() => import('./views/TTSGenView.tsx').then((m) => ({ default: m.TTSGenView })));
 
 export const App: React.FC = () => {
-  const { activeTab, loadSettings, loadStats, addNotification } = useAppStore();
+  const { activeTab, loadSettings, loadStats, addNotification, capcutModal, closeCapCutModal } = useAppStore();
   const { loadJobs, handleJobUpdate } = useQueueStore();
   const { loadSessions, handleSessionUpdate } = useSessionStore();
 
@@ -103,6 +104,17 @@ export const App: React.FC = () => {
           </Suspense>
         </main>
       </div>
+
+      <CapCutExportModal
+        isOpen={capcutModal.isOpen}
+        onClose={closeCapCutModal}
+        initialDraftName={capcutModal.initialDraftName}
+        initialSrtText={capcutModal.initialSrtText}
+        initialSrtPath={capcutModal.initialSrtPath}
+        initialAudioPath={capcutModal.initialAudioPath}
+        initialMediaPaths={capcutModal.initialMediaPaths}
+        initialMediaFolder={capcutModal.initialMediaFolder}
+      />
     </div>
   );
 };

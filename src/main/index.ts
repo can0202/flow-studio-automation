@@ -1,3 +1,4 @@
+import { CapCutDraftService } from './services/capcut-draft-service.ts';
 import { app, BrowserWindow, ipcMain, dialog, protocol, shell } from 'electron';
 import path from 'path';
 import fs from 'fs';
@@ -392,6 +393,43 @@ function registerIpcHandlers() {
   });
 
 }
+
+
+  // CapCut Automation Handlers
+  ipcMain.handle('capcut:detect', async () => {
+    return CapCutDraftService.detect();
+  });
+
+  ipcMain.handle('capcut:createDraft', async (_e, options: any) => {
+    return CapCutDraftService.createDraft(options);
+  });
+
+  ipcMain.handle('capcut:selectSrtFile', async () => {
+    const res = await dialog.showOpenDialog(mainWindow!, {
+      title: 'Chọn file phụ đề SRT',
+      filters: [{ name: 'Subtitles', extensions: ['srt', 'vtt', 'txt'] }],
+      properties: ['openFile'],
+    });
+    if (res.canceled || res.filePaths.length === 0) return null;
+    const filePath = res.filePaths[0];
+    const content = fs.readFileSync(filePath, 'utf-8');
+    return { filePath, content };
+  });
+
+  ipcMain.handle('capcut:openDraftFolder', async (_e, draftPath: string) => {
+    if (draftPath && fs.existsSync(draftPath)) {
+      shell.openPath(draftPath);
+    }
+  });
+
+  ipcMain.handle('capcut:launch', async () => {
+    const info = CapCutDraftService.detect();
+    if (info.executablePath && fs.existsSync(info.executablePath)) {
+      shell.openPath(info.executablePath);
+      return true;
+    }
+    return false;
+  });
 
 function registerProtocolHandlers() {
   protocol.handle('app-media', async (request) => {
