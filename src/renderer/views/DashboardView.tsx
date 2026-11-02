@@ -23,12 +23,12 @@ export const DashboardView: React.FC = () => {
   const { sessions } = useSessionStore();
 
   const kpis = [
-    { label: 'Job đang chờ', value: stats?.pending || 0, icon: Clock, color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20' },
-    { label: 'Đang xử lý', value: stats?.running || 0, icon: Play, color: 'text-[#CFFF74]', bg: 'bg-[#CFFF74]/10 border-[#CFFF74]/20' },
-    { label: 'Chờ duyệt', value: stats?.waiting_for_user || 0, icon: UserCheck, color: 'text-[#67E8F9]', bg: 'bg-[#67E8F9]/10 border-[#67E8F9]/20' },
-    { label: 'Hoàn thành', value: stats?.completed || 0, icon: CheckCircle2, color: 'text-[#A8D95A]', bg: 'bg-[#A8D95A]/10 border-[#A8D95A]/20' },
-    { label: 'Thất bại', value: stats?.failed || 0, icon: XCircle, color: 'text-rose-400', bg: 'bg-rose-500/10 border-rose-500/20' },
-    { label: 'Phiên hoạt động', value: stats?.activeSessions || 0, icon: Globe, color: 'text-[#9DB87A]', bg: 'bg-[#3A4F22]/40 border-[#3A4F22]' },
+    { label: 'Job đang chờ', value: stats?.pending || 0, icon: Clock, color: 'text-amber-700', bg: 'bg-amber-50 border-amber-200' },
+    { label: 'Đang xử lý', value: stats?.running || 0, icon: Play, color: 'text-[#5F2CFF]', bg: 'bg-[#5F2CFF]/10 border-[#5F2CFF]/20' },
+    { label: 'Chờ duyệt', value: stats?.waiting_for_user || 0, icon: UserCheck, color: 'text-[#0EA5E9]', bg: 'bg-[#0EA5E9]/10 border-[#0EA5E9]/20' },
+    { label: 'Hoàn thành', value: stats?.completed || 0, icon: CheckCircle2, color: 'text-[#7B52FF]', bg: 'bg-[#7B52FF]/10 border-[#7B52FF]/20' },
+    { label: 'Thất bại', value: stats?.failed || 0, icon: XCircle, color: 'text-rose-600', bg: 'bg-rose-50 border-rose-200' },
+    { label: 'Phiên hoạt động', value: stats?.activeSessions || 0, icon: Globe, color: 'text-[#4A4070]', bg: 'bg-[#E8ECFF] border-[#C4CEFF]' },
   ];
 
   const recentJobs = jobs.slice(0, 6);
@@ -76,16 +76,16 @@ export const DashboardView: React.FC = () => {
     <div className="p-8 space-y-8 overflow-y-auto max-h-[calc(100vh-4rem)]">
       {/* Simulation Banner & Quick Test Bar */}
       {settings?.simulationMode && (
-        <div className="p-5 rounded-2xl bg-gradient-to-r from-amber-950/40 via-amber-900/20 to-[#1A2410]/60 border border-amber-500/30 shadow-lg relative overflow-hidden">
+        <div className="p-5 rounded-2xl bg-amber-50/80 border border-amber-300/60 shadow-sm relative overflow-hidden">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
-                <span className="p-1.5 rounded-lg bg-amber-500/20 text-amber-400">
-                  <Zap className="w-5 h-5 fill-amber-400 text-amber-400" />
+                <span className="p-1.5 rounded-lg bg-amber-500/20 text-amber-700">
+                  <Zap className="w-5 h-5 fill-amber-400 text-amber-700" />
                 </span>
-                <h3 className="text-base font-bold text-[#E8F5D0]">Chế độ Giả lập đang bật (Mock Provider)</h3>
+                <h3 className="text-base font-bold text-[#1A0A4A]">Chế độ Giả lập đang bật (Mock Provider)</h3>
               </div>
-              <p className="text-xs text-amber-200/80 mt-1 max-w-2xl">
+              <p className="text-xs text-amber-700/80 mt-1 max-w-2xl">
                 Ứng dụng đang chạy ở Chế độ Giả lập. Thử nghiệm logic hàng đợi, đồng thời, giải quyết phụ thuộc, retry backoff và lưu file cục bộ mà không gửi yêu cầu tới Google Flow.
               </p>
             </div>
@@ -93,28 +93,28 @@ export const DashboardView: React.FC = () => {
             <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={handleSimulateImage}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#CFFF74] hover:bg-[#A8D95A] text-[#111A09] shadow-md transition-all flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#5F2CFF] hover:bg-[#7B52FF] text-white shadow-md transition-all flex items-center gap-1.5"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>+ Thêm job ảnh</span>
               </button>
               <button
                 onClick={handleSimulateVideo}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#A8D95A] hover:bg-[#CFFF74] text-[#111A09] shadow-md transition-all flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#7B52FF] hover:bg-[#5F2CFF] text-white shadow-md transition-all flex items-center gap-1.5"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>+ Thêm job video</span>
               </button>
               <button
                 onClick={handleSimulateRetry}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 transition-all flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/20 hover:bg-amber-100 text-amber-700 border border-amber-200 transition-all flex items-center gap-1.5"
               >
                 <RotateCw className="w-3.5 h-3.5" />
                 <span>Kiểm tra Retry</span>
               </button>
               <button
                 onClick={handleSimulateQuota}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 transition-all flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-50 hover:bg-rose-500/30 text-rose-500 border border-rose-200 transition-all flex items-center gap-1.5"
               >
                 <AlertTriangle className="w-3.5 h-3.5" />
                 <span>Kiểm tra Quota</span>
@@ -131,16 +131,16 @@ export const DashboardView: React.FC = () => {
           return (
             <div
               key={idx}
-              className="p-4 rounded-xl border border-[#3A4F22] bg-[#1A2410] flex flex-col justify-between hover:scale-[1.02] transition-transform duration-200"
+              className="p-4 rounded-xl border border-[#E2E6FF] bg-white flex flex-col justify-between hover:scale-[1.02] transition-transform duration-200"
             >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-[#9DB87A]">{kpi.label}</span>
+                <span className="text-xs font-medium text-[#4A4070]">{kpi.label}</span>
                 <div className={`p-2 rounded-lg ${kpi.bg}`}>
                   <Icon className={`w-4 h-4 ${kpi.color}`} />
                 </div>
               </div>
               <div className="mt-3">
-                <span className="text-2xl font-extrabold text-[#E8F5D0] tracking-tight">{kpi.value}</span>
+                <span className="text-2xl font-extrabold text-[#1A0A4A] tracking-tight">{kpi.value}</span>
               </div>
             </div>
           );
@@ -149,19 +149,19 @@ export const DashboardView: React.FC = () => {
 
       {/* Attention Alert if any session is in auth_required or quota_exhausted */}
       {sessions.some((s) => s.status === 'auth_required' || s.status === 'quota_exhausted') && (
-        <div className="p-4 rounded-xl bg-rose-950/40 border border-rose-500/30 flex items-center justify-between">
+        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <AlertTriangle className="w-5 h-5 text-rose-400" />
+            <AlertTriangle className="w-5 h-5 text-rose-600" />
             <div>
-              <h4 className="text-sm font-bold text-rose-200">Phiên cần chú ý</h4>
-              <p className="text-xs text-rose-300/80">
+              <h4 className="text-sm font-bold text-rose-500">Phiên cần chú ý</h4>
+              <p className="text-xs text-rose-500/80">
                 Một hoặc nhiều phiên trình duyệt gặp giới hạn quota hoặc cần đăng nhập Google.
               </p>
             </div>
           </div>
           <button
             onClick={() => setActiveTab('sessions')}
-            className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-500 text-white transition-colors flex items-center gap-1.5"
+            className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-500 text-[#1A0A4A] transition-colors flex items-center gap-1.5"
           >
             <span>Quản lý phiên</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -172,17 +172,17 @@ export const DashboardView: React.FC = () => {
       {/* Recent Activity & Sessions Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Jobs (2 cols) */}
-        <div className="lg:col-span-2 rounded-2xl border border-[#3A4F22] bg-[#1A2410] p-5 space-y-4">
+        <div className="lg:col-span-2 rounded-2xl border border-[#E2E6FF] bg-white p-5 space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-bold text-[#E8F5D0] tracking-tight">Hoạt động Job gần đây</h3>
-              <p className="text-xs text-[#9DB87A]">Tiến độ trực tiếp và chuyển đổi trạng thái trong hàng đợi SQLite bền vững</p>
+              <h3 className="text-sm font-bold text-[#1A0A4A] tracking-tight">Hoạt động Job gần đây</h3>
+              <p className="text-xs text-[#4A4070]">Tiến độ trực tiếp và chuyển đổi trạng thái trong hàng đợi SQLite bền vững</p>
             </div>
             <div className="flex items-center gap-2">
               {(stats?.failed || 0) > 0 && (
                 <button
                   onClick={retryFailed}
-                  className="px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 transition-colors flex items-center gap-1"
+                  className="px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-50 transition-colors flex items-center gap-1"
                 >
                   <RotateCw className="w-3 h-3" />
                   <span>Thử lại thất bại</span>
@@ -190,7 +190,7 @@ export const DashboardView: React.FC = () => {
               )}
               <button
                 onClick={() => setActiveTab('queue')}
-                className="text-xs font-semibold text-[#CFFF74] hover:text-[#A8D95A] flex items-center gap-1"
+                className="text-xs font-semibold text-[#5F2CFF] hover:text-[#7B52FF] flex items-center gap-1"
               >
                 <span>Xem tất cả</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -199,7 +199,7 @@ export const DashboardView: React.FC = () => {
           </div>
 
           {recentJobs.length === 0 ? (
-            <div className="py-12 text-center text-[#6B7F52] text-xs">
+            <div className="py-12 text-center text-[#8B85B8] text-xs">
               Chưa có job nào. Nhấn &quot;+ Thêm job ảnh&quot; hoặc truy cập Tạo ảnh để bắt đầu.
             </div>
           ) : (
@@ -209,38 +209,36 @@ export const DashboardView: React.FC = () => {
                 return (
                   <div
                     key={job.id}
-                    className="p-3 rounded-xl bg-[#243218] border border-[#3A4F22]/80 hover:border-[#4A6328]/80 flex items-center justify-between gap-4 transition-all"
+                    className="p-3 rounded-xl bg-[#F0F3FF] border border-[#E2E6FF]/80 hover:border-[#C4CEFF]/80 flex items-center justify-between gap-4 transition-all"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${
-                          isImage
-                            ? 'bg-[#CFFF74]/10 text-[#CFFF74] border border-[#CFFF74]/20'
-                            : 'bg-[#A8D95A]/10 text-[#A8D95A] border border-[#A8D95A]/20'
-                        }`}
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${isImage
+                            ? 'bg-[#5F2CFF]/10 text-[#5F2CFF] border border-[#5F2CFF]/20'
+                            : 'bg-[#7B52FF]/10 text-[#7B52FF] border border-[#7B52FF]/20'
+                          }`}
                       >
                         {job.type}
                       </span>
                       <div className="min-w-0">
-                        <p className="text-xs font-semibold text-[#E8F5D0] truncate">{job.name}</p>
-                        <p className="text-[11px] text-[#9DB87A] truncate max-w-md">{job.prompt}</p>
+                        <p className="text-xs font-semibold text-[#1A0A4A] truncate">{job.name}</p>
+                        <p className="text-[11px] text-[#4A4070] truncate max-w-md">{job.prompt}</p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-3 shrink-0">
                       {/* Status badge */}
                       <span
-                        className={`text-[11px] font-medium px-2.5 py-1 rounded-full ${
-                          job.status === 'completed'
-                            ? 'bg-[#CFFF74]/10 text-[#CFFF74] border border-[#CFFF74]/20'
+                        className={`text-[11px] font-medium px-2.5 py-1 rounded-full ${job.status === 'completed'
+                            ? 'bg-[#5F2CFF]/10 text-[#5F2CFF] border border-[#5F2CFF]/20'
                             : job.status === 'running' || job.status === 'downloading'
-                            ? 'bg-[#A8D95A]/10 text-[#A8D95A] border border-[#A8D95A]/20 animate-pulse'
-                            : job.status === 'waiting_for_user'
-                            ? 'bg-[#67E8F9]/10 text-[#67E8F9] border border-[#67E8F9]/20'
-                            : job.status === 'failed'
-                            ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                            : 'bg-[#2F3A1D] text-[#9DB87A]'
-                        }`}
+                              ? 'bg-[#7B52FF]/10 text-[#7B52FF] border border-[#7B52FF]/20 animate-pulse'
+                              : job.status === 'waiting_for_user'
+                                ? 'bg-[#67E8F9]/10 text-[#0EA5E9] border border-[#67E8F9]/20'
+                                : job.status === 'failed'
+                                  ? 'bg-rose-50 text-rose-600 border border-rose-200'
+                                  : 'bg-[#E8ECFF] text-[#4A4070]'
+                          }`}
                       >
                         {JOB_STATUS_NAMES[job.status] || job.status}
                       </span>
@@ -249,7 +247,7 @@ export const DashboardView: React.FC = () => {
                       {job.status === 'waiting_for_user' && (
                         <button
                           onClick={() => approveJob(job.id)}
-                          className="px-2 py-1 rounded bg-[#CFFF74] hover:bg-[#A8D95A] text-[#111A09] text-[11px] font-semibold"
+                          className="px-2 py-1 rounded bg-[#5F2CFF] hover:bg-[#7B52FF] text-white text-[11px] font-semibold"
                         >
                           Duyệt
                         </button>
@@ -263,15 +261,15 @@ export const DashboardView: React.FC = () => {
         </div>
 
         {/* Sessions Status (1 col) */}
-        <div className="rounded-2xl border border-[#3A4F22] bg-[#1A2410] p-5 space-y-4">
+        <div className="rounded-2xl border border-[#E2E6FF] bg-white p-5 space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-bold text-[#E8F5D0] tracking-tight">Phiên hoạt động</h3>
-              <p className="text-xs text-[#9DB87A]">Hồ sơ trình duyệt Google Flow</p>
+              <h3 className="text-sm font-bold text-[#1A0A4A] tracking-tight">Phiên hoạt động</h3>
+              <p className="text-xs text-[#4A4070]">Hồ sơ trình duyệt Google Flow</p>
             </div>
             <button
               onClick={() => setActiveTab('sessions')}
-              className="text-xs font-semibold text-[#CFFF74] hover:text-[#A8D95A]"
+              className="text-xs font-semibold text-[#5F2CFF] hover:text-[#7B52FF]"
             >
               Quản lý
             </button>
@@ -280,8 +278,8 @@ export const DashboardView: React.FC = () => {
           <div className="space-y-3">
             {sessions.map((session) => {
               const statusColors: Record<string, string> = {
-                ready: 'bg-[#CFFF74]',
-                busy: 'bg-[#A8D95A] animate-pulse',
+                ready: 'bg-[#5F2CFF]',
+                busy: 'bg-[#7B52FF] animate-pulse',
                 auth_required: 'bg-amber-400',
                 quota_exhausted: 'bg-rose-400',
                 disabled: 'bg-[#6B7F52]',
@@ -291,18 +289,18 @@ export const DashboardView: React.FC = () => {
               return (
                 <div
                   key={session.id}
-                  className="p-3 rounded-xl bg-[#243218] border border-[#3A4F22] flex items-center justify-between"
+                  className="p-3 rounded-xl bg-[#F0F3FF] border border-[#E2E6FF] flex items-center justify-between"
                 >
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <span className={`w-2 h-2 rounded-full ${statusColors[session.status] || 'bg-[#6B7F52]'}`} />
-                      <span className="text-xs font-semibold text-[#E8F5D0] truncate">{session.name}</span>
+                      <span className="text-xs font-semibold text-[#1A0A4A] truncate">{session.name}</span>
                     </div>
-                    <p className="text-[10px] text-[#9DB87A] truncate mt-0.5 font-mono">
+                    <p className="text-[10px] text-[#4A4070] truncate mt-0.5 font-mono">
                       {session.notes || session.profileDir.split(/[\\\/]/).pop()}
                     </p>
                   </div>
-                  <span className="text-[10px] font-semibold text-[#9DB87A] uppercase tracking-wider">
+                  <span className="text-[10px] font-semibold text-[#4A4070] uppercase tracking-wider">
                     {session.status.replace('_', ' ')}
                   </span>
                 </div>
@@ -313,7 +311,7 @@ export const DashboardView: React.FC = () => {
           <div className="pt-2">
             <button
               onClick={() => setActiveTab('sessions')}
-              className="w-full py-2 rounded-xl text-xs font-semibold bg-[#2F3A1D] hover:bg-[#3A4F22] text-[#9DB87A] border border-[#3A4F22] transition-colors"
+              className="w-full py-2 rounded-xl text-xs font-semibold bg-[#E8ECFF] hover:bg-[#E8ECFF] text-[#4A4070] border border-[#E2E6FF] transition-colors"
             >
               + Thêm / Cấu hình Phiên
             </button>

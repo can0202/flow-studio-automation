@@ -21,37 +21,37 @@ export const Header: React.FC = () => {
   const currentView = VIEW_TITLES[activeTab] || { title: 'Flow Studio', desc: '' };
 
   return (
-    <header className="h-16 px-8 border-b border-[#3A4F22]/60 bg-[#111A09]/90 backdrop-blur-md flex items-center justify-between sticky top-0 z-30">
+    <header className="h-16 px-8 border-b border-[#E2E6FF] bg-white shadow-sm flex items-center justify-between sticky top-0 z-30">
       <div>
-        <h2 className="text-base font-bold text-[#CFFF74] tracking-tight">{currentView.title}</h2>
-        <p className="text-xs text-[#9DB87A]">{currentView.desc}</p>
+        <h2 className="text-base font-bold text-[#5F2CFF] tracking-tight">{currentView.title}</h2>
+        <p className="text-xs text-[#4A4070]">{currentView.desc}</p>
       </div>
 
       <div className="flex items-center gap-4">
         {/* Simulation Mode warning badge */}
         {settings?.simulationMode && (
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold">
-            <Zap className="w-3.5 h-3.5 fill-amber-400 text-amber-400 animate-pulse" />
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-xs font-semibold">
+            <Zap className="w-3.5 h-3.5 fill-amber-400 text-amber-700 animate-pulse" />
             <span>Chế độ Giả lập Đang bật</span>
           </div>
         )}
 
         {/* Quick KPI badge */}
-        <div className="flex items-center gap-3 px-3 py-1.5 rounded-lg bg-[#1A2410] border border-[#3A4F22] text-xs font-mono">
+        <div className="flex items-center gap-3 px-3 py-1.5 rounded-lg bg-white border border-[#E2E6FF] shadow-sm text-xs font-mono">
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-[#CFFF74] animate-pulse" />
-            <span className="text-[#9DB87A]">Đang chạy:</span>
-            <span className="font-bold text-[#CFFF74]">{stats?.running || 0}</span>
+            <span className="w-2 h-2 rounded-full bg-[#5F2CFF] animate-pulse" />
+            <span className="text-[#4A4070]">Đang chạy:</span>
+            <span className="font-bold text-[#5F2CFF]">{stats?.running || 0}</span>
           </div>
-          <div className="h-3 w-[1px] bg-[#3A4F22]" />
+          <div className="h-3 w-[1px] bg-[#E2E6FF]" />
           <div className="flex items-center gap-1.5">
-            <span className="text-[#9DB87A]">Hoàn thành:</span>
-            <span className="font-bold text-[#A8D95A]">{stats?.completed || 0}</span>
+            <span className="text-[#4A4070]">Hoàn thành:</span>
+            <span className="font-bold text-[#7B52FF]">{stats?.completed || 0}</span>
           </div>
           {stats?.attentionSessions ? (
             <>
-              <div className="h-3 w-[1px] bg-[#3A4F22]" />
-              <div className="flex items-center gap-1.5 text-rose-400 font-bold">
+              <div className="h-3 w-[1px] bg-[#E2E6FF]" />
+              <div className="flex items-center gap-1.5 text-rose-600 font-bold">
                 <AlertCircle className="w-3.5 h-3.5" />
                 <span>{stats.attentionSessions} Cần xác thực</span>
               </div>
@@ -64,16 +64,16 @@ export const Header: React.FC = () => {
       <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm pointer-events-none">
         {notifications.map((notif) => {
           const icons = {
-            success: <CheckCircle2 className="w-4 h-4 text-[#CFFF74] shrink-0" />,
-            warning: <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />,
-            error: <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />,
-            info: <Info className="w-4 h-4 text-[#67E8F9] shrink-0" />,
+            success: <CheckCircle2 className="w-4 h-4 text-[#5F2CFF] shrink-0" />,
+            warning: <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0" />,
+            error: <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />,
+            info: <Info className="w-4 h-4 text-[#0EA5E9] shrink-0" />,
           };
           const borders = {
-            success: 'border-[#3A4F22] bg-[#1A2410]/95 text-[#E8F5D0]',
-            warning: 'border-amber-500/30 bg-amber-950/90 text-amber-100',
-            error: 'border-rose-500/30 bg-rose-950/90 text-rose-100',
-            info: 'border-[#3A4F22] bg-[#1A2410]/95 text-[#E8F5D0]',
+            success: 'border-[#E2E6FF] bg-white/95 text-[#1A0A4A]',
+            warning: 'border-amber-200 bg-amber-50 text-amber-800',
+            error: 'border-rose-500/30 bg-rose-50 text-rose-700',
+            info: 'border-[#E2E6FF] bg-white/95 text-[#1A0A4A]',
           };
 
           return (
@@ -86,7 +86,7 @@ export const Header: React.FC = () => {
               <div className="flex-1 font-medium leading-relaxed">{notif.message}</div>
               <button
                 onClick={() => removeNotification(notif.id)}
-                className="text-[#6B7F52] hover:text-[#E8F5D0] p-0.5"
+                className="text-[#8B85B8] hover:text-[#1A0A4A] p-0.5"
               >
                 <X className="w-3.5 h-3.5" />
               </button>

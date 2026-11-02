@@ -555,16 +555,16 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
   return (
     <div className="flex h-full overflow-hidden">
       {/* ── Left Panel: Inputs ── */}
-      <div className="w-[500px] shrink-0 flex flex-col border-r border-slate-800 bg-[#0d1322] overflow-y-auto">
+      <div className="w-[500px] shrink-0 flex flex-col border-r border-[#E2E6FF] bg-white overflow-y-auto">
         {/* Header */}
-        <div className="px-6 py-5 border-b border-slate-800">
+        <div className="px-6 py-5 border-b border-[#E2E6FF]">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-violet-600 to-purple-700 shadow-lg shadow-violet-600/30">
+            <div className="p-2 rounded-xl bg-gradient-to-br from-[#5F2CFF] to-[#5F2CFF] shadow-lg shadow-[#5F2CFF]/20">
               <Wand2 className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-white">Tạo Prompt từ SRT</h2>
-              <p className="text-[11px] text-slate-400">Dùng AI (Gemini, Groq Llama 70B...) để chuyển phụ đề thành image prompts</p>
+              <h2 className="text-sm font-bold text-[#1A0A4A]">Tạo Prompt từ SRT</h2>
+              <p className="text-[11px] text-[#4A4070]">Dùng AI (Gemini, Groq Llama 70B...) để chuyển phụ đề thành image prompts</p>
             </div>
           </div>
         </div>
@@ -572,15 +572,15 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
         <div className="flex-1 px-5 py-5 space-y-5 overflow-y-auto">
           {/* AI Providers Status Banner */}
           {/* {configuredProviders.length === 0 ? (
-            <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-amber-950/40 border border-amber-500/30">
-              <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-amber-50 border border-amber-200">
+              <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
-                <p className="text-xs text-amber-300 font-semibold">Chưa cấu hình API Key AI</p>
-                <p className="text-[11px] text-amber-400/80 mt-0.5">
+                <p className="text-xs text-amber-700 font-semibold">Chưa cấu hình API Key AI</p>
+                <p className="text-[11px] text-amber-700/80 mt-0.5">
                   Vào{' '}
                   <button
                     onClick={() => setActiveTab('settings')}
-                    className="underline hover:text-amber-200 font-bold"
+                    className="underline hover:text-amber-800 font-bold"
                   >
                     Cài đặt
                   </button>
@@ -589,10 +589,10 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
               </div>
             </div>
           ) : (
-            <div className="p-3 rounded-xl bg-slate-900/70 border border-slate-800 space-y-2.5">
+            <div className="p-3 rounded-xl bg-white/70 border border-[#E2E6FF] space-y-2.5">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-violet-400" />
+                <span className="text-[11px] font-semibold text-[#4A4070] flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-[#7B52FF]" />
                   AI Providers & Quota ({configuredProviders.length}/4 sẵn sàng)
                 </span>
                 <div className="flex items-center gap-2">
@@ -600,15 +600,15 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
                     type="button"
                     onClick={handleCheckQuotas}
                     disabled={isCheckingQuotas}
-                    className="text-[10px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1 hover:underline disabled:opacity-50"
+                    className="text-[10px] text-emerald-600 hover:text-emerald-700 flex items-center gap-1 hover:underline disabled:opacity-50"
                   >
                     <RefreshCw className={`w-3 h-3 ${isCheckingQuotas ? 'animate-spin' : ''}`} />
                     <span>{isCheckingQuotas ? 'Đang check...' : 'Kiểm tra Quota'}</span>
                   </button>
-                  <span className="text-slate-700">|</span>
+                  <span className="text-[#8B85B8]">|</span>
                   <button
                     onClick={() => setActiveTab('settings')}
-                    className="text-[10px] text-violet-400 hover:text-violet-300 flex items-center gap-1 hover:underline"
+                    className="text-[10px] text-[#7B52FF] hover:text-[#9B7AFF] flex items-center gap-1 hover:underline"
                   >
                     <Settings className="w-3 h-3" />
                     Cài đặt
@@ -627,21 +627,21 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
                     <div
                       key={p.id}
                       className={`p-2 rounded-lg border text-[11px] flex flex-col justify-between space-y-1 ${!p.hasKey
-                          ? 'bg-slate-950/40 border-slate-800/60 text-slate-500'
+                          ? 'bg-[#F4F6FF]/40 border-[#E2E6FF]/60 text-[#8B85B8]'
                           : isOutOfQuota
-                            ? 'bg-rose-950/30 border-rose-500/40 text-rose-300'
+                            ? 'bg-rose-50 border-rose-200 text-rose-600'
                             : isInvalid
-                              ? 'bg-amber-950/30 border-amber-500/40 text-amber-300'
-                              : 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300'
+                              ? 'bg-amber-50 border-amber-200 text-amber-700'
+                              : 'bg-emerald-50 border-emerald-200 text-emerald-700'
                         }`}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-semibold truncate text-[11px] text-slate-200">
+                        <span className="font-semibold truncate text-[11px] text-[#1A0A4A]">
                           {p.name.replace(/\(.*?\)/g, '').trim()}
                         </span>
                         <div
                           className={`w-1.5 h-1.5 rounded-full ${!p.hasKey
-                              ? 'bg-slate-600'
+                              ? 'bg-[#8B7AB8]'
                               : isOutOfQuota
                                 ? 'bg-rose-400'
                                 : isInvalid
@@ -651,10 +651,10 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
                         />
                       </div>
 
-                      <div className="text-[10px] text-slate-400 space-y-0.5">
+                      <div className="text-[10px] text-[#4A4070] space-y-0.5">
                         <div className="flex justify-between">
                           <span>Quota:</span>
-                          <span className="font-medium text-slate-300">
+                          <span className="font-medium text-[#4A4070]">
                             {p.id === 'gemini'
                               ? '1,500/ngày'
                               : p.id === 'groq'
@@ -664,9 +664,9 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
                                     : (qInfo?.remainingRequests ? `${qInfo.remainingRequests}` : 'Credits')}
                           </span>
                         </div>
-                        <div className="flex justify-between text-slate-500">
+                        <div className="flex justify-between text-[#8B85B8]">
                           <span>Dùng hôm nay:</span>
-                          <span className="text-violet-400 font-semibold">{usage} lượt</span>
+                          <span className="text-[#7B52FF] font-semibold">{usage} lượt</span>
                         </div>
                       </div>
                     </div>
@@ -674,14 +674,14 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
                 })}
               </div>
 
-              <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-800/60">
+              <div className="flex items-center justify-between text-[10px] text-[#4A4070] pt-1 border-t border-[#E2E6FF]/60">
                 <span className="flex items-center gap-1">
-                  <RefreshCw className="w-2.5 h-2.5 text-violet-400" />
+                  <RefreshCw className="w-2.5 h-2.5 text-[#7B52FF]" />
                   Tự động chuyển đổi khi hết quota / lỗi
                 </span>
                 {settings?.preferredAiProvider && (
-                  <span className="text-slate-500">
-                    Ưu tiên: <strong className="text-slate-300 capitalize">{settings.preferredAiProvider}</strong>
+                  <span className="text-[#8B85B8]">
+                    Ưu tiên: <strong className="text-[#4A4070] capitalize">{settings.preferredAiProvider}</strong>
                   </span>
                 )}
               </div>
@@ -690,8 +690,8 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
 
           {/* SRT Input */}
           <div className="space-y-2">
-            <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-300">
-              <FileText className="w-3.5 h-3.5 text-blue-400" />
+            <label className="flex items-center gap-1.5 text-xs font-semibold text-[#4A4070]">
+              <FileText className="w-3.5 h-3.5 text-[#0EA5E9]" />
               Nội dung SRT
             </label>
             <textarea
@@ -699,24 +699,24 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
               onChange={(e) => setSrtText(e.target.value)}
               rows={10}
               placeholder={`1\n00:00:01,000 --> 00:00:03,000\nBạn từng nghĩ rằng cuộc đời sẽ dễ dàng hơn...\n\n2\n00:00:03,500 --> 00:00:06,000\nNhưng thực tế lại khác xa những gì bạn tưởng tượng.`}
-              className="w-full px-3.5 py-3 rounded-xl bg-slate-900 border border-slate-700 text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500 resize-none leading-relaxed transition-colors"
+              className="w-full px-3.5 py-3 rounded-xl bg-white border border-[#C4CEFF] text-xs font-mono text-[#1A0A4A] placeholder-slate-600 focus:outline-none focus:border-[#0EA5E9] resize-none leading-relaxed transition-colors"
             />
             {srtText && (
-              <div className="flex items-center justify-between text-[11px] text-slate-400">
+              <div className="flex items-center justify-between text-[11px] text-[#4A4070]">
                 <span>
-                  Phát hiện: <strong className="text-emerald-400 font-semibold">{detectedBlocks.length}</strong> đoạn phụ đề
+                  Phát hiện: <strong className="text-emerald-600 font-semibold">{detectedBlocks.length}</strong> đoạn phụ đề
                 </span>
                 <span>
-                  Dự kiến tạo: <strong className="text-violet-400 font-semibold">{expectedPromptCount}</strong> prompt
+                  Dự kiến tạo: <strong className="text-[#7B52FF] font-semibold">{expectedPromptCount}</strong> prompt
                 </span>
               </div>
             )}
 
             {/* Grouping Mode Selector */}
-            <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1.5">
+            <div className="p-2.5 rounded-xl bg-white/80 border border-[#E2E6FF] space-y-1.5">
               <div className="flex items-center justify-between text-[11px]">
-                <span className="font-medium text-slate-300">Chế độ phân cảnh</span>
-                <span className="text-slate-500 text-[10px]">
+                <span className="font-medium text-[#4A4070]">Chế độ phân cảnh</span>
+                <span className="text-[#8B85B8] text-[10px]">
                   {groupingSize === 1
                     ? '1:1 - Mỗi đoạn 1 prompt ảnh'
                     : `Gộp ${groupingSize} đoạn thành 1 prompt`}
@@ -734,8 +734,8 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
                     type="button"
                     onClick={() => setGroupingSize(opt.size)}
                     className={`py-1.5 px-2 rounded-lg text-[10px] font-semibold border transition-all ${groupingSize === opt.size
-                        ? 'bg-violet-600 border-violet-500 text-white shadow-sm'
-                        : 'bg-slate-950/50 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                      ? 'bg-[#7B52FF] border-[#7B52FF] text-white shadow-sm'
+                      : 'bg-[#F4F6FF]/50 border-[#E2E6FF] text-[#4A4070] hover:text-[#1A0A4A] hover:border-[#C4CEFF]'
                       }`}
                   >
                     {opt.label}
@@ -747,90 +747,90 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
 
           {/* Fixed Character */}
           <div className="space-y-2">
-            <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-300">
-              <User className="w-3.5 h-3.5 text-emerald-400" />
+            <label className="flex items-center gap-1.5 text-xs font-semibold text-[#4A4070]">
+              <User className="w-3.5 h-3.5 text-emerald-600" />
               Nhân vật cố định
-              <span className="text-[10px] text-slate-500 font-normal">(tuỳ chọn)</span>
+              <span className="text-[10px] text-[#8B85B8] font-normal">(tuỳ chọn)</span>
             </label>
             <textarea
               value={fixedCharacter}
               onChange={(e) => setFixedCharacter(e.target.value)}
               rows={3}
               placeholder="Ví dụ: A Vietnamese man in his 30s, wearing a white linen shirt, short black hair, warm confident smile, standing in soft natural light..."
-              className="w-full px-3.5 py-3 rounded-xl bg-slate-900 border border-slate-700 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500 resize-none leading-relaxed transition-colors"
+              className="w-full px-3.5 py-3 rounded-xl bg-white border border-[#C4CEFF] text-xs text-[#1A0A4A] placeholder-slate-600 focus:outline-none focus:border-emerald-500 resize-none leading-relaxed transition-colors"
             />
-            <p className="text-[10px] text-slate-500">
+            <p className="text-[10px] text-[#8B85B8]">
               Sẽ được chèn nguyên văn vào prompt khi block SRT có nhân vật chính xuất hiện.
             </p>
           </div>
 
           {/* Fixed Style */}
           <div className="space-y-2">
-            <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-300">
-              <Palette className="w-3.5 h-3.5 text-amber-400" />
+            <label className="flex items-center gap-1.5 text-xs font-semibold text-[#4A4070]">
+              <Palette className="w-3.5 h-3.5 text-amber-700" />
               Style cố định
-              <span className="text-[10px] text-slate-500 font-normal">(tuỳ chọn)</span>
+              <span className="text-[10px] text-[#8B85B8] font-normal">(tuỳ chọn)</span>
             </label>
             <textarea
               value={fixedStyle}
               onChange={(e) => setFixedStyle(e.target.value)}
               rows={3}
               placeholder="Ví dụ: cinematic photography, shot on Sony A7IV, 85mm f/1.8, soft warm tones, film grain, ultra detailed, 8k resolution, professional color grading..."
-              className="w-full px-3.5 py-3 rounded-xl bg-slate-900 border border-slate-700 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-amber-500 resize-none leading-relaxed transition-colors"
+              className="w-full px-3.5 py-3 rounded-xl bg-white border border-[#C4CEFF] text-xs text-[#1A0A4A] placeholder-slate-600 focus:outline-none focus:border-amber-500 resize-none leading-relaxed transition-colors"
             />
-            <p className="text-[10px] text-slate-500">
+            <p className="text-[10px] text-[#8B85B8]">
               Sẽ được thêm vào cuối mỗi prompt.
             </p>
           </div>
 
           {/* ── Custom Formula Toggle ── */}
-          <div className="rounded-xl border border-slate-800 overflow-hidden">
+          <div className="rounded-xl border border-[#E2E6FF] overflow-hidden">
             {/* Toggle Header */}
             <button
               type="button"
               onClick={() => setUseCustomFormula((v) => !v)}
               className={`w-full flex items-center justify-between px-3.5 py-2.5 transition-colors ${useCustomFormula
-                  ? 'bg-amber-950/40 border-b border-amber-800/50'
-                  : 'bg-slate-900/60 hover:bg-slate-900'
+                ? 'bg-amber-50 border-b border-amber-200'
+                : 'bg-white/80 hover:bg-white'
                 }`}
             >
               <span className="flex items-center gap-2 text-xs font-semibold">
-                <FlaskConical className={`w-3.5 h-3.5 ${useCustomFormula ? 'text-amber-400' : 'text-slate-500'}`} />
-                <span className={useCustomFormula ? 'text-amber-300' : 'text-slate-400'}>
+                <FlaskConical className={`w-3.5 h-3.5 ${useCustomFormula ? 'text-amber-700' : 'text-[#8B85B8]'}`} />
+                <span className={useCustomFormula ? 'text-amber-700' : 'text-[#4A4070]'}>
                   Công thức tùy chỉnh
                 </span>
                 {useCustomFormula && (
-                  <span className="px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-400 text-[10px] font-bold border border-amber-500/30">
+                  <span className="px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-700 text-[10px] font-bold border border-amber-200">
                     ĐANG BẬT
                   </span>
                 )}
               </span>
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] text-slate-500">
+                <span className="text-[10px] text-[#8B85B8]">
                   {useCustomFormula ? 'Tắt' : 'Bật để tùy chỉnh'}
                 </span>
                 {useCustomFormula ? (
-                  <ToggleRight className="w-5 h-5 text-amber-400" />
+                  <ToggleRight className="w-5 h-5 text-amber-700" />
                 ) : (
-                  <ToggleLeft className="w-5 h-5 text-slate-600" />
+                  <ToggleLeft className="w-5 h-5 text-[#4A4070]" />
                 )}
               </div>
             </button>
 
             {/* Expanded Content */}
             {useCustomFormula && (
-              <div className="p-3.5 space-y-3 bg-amber-950/10">
+              <div className="p-3.5 space-y-3 bg-amber-50/50">
                 <div className="space-y-1.5">
-                  <div className="flex items-start gap-2 p-2.5 rounded-lg bg-amber-950/30 border border-amber-800/40">
-                    <AlertCircle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-                    <div className="text-[10px] text-amber-300 leading-relaxed space-y-1">
+                  <div className="flex items-start gap-2 p-2.5 rounded-lg bg-amber-50 border border-amber-200">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-700 shrink-0 mt-0.5" />
+                    <div className="text-[10px] text-amber-700 leading-relaxed space-y-1">
                       <p className="font-semibold">Biến thay thế trong công thức:</p>
-                      <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-amber-200/80">
-                        <span><code className="text-amber-400">{'{COUNT}'}</code> — số prompt trong đợt</span>
-                        <span><code className="text-amber-400">{'{CHARACTER}'}</code> — Nhân vật cố định</span>
-                        <span><code className="text-amber-400">{'{STYLE}'}</code> — Style cố định</span>
-                        <span><code className="text-amber-400">{'{START}'}</code> — số đoạn đầu</span>
-                        <span><code className="text-amber-400">{'{END}'}</code> — số đoạn cuối</span>
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-amber-700/80">
+                        <span><code className="text-amber-700">{'{COUNT}'}</code> — số prompt trong đợt</span>
+                        <span><code className="text-amber-700">{'{CHARACTER}'}</code> — Nhân vật cố định</span>
+                        <span><code className="text-amber-700">{'{STYLE}'}</code> — Style cố định</span>
+                        <span><code className="text-amber-700">{'{START}'}</code> — số đoạn đầu</span>
+                        <span><code className="text-amber-700">{'{END}'}</code> — số đoạn cuối</span>
                       </div>
                     </div>
                   </div>
@@ -839,7 +839,7 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
                     onChange={(e) => setCustomFormula(e.target.value)}
                     rows={14}
                     spellCheck={false}
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-amber-800/40 text-[11px] font-mono text-amber-100 placeholder-slate-600 focus:outline-none focus:border-amber-500 resize-none leading-relaxed transition-colors"
+                    className="w-full px-3 py-2.5 rounded-xl bg-amber-50 border border-amber-200 text-[11px] font-mono text-amber-700 placeholder-slate-600 focus:outline-none focus:border-amber-500 resize-none leading-relaxed transition-colors"
                     placeholder="Nhập công thức tùy chỉnh của bạn..."
                   />
                 </div>
@@ -847,14 +847,14 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
                   <button
                     type="button"
                     onClick={() => setCustomFormula(DEFAULT_FORMULA)}
-                    className="flex-1 py-1.5 rounded-lg text-[10px] font-semibold bg-slate-900 border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-600 transition-all"
+                    className="flex-1 py-1.5 rounded-lg text-[10px] font-semibold bg-white border border-[#C4CEFF] text-[#4A4070] hover:text-[#1A0A4A] hover:border-[#8B7AB8] transition-all"
                   >
                     Khôi phục công thức mặc định
                   </button>
                   <button
                     type="button"
                     onClick={() => setCustomFormula('')}
-                    className="py-1.5 px-3 rounded-lg text-[10px] font-semibold bg-slate-900 border border-slate-700 text-rose-400 hover:text-rose-300 hover:border-rose-800 transition-all"
+                    className="py-1.5 px-3 rounded-lg text-[10px] font-semibold bg-white border border-[#C4CEFF] text-rose-600 hover:text-rose-600 hover:border-rose-800 transition-all"
                   >
                     Xoá
                   </button>
@@ -865,23 +865,23 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
 
           {/* Error & Retry Banner */}
           {error && (
-            <div className="p-3.5 rounded-xl bg-rose-950/40 border border-rose-500/30 space-y-2.5">
+            <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 space-y-2.5">
               <div className="flex items-start gap-2.5">
-                <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-rose-300 leading-relaxed whitespace-pre-line font-medium">{error}</p>
+                  <p className="text-xs text-rose-600 leading-relaxed whitespace-pre-line font-medium">{error}</p>
                 </div>
               </div>
               {canResume && (
                 <div className="pt-2 border-t border-rose-500/20 flex items-center justify-between gap-2">
-                  <span className="text-[11px] text-rose-300/80">
+                  <span className="text-[11px] text-rose-600/80">
                     Đã giữ <strong>{generatedPrompts.length}</strong> prompt đã hoàn thành
                   </span>
                   <button
                     type="button"
                     onClick={() => handleGenerate(true)}
                     disabled={isGenerating}
-                    className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-md shadow-rose-900/40"
+                    className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-[#1A0A4A] text-xs font-bold flex items-center gap-1.5 transition-all shadow-md shadow-rose-900/40"
                   >
                     <RotateCw className="w-3.5 h-3.5" />
                     Thử lại từ prompt {nextMissingIndex}
@@ -893,24 +893,24 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
 
           {/* Real-time Status / Failover Message */}
           {isGenerating && statusMessage && (
-            <div className="p-3 rounded-xl bg-violet-950/50 border border-violet-800/60 flex items-center gap-2.5">
-              <RefreshCw className="w-3.5 h-3.5 text-violet-400 animate-spin shrink-0" />
-              <span className="text-xs text-violet-200 leading-relaxed font-medium">{statusMessage}</span>
+            <div className="p-3 rounded-xl bg-[#F0F3FF]/50 border border-[#E2E6FF] flex items-center gap-2.5">
+              <RefreshCw className="w-3.5 h-3.5 text-[#7B52FF] animate-spin shrink-0" />
+              <span className="text-xs text-[#7B52FF] leading-relaxed font-medium">{statusMessage}</span>
             </div>
           )}
 
           {/* Progress Bar when Generating */}
           {isGenerating && progress && progress.total > 0 && (
-            <div className="space-y-1.5 p-3 rounded-xl bg-slate-900/80 border border-slate-800">
-              <div className="flex justify-between text-[11px] text-slate-400">
+            <div className="space-y-1.5 p-3 rounded-xl bg-[#F0F3FF]/80 border border-[#E2E6FF]">
+              <div className="flex justify-between text-[11px] text-[#4A4070]">
                 <span>Tiến độ tạo prompt</span>
-                <span className="font-semibold text-violet-300">
+                <span className="font-semibold text-[#9B7AFF]">
                   {progress.done} / {progress.total} ({Math.round((progress.done / progress.total) * 100)}%)
                 </span>
               </div>
-              <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800">
+              <div className="w-full bg-[#F4F6FF] rounded-full h-2 overflow-hidden border border-[#E2E6FF]">
                 <div
-                  className="bg-gradient-to-r from-violet-500 to-purple-500 h-full transition-all duration-300 rounded-full"
+                  className="bg-gradient-to-r from-[#7B52FF] to-[#7B52FF] h-full transition-all duration-300 rounded-full"
                   style={{ width: `${Math.min(100, Math.round((progress.done / progress.total) * 100))}%` }}
                 />
               </div>
@@ -921,7 +921,7 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
           {isGenerating ? (
             <button
               onClick={handleStop}
-              className="w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/30 transition-all"
+              className="w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-500 text-[#1A0A4A] shadow-lg shadow-rose-600/30 transition-all"
             >
               <RefreshCw className="w-4 h-4 animate-spin" />
               Dừng lại {progress ? `(Đã tạo ${progress.done}/${progress.total})` : ''}
@@ -930,14 +930,14 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
             <div className="space-y-2">
               <button
                 onClick={() => handleGenerate(true)}
-                className="w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white shadow-lg shadow-violet-600/30 transition-all"
+                className="w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 bg-gradient-to-r from-[#5F2CFF] to-[#7B52FF] hover:from-[#7B52FF] hover:to-[#7B52FF] text-[#1A0A4A] shadow-lg shadow-[#5F2CFF]/20 transition-all"
               >
                 <Play className="w-4 h-4 fill-current" />
                 Tiếp tục tạo từ prompt {nextMissingIndex} ({generatedPrompts.length}/{expectedPromptCount} đã xong)
               </button>
               <button
                 onClick={() => handleGenerate(false)}
-                className="w-full py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1.5 border border-slate-800"
+                className="w-full py-2 rounded-lg text-xs font-semibold text-[#4A4070] hover:text-[#1A0A4A] hover:bg-[#E8ECFF] transition-all flex items-center justify-center gap-1.5 border border-[#E2E6FF]"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 Tạo lại từ đầu (xoá {generatedPrompts.length} prompt cũ)
@@ -946,7 +946,7 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
           ) : (
             <button
               onClick={() => handleGenerate(false)}
-              className="w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white shadow-lg shadow-violet-600/30 transition-all"
+              className="w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 bg-gradient-to-r from-[#5F2CFF] to-[#7B52FF] hover:from-[#7B52FF] hover:to-[#7B52FF] text-white shadow-lg shadow-[#5F2CFF]/20 transition-all"
             >
               <Sparkles className="w-4 h-4" />
               {generatedPrompts.length >= expectedPromptCount && expectedPromptCount > 0
@@ -958,33 +958,33 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
       </div>
 
       {/* ── Right Panel: Results ── */}
-      <div className="flex-1 flex flex-col overflow-hidden bg-[#090d16]">
+      <div className="flex-1 flex flex-col overflow-hidden bg-[#F4F6FF]">
         {/* Toolbar */}
         {hasResults && (
-          <div className="px-6 py-3 border-b border-slate-800 flex items-center justify-between gap-4 bg-[#0d1322]">
+          <div className="px-6 py-3 border-b border-[#E2E6FF] flex items-center justify-between gap-4 bg-white">
             <div className="flex items-center gap-3">
-              <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                <ListOrdered className="w-3.5 h-3.5 text-violet-400" />
+              <span className="text-xs font-semibold text-[#4A4070] flex items-center gap-1.5">
+                <ListOrdered className="w-3.5 h-3.5 text-[#7B52FF]" />
                 {generatedPrompts.length} prompts
               </span>
 
               {lastGenResult && (
-                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-[10px]">
-                  <span className="text-slate-500">Nguồn:</span>
-                  <span className="text-slate-200 font-semibold">{lastGenResult.providerName}</span>
+                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-white border border-[#E2E6FF] shadow-sm text-[10px]">
+                  <span className="text-[#8B85B8]">Nguồn:</span>
+                  <span className="text-[#1A0A4A] font-semibold">{lastGenResult.providerName}</span>
                   {lastGenResult.fallbackCount > 0 && (
-                    <span className="px-1 py-0.2 rounded bg-amber-950/60 text-amber-300 border border-amber-800/40 font-medium">
+                    <span className="px-1 py-0.2 rounded bg-amber-50 text-amber-700 border border-amber-200 font-medium">
                       Fallback
                     </span>
                   )}
                 </div>
               )}
 
-              <span className="text-slate-700">|</span>
-              <button onClick={selectAll} className="text-[11px] text-violet-400 hover:text-violet-300">
+              <span className="text-[#8B85B8]">|</span>
+              <button onClick={selectAll} className="text-[11px] text-[#7B52FF] hover:text-[#9B7AFF]">
                 Chọn tất cả
               </button>
-              <button onClick={deselectAll} className="text-[11px] text-slate-500 hover:text-slate-300">
+              <button onClick={deselectAll} className="text-[11px] text-[#8B85B8] hover:text-[#4A4070]">
                 Bỏ chọn tất cả
               </button>
             </div>
@@ -994,7 +994,7 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
               <select
                 value={aspectRatio}
                 onChange={(e) => setAspectRatio(e.target.value)}
-                className="px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs text-slate-200 focus:outline-none focus:border-violet-500"
+                className="px-2.5 py-1.5 rounded-lg bg-[#F0F3FF] border border-[#C4CEFF] text-xs text-[#1A0A4A] focus:outline-none focus:border-[#7B52FF]"
               >
                 {ASPECT_RATIOS.map((r) => (
                   <option key={r} value={r}>{r}</option>
@@ -1003,15 +1003,15 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
 
               <button
                 onClick={handleCopyAll}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 border border-slate-700 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#F0F3FF] hover:bg-[#E8ECFF] text-xs text-[#4A4070] border border-[#C4CEFF] transition-colors"
               >
-                {copiedAll ? <CheckCheck className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                {copiedAll ? <CheckCheck className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                 Copy {selectedIndices.size} prompt
               </button>
 
               <button
                 onClick={handleExportTxt}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 border border-slate-700 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#F0F3FF] hover:bg-[#E8ECFF] text-xs text-[#4A4070] border border-[#C4CEFF] transition-colors"
               >
                 <Download className="w-3.5 h-3.5" />
                 Xuất .txt
@@ -1019,7 +1019,7 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
 
               <button
                 onClick={handleSendToQueue}
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-xs font-bold text-white shadow shadow-violet-600/30 transition-all"
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-gradient-to-r from-[#5F2CFF] to-[#7B52FF] hover:from-[#7B52FF] hover:to-[#7B52FF] text-xs font-bold text-[#1A0A4A] shadow shadow-[#5F2CFF]/20 transition-all"
               >
                 <Send className="w-3.5 h-3.5" />
                 Gửi {selectedIndices.size} vào Queue
@@ -1032,16 +1032,16 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
         <div className="flex-1 overflow-y-auto p-6">
           {!hasResults && !isGenerating && (
             <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-600/20 to-purple-700/20 border border-violet-500/20 flex items-center justify-center">
-                <Wand2 className="w-8 h-8 text-violet-400" />
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#5F2CFF]/15 to-[#5F2CFF]/15 border border-[#7B52FF]/20 flex items-center justify-center">
+                <Wand2 className="w-8 h-8 text-[#7B52FF]" />
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-slate-300">Chưa có prompt nào</h3>
-                <p className="text-xs text-slate-500 mt-1.5 max-w-xs leading-relaxed">
-                  Dán nội dung SRT, điền nhân vật và style cố định, sau đó nhấn <strong className="text-violet-400">Tạo Prompt từ SRT</strong>
+                <h3 className="text-sm font-semibold text-[#4A4070]">Chưa có prompt nào</h3>
+                <p className="text-xs text-[#8B85B8] mt-1.5 max-w-xs leading-relaxed">
+                  Dán nội dung SRT, điền nhân vật và style cố định, sau đó nhấn <strong className="text-[#7B52FF]">Tạo Prompt từ SRT</strong>
                 </p>
               </div>
-              <div className="flex items-center gap-2 text-xs text-slate-600">
+              <div className="flex items-center gap-2 text-xs text-[#4A4070]">
                 <ChevronRight className="w-3.5 h-3.5" />
                 <span>Kết quả sẽ hiển thị ở đây và có thể chỉnh sửa từng prompt</span>
               </div>
@@ -1050,18 +1050,18 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
 
           {isGenerating && generatedPrompts.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
-              <div className="w-16 h-16 rounded-2xl bg-violet-600/10 border border-violet-500/20 flex items-center justify-center">
-                <Sparkles className="w-8 h-8 text-violet-400 animate-pulse" />
+              <div className="w-16 h-16 rounded-2xl bg-[#7B52FF]/10 border border-[#7B52FF]/20 flex items-center justify-center">
+                <Sparkles className="w-8 h-8 text-[#7B52FF] animate-pulse" />
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-slate-300">AI đang phân tích SRT...</h3>
-                <p className="text-xs text-slate-500 mt-1">Quá trình này thường mất 5–20 giây.</p>
+                <h3 className="text-sm font-semibold text-[#4A4070]">AI đang phân tích SRT...</h3>
+                <p className="text-xs text-[#8B85B8] mt-1">Quá trình này thường mất 5–20 giây.</p>
               </div>
               <div className="flex gap-1">
                 {[0, 1, 2].map((i) => (
                   <div
                     key={i}
-                    className="w-2 h-2 rounded-full bg-violet-500 animate-bounce"
+                    className="w-2 h-2 rounded-full bg-[#7B52FF] animate-bounce"
                     style={{ animationDelay: `${i * 0.15}s` }}
                   />
                 ))}
@@ -1077,12 +1077,12 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
                   <div
                     key={item.index}
                     className={`rounded-xl border transition-all ${isSelected
-                      ? 'border-violet-500/40 bg-violet-950/20'
-                      : 'border-slate-800 bg-[#0d1322] opacity-60'
+                      ? 'border-[#7B52FF]/40 bg-[#F0F3FF]/20'
+                      : 'border-[#E2E6FF] bg-white opacity-60'
                       }`}
                   >
                     {/* Card Header */}
-                    <div className="flex items-start gap-3 px-4 py-3 border-b border-slate-800/60">
+                    <div className="flex items-start gap-3 px-4 py-3 border-b border-[#E2E6FF]/60">
                       <input
                         type="checkbox"
                         checked={isSelected}
@@ -1091,24 +1091,24 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-violet-400">Block #{item.index}</span>
+                          <span className="text-xs font-bold text-[#7B52FF]">Block #{item.index}</span>
                           {item.edited && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">
                               Đã sửa
                             </span>
                           )}
                         </div>
-                        <p className="text-[11px] text-slate-500 mt-0.5 truncate italic">
+                        <p className="text-[11px] text-[#8B85B8] mt-0.5 truncate italic">
                           "{item.srtText}"
                         </p>
                       </div>
                       <button
                         onClick={() => handleCopy(item.index, item.prompt)}
-                        className="shrink-0 p-1.5 rounded-lg hover:bg-slate-800 text-slate-500 hover:text-slate-300 transition-colors"
+                        className="shrink-0 p-1.5 rounded-lg hover:bg-[#F0F3FF] text-[#8B85B8] hover:text-[#4A4070] transition-colors"
                         title="Copy prompt này"
                       >
                         {copiedIndex === item.index ? (
-                          <CheckCheck className="w-3.5 h-3.5 text-emerald-400" />
+                          <CheckCheck className="w-3.5 h-3.5 text-emerald-600" />
                         ) : (
                           <Copy className="w-3.5 h-3.5" />
                         )}
@@ -1121,7 +1121,7 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
                         value={item.prompt}
                         onChange={(e) => handleEditPrompt(item.index, e.target.value)}
                         rows={3}
-                        className="w-full bg-transparent text-xs text-slate-200 leading-relaxed resize-none focus:outline-none placeholder-slate-600"
+                        className="w-full bg-transparent text-xs text-[#1A0A4A] leading-relaxed resize-none focus:outline-none placeholder-slate-600"
                       />
                     </div>
                   </div>

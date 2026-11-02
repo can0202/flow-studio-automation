@@ -248,15 +248,15 @@ export const QueueView: React.FC = () => {
   return (
     <div className="p-8 space-y-6 overflow-y-auto max-h-[calc(100vh-4rem)]">
       {/* Action Toolbar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl bg-[#0d1322] border border-slate-800">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl bg-white border border-[#E2E6FF] shadow-sm">
         <div className="flex flex-wrap items-center gap-3">
           {/* Queue Start/Pause */}
           <button
             onClick={toggleQueue}
             className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow-md ${
               isQueueRunning
-                ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30 hover:bg-amber-500/25'
-                : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/25'
+                ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                : 'bg-[#5F2CFF] hover:bg-[#7B52FF] text-white shadow-[#5F2CFF]/20'
             }`}
           >
             {isQueueRunning ? (
@@ -275,18 +275,18 @@ export const QueueView: React.FC = () => {
           {/* Retry Failed */}
           <button
             onClick={retryFailed}
-            className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors flex items-center gap-1.5"
+            className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#F0F3FF] hover:bg-[#E8ECFF] text-[#1A0A4A] border border-[#C4CEFF] transition-colors flex items-center gap-1.5"
           >
-            <RotateCw className="w-3.5 h-3.5 text-indigo-400" />
+            <RotateCw className="w-3.5 h-3.5 text-[#5F2CFF]" />
             <span>Thử lại thất bại</span>
           </button>
 
           {/* Clear Completed */}
           <button
             onClick={clearCompleted}
-            className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors flex items-center gap-1.5"
+            className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-white hover:bg-rose-50 text-rose-500 border border-rose-200 transition-colors flex items-center gap-1.5"
           >
-            <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+            <Trash2 className="w-3.5 h-3.5 text-rose-600" />
             <span>Xóa đã hoàn thành</span>
           </button>
 
@@ -300,17 +300,17 @@ export const QueueView: React.FC = () => {
               }
             }}
             disabled={jobs.length === 0}
-            className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-rose-500/15 hover:bg-rose-500/25 disabled:opacity-40 text-rose-300 border border-rose-500/30 transition-colors flex items-center gap-1.5"
+            className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-white hover:bg-rose-50 disabled:opacity-40 text-rose-500 border border-rose-200 transition-colors flex items-center gap-1.5"
             title="Xóa toàn bộ tác vụ trong hàng đợi SQLite"
           >
-            <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+            <Trash2 className="w-3.5 h-3.5 text-rose-600" />
             <span>Xóa tất cả hàng đợi</span>
           </button>
 
           {/* Batch Import */}
           <button
             onClick={() => setIsImportModalOpen(true)}
-            className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 transition-colors flex items-center gap-1.5"
+            className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#F0F3FF] hover:bg-[#E8ECFF] text-[#5F2CFF] border border-[#C4CEFF] transition-colors flex items-center gap-1.5"
           >
             <Upload className="w-3.5 h-3.5" />
             <span>Nhập hàng loạt (CSV / JSON)</span>
@@ -319,11 +319,11 @@ export const QueueView: React.FC = () => {
 
         {/* Concurrency Selector */}
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-slate-400">Đồng thời:</span>
+          <span className="text-xs font-semibold text-[#4A4070]">Đồng thời:</span>
           <select
             value={settings?.concurrencyLimit || 1}
             onChange={(e) => updateSettings({ concurrencyLimit: parseInt(e.target.value) || 1 })}
-            className="px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs font-bold text-white focus:outline-none"
+            className="px-2.5 py-1.5 rounded-lg bg-white border border-[#C4CEFF] text-xs font-bold text-[#1A0A4A] focus:outline-none"
           >
             <option value={1}>1 job một lúc</option>
             <option value={2}>2 job đồng thời</option>
@@ -335,19 +335,19 @@ export const QueueView: React.FC = () => {
 
       {/* Multi-Worker Active Lanes */}
       {runningJobs.length > 0 && (
-        <div className="p-5 rounded-2xl bg-gradient-to-br from-[#0e172a] to-[#0d1322] border border-indigo-500/30 shadow-lg space-y-3">
+        <div className="p-5 rounded-2xl bg-gradient-to-br from-[#F0F3FF] to-white border border-[#5F2CFF]/25 shadow-lg space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="relative flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
               </span>
-              <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                <Cpu className="w-4 h-4 text-indigo-400" />
+              <h3 className="text-xs font-bold text-[#1A0A4A] uppercase tracking-wider flex items-center gap-1.5">
+                <Cpu className="w-4 h-4 text-[#5F2CFF]" />
                 <span>Các Luồng Đang Hoạt Động Song Song ({runningJobs.length}/{settings?.concurrencyLimit || 1} Luồng)</span>
               </h3>
             </div>
-            <span className="text-[11px] font-medium text-slate-400">
+            <span className="text-[11px] font-medium text-[#4A4070]">
               1 tài khoản = 1 luồng riêng biệt
             </span>
           </div>
@@ -358,36 +358,36 @@ export const QueueView: React.FC = () => {
               return (
                 <div
                   key={rJob.id}
-                  className="p-3.5 rounded-xl bg-slate-900/90 border border-indigo-500/20 space-y-2 hover:border-indigo-500/40 transition-all"
+                  className="p-3.5 rounded-xl bg-[#F0F3FF]/90 border border-[#5F2CFF]/20 space-y-2 hover:border-[#5F2CFF]/30 transition-all"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#5F2CFF]/15 text-[#7B52FF] border border-[#5F2CFF]/25">
                       LUỒNG #{idx + 1}
                     </span>
-                    <span className="text-[11px] font-bold text-emerald-400 flex items-center gap-1">
+                    <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                       {rJob.progress || 10}%
                     </span>
                   </div>
 
                   <div className="space-y-0.5">
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-white truncate">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-[#1A0A4A] truncate">
                       <span>👤</span>
                       <span className="truncate">{sessionObj?.name || 'Tài khoản chưa định danh'}</span>
                     </div>
-                    <div className="text-[11px] text-slate-400 truncate flex items-center gap-1">
-                      <span className="text-slate-500">Dự án:</span>
-                      <span className="text-slate-300 font-medium">{rJob.metadata?.projectName || 'FlowStudioProject'}</span>
+                    <div className="text-[11px] text-[#4A4070] truncate flex items-center gap-1">
+                      <span className="text-[#8B85B8]">Dự án:</span>
+                      <span className="text-[#4A4070] font-medium">{rJob.metadata?.projectName || 'FlowStudioProject'}</span>
                     </div>
-                    <div className="text-[11px] text-slate-300 truncate font-semibold">
+                    <div className="text-[11px] text-[#4A4070] truncate font-semibold">
                       {rJob.name}
                     </div>
                   </div>
 
                   {/* Progress Bar */}
-                  <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                  <div className="w-full h-1.5 rounded-full bg-[#F0F3FF] overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-indigo-500 to-emerald-400 transition-all duration-300"
+                      className="h-full bg-gradient-to-r from-[#5F2CFF] to-emerald-400 transition-all duration-300"
                       style={{ width: `${rJob.progress || 10}%` }}
                     />
                   </div>
@@ -406,21 +406,21 @@ export const QueueView: React.FC = () => {
         return (
           <div
             key={s.id}
-            className="p-4 rounded-2xl bg-gradient-to-br from-amber-950/60 to-orange-950/50 border border-amber-500/50 shadow-lg"
+            className="p-4 rounded-2xl bg-amber-50 border border-amber-200 shadow-sm"
           >
             <div className="flex flex-col sm:flex-row sm:items-center gap-3">
               <div className="flex items-start gap-3 flex-1 min-w-0">
-                <div className="p-2 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/30 shrink-0">
+                <div className="p-2 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
                   <AlertTriangle className="w-5 h-5" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-bold text-amber-300">
+                  <p className="text-sm font-bold text-amber-700">
                     {s.status === 'quota_exhausted'
                       ? `⛔ Tài khoản "${s.name}" đã hết Quota hôm nay`
                       : `⚠️ Tài khoản "${s.name}" tạm dừng (Google phát hiện tần suất nhanh)`}
                   </p>
-                  <p className="text-xs text-amber-200/70 mt-0.5">
-                    <span className="font-bold text-white">{pausedCount} tác vụ</span> đang bị tạm dừng.
+                  <p className="text-xs text-amber-800 mt-0.5">
+                    <span className="font-bold text-[#1A0A4A]">{pausedCount} tác vụ</span> đang bị tạm dừng.
                     Chọn tài khoản khác để chạy tiếp, hoặc chờ để tiếp tục.
                   </p>
                 </div>
@@ -432,7 +432,7 @@ export const QueueView: React.FC = () => {
                     <select
                       value={bannerTarget}
                       onChange={(e) => setBannerTargetMap((prev) => ({ ...prev, [s.id]: e.target.value }))}
-                      className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500 min-w-[160px]"
+                      className="px-3 py-1.5 rounded-lg bg-white border border-[#C4CEFF] text-xs text-[#1A0A4A] focus:outline-none focus:border-[#5F2CFF] min-w-[160px]"
                     >
                       <option value="">-- Chọn tài khoản --</option>
                       {availableSessions.map((x) => (
@@ -451,14 +451,14 @@ export const QueueView: React.FC = () => {
                         });
                         setBannerTargetMap((prev) => ({ ...prev, [s.id]: '' }));
                       }}
-                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-all"
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-[#5F2CFF] hover:bg-[#7B52FF] disabled:opacity-40 disabled:cursor-not-allowed text-white transition-all"
                     >
                       <ArrowRightLeft className="w-3.5 h-3.5" />
                       Chạy tiếp
                     </button>
                   </>
                 ) : (
-                  <span className="text-xs text-slate-500 italic px-2">
+                  <span className="text-xs text-[#8B85B8] italic px-2">
                     Không có tài khoản sẵn sàng
                   </span>
                 )}
@@ -479,14 +479,14 @@ export const QueueView: React.FC = () => {
                 onClick={() => setFilterStatus(tab.id)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all whitespace-nowrap ${
                   isActive
-                    ? 'bg-indigo-600 text-white'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                    ? 'bg-[#5F2CFF] text-white'
+                    : 'text-[#4A4070] hover:text-[#1A0A4A] hover:bg-[#E8ECFF]'
                 }`}
               >
                 <span>{tab.label}</span>
                 <span
                   className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                    isActive ? 'bg-indigo-700 text-white' : 'bg-slate-800 text-slate-400'
+                    isActive ? 'bg-[#E8ECFF] text-[#1A0A4A]' : 'bg-[#F0F3FF] text-[#4A4070]'
                   }`}
                 >
                   {tab.count}
@@ -498,28 +498,28 @@ export const QueueView: React.FC = () => {
 
         {/* Search Input */}
         <div className="relative min-w-[220px]">
-          <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-3.5 h-3.5 text-[#8B85B8] absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Tìm kiếm prompt hoặc ID..."
-            className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
+            className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-white border border-[#E2E6FF] shadow-sm text-xs text-[#1A0A4A] placeholder:text-[#8B85B8] focus:outline-none focus:border-[#5F2CFF]"
           />
         </div>
       </div>
 
       {/* Jobs Table */}
-      <div className="rounded-2xl border border-slate-800 bg-[#0d1322] overflow-hidden">
+      <div className="rounded-2xl border border-[#E2E6FF] bg-white overflow-hidden">
         {filteredJobs.length === 0 ? (
-          <div className="py-16 text-center text-slate-500 text-xs">
+          <div className="py-16 text-center text-[#8B85B8] text-xs">
             Không tìm thấy job nào phù hợp.
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-slate-800 bg-slate-900/60 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                <tr className="border-b border-[#E2E6FF] bg-white/80 text-[11px] font-bold text-[#4A4070] uppercase tracking-wider">
                   <th className="py-3 px-4">Loại</th>
                   <th className="py-3 px-4">Tên & Prompt</th>
                   <th className="py-3 px-4">Tài khoản</th>
@@ -529,22 +529,22 @@ export const QueueView: React.FC = () => {
                   <th className="py-3 px-4 text-right">Thao tác</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/80 text-xs">
+              <tbody className="divide-y divide-[#E2E6FF] text-xs">
                 {filteredJobs.map((job) => {
                   const isImage = job.type === 'image';
                   return (
                     <tr
                       key={job.id}
                       onClick={() => setSelectedJob(job)}
-                      className="hover:bg-slate-900/50 cursor-pointer transition-colors"
+                      className="hover:bg-white/50 cursor-pointer transition-colors"
                     >
                       {/* Type Badge */}
                       <td className="py-3 px-4">
                         <span
                           className={`text-[10px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider ${
                             isImage
-                              ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
-                              : 'bg-violet-500/10 text-violet-400 border border-violet-500/20'
+                              ? 'bg-[#5F2CFF]/10 text-[#5F2CFF] border border-[#5F2CFF]/20'
+                              : 'bg-[#7B52FF]/10 text-[#7B52FF] border border-[#7B52FF]/20'
                           }`}
                         >
                           {job.type}
@@ -553,10 +553,10 @@ export const QueueView: React.FC = () => {
 
                       {/* Name & Prompt */}
                       <td className="py-3 px-4 max-w-md">
-                        <p className="font-semibold text-slate-200 truncate">{job.name}</p>
-                        <p className="text-[11px] text-slate-400 truncate">{job.prompt}</p>
+                        <p className="font-semibold text-[#1A0A4A] truncate">{job.name}</p>
+                        <p className="text-[11px] text-[#4A4070] truncate">{job.prompt}</p>
                         {job.dependencyJobId && (
-                          <span className="text-[10px] text-cyan-400 font-mono">
+                          <span className="text-[10px] text-sky-700 font-mono">
                             ↳ Liên kết với job cha {job.dependencyJobId}
                           </span>
                         )}
@@ -565,11 +565,11 @@ export const QueueView: React.FC = () => {
                       {/* Session / Account */}
                       <td className="py-3 px-4 whitespace-nowrap">
                         {job.sessionId ? (
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700/80">
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-[#F0F3FF] text-[#4A4070] border border-[#C4CEFF]/80">
                             👤 {sessions.find((s) => s.id === job.sessionId)?.name || 'Phiên #' + job.sessionId.slice(-4)}
                           </span>
                         ) : (
-                          <span className="text-[10px] text-slate-500 italic">Tự động chọn</span>
+                          <span className="text-[10px] text-[#8B85B8] italic">Tự động chọn</span>
                         )}
                       </td>
 
@@ -579,16 +579,16 @@ export const QueueView: React.FC = () => {
                           <span
                             className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
                               job.status === 'completed'
-                                ? 'bg-emerald-500/10 text-emerald-400'
+                                ? 'bg-emerald-50 text-emerald-600'
                                 : job.status === 'running' || job.status === 'downloading'
-                                ? 'bg-indigo-500/10 text-indigo-400 animate-pulse'
+                                ? 'bg-[#5F2CFF]/10 text-[#5F2CFF] animate-pulse'
                                 : job.status === 'waiting_for_user'
-                                ? 'bg-cyan-500/10 text-cyan-400'
+                                ? 'bg-sky-50 text-sky-700'
                                 : job.status === 'failed'
-                                ? 'bg-rose-500/10 text-rose-400'
+                                ? 'bg-rose-50 text-rose-600'
                                 : job.status === 'interrupted'
-                                ? 'bg-amber-500/10 text-amber-400'
-                                : 'bg-slate-800 text-slate-400'
+                                ? 'bg-amber-50 text-amber-700'
+                                : 'bg-[#F0F3FF] text-[#4A4070]'
                             }`}
                           >
                             {JOB_STATUS_NAMES[job.status] || job.status}
@@ -596,13 +596,13 @@ export const QueueView: React.FC = () => {
 
                           {(job.status === 'running' || job.status === 'downloading') && (
                             <div className="flex items-center gap-2">
-                              <div className="w-20 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                              <div className="w-20 h-1.5 rounded-full bg-[#F0F3FF] overflow-hidden">
                                 <div
-                                  className="h-full bg-indigo-500 transition-all duration-300"
+                                  className="h-full bg-[#5F2CFF] transition-all duration-300"
                                   style={{ width: `${job.progress || 10}%` }}
                                 />
                               </div>
-                              <span className="text-[10px] font-mono font-medium text-indigo-400">
+                              <span className="text-[10px] font-mono font-medium text-[#5F2CFF]">
                                 {job.progress || 10}%
                               </span>
                             </div>
@@ -611,16 +611,16 @@ export const QueueView: React.FC = () => {
                       </td>
 
                       {/* Retries */}
-                      <td className="py-3 px-4 text-slate-400 font-mono text-[11px]">
+                      <td className="py-3 px-4 text-[#4A4070] font-mono text-[11px]">
                         {job.retryCount > 0 ? (
-                          <span className="text-amber-400 font-semibold">{job.retryCount}/{job.maxRetries}</span>
+                          <span className="text-amber-700 font-semibold">{job.retryCount}/{job.maxRetries}</span>
                         ) : (
                           <span>0/{job.maxRetries}</span>
                         )}
                       </td>
 
                       {/* Created */}
-                      <td className="py-3 px-4 text-slate-400 text-[11px]">
+                      <td className="py-3 px-4 text-[#4A4070] text-[11px]">
                         {new Date(job.createdAt).toLocaleTimeString()}
                       </td>
 
@@ -629,7 +629,7 @@ export const QueueView: React.FC = () => {
                         {job.status === 'waiting_for_user' && (
                           <button
                             onClick={() => approveJob(job.id)}
-                            className="px-2.5 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-[11px]"
+                            className="px-2.5 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-[#1A0A4A] font-bold text-[11px]"
                           >
                             Duyệt
                           </button>
@@ -638,7 +638,7 @@ export const QueueView: React.FC = () => {
                         {(job.status === 'failed' || job.status === 'interrupted' || job.status === 'cancelled') && (
                           <button
                             onClick={() => retryJob(job.id)}
-                            className="p-1.5 rounded hover:bg-slate-800 text-indigo-400"
+                            className="p-1.5 rounded hover:bg-[#F0F3FF] text-[#5F2CFF]"
                             title="Thử lại job"
                           >
                             <RotateCw className="w-3.5 h-3.5" />
@@ -648,7 +648,7 @@ export const QueueView: React.FC = () => {
                         {(job.status === 'pending' || job.status === 'running') && (
                           <button
                             onClick={() => cancelJob(job.id)}
-                            className="p-1.5 rounded hover:bg-slate-800 text-amber-400"
+                            className="p-1.5 rounded hover:bg-[#F0F3FF] text-amber-700"
                             title="Hủy job"
                           >
                             <X className="w-3.5 h-3.5" />
@@ -657,7 +657,7 @@ export const QueueView: React.FC = () => {
 
                         <button
                           onClick={() => deleteJob(job.id)}
-                          className="p-1.5 rounded hover:bg-slate-800 text-slate-500 hover:text-rose-400"
+                          className="p-1.5 rounded hover:bg-[#F0F3FF] text-[#8B85B8] hover:text-rose-600"
                           title="Xóa job"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -675,18 +675,18 @@ export const QueueView: React.FC = () => {
       {/* Batch Import Modal with Live Preview */}
       {isImportModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in">
-          <div className="w-full max-w-2xl bg-[#0d1322] border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="p-5 border-b border-slate-800 flex items-center justify-between">
+          <div className="w-full max-w-2xl bg-white border border-[#E2E6FF] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-5 border-b border-[#E2E6FF] flex items-center justify-between">
               <div>
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <Upload className="w-4 h-4 text-indigo-400" />
+                <h3 className="text-base font-bold text-[#1A0A4A] flex items-center gap-2">
+                  <Upload className="w-4 h-4 text-[#5F2CFF]" />
                   <span>Nhập Prompts hàng loạt (CSV / JSON)</span>
                 </h3>
-                <p className="text-xs text-slate-400">Xem trước prompt trước khi đưa vào hàng đợi</p>
+                <p className="text-xs text-[#4A4070]">Xem trước prompt trước khi đưa vào hàng đợi</p>
               </div>
               <button
                 onClick={() => setIsImportModalOpen(false)}
-                className="text-slate-400 hover:text-white p-1"
+                className="text-[#4A4070] hover:text-[#1A0A4A] p-1"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -695,12 +695,12 @@ export const QueueView: React.FC = () => {
             <div className="p-6 space-y-4 overflow-y-auto flex-1">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
-                  <span className="text-xs font-semibold text-slate-300">Dán danh sách Prompts:</span>
-                  <p className="text-[11px] text-slate-500">Mỗi dòng là 1 prompt (tự do), hoặc theo định dạng CSV / JSON</p>
+                  <span className="text-xs font-semibold text-[#4A4070]">Dán danh sách Prompts:</span>
+                  <p className="text-[11px] text-[#8B85B8]">Mỗi dòng là 1 prompt (tự do), hoặc theo định dạng CSV / JSON</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-semibold text-slate-400">Tỷ lệ:</span>
-                  <div className="flex bg-slate-900 border border-slate-800 rounded-lg p-0.5">
+                  <span className="text-[11px] font-semibold text-[#4A4070]">Tỷ lệ:</span>
+                  <div className="flex bg-white border border-[#E2E6FF] rounded-lg p-0.5">
                     {['16:9', '1:1', '9:16', '4:3', '3:4'].map((r) => (
                       <button
                         key={r}
@@ -711,8 +711,8 @@ export const QueueView: React.FC = () => {
                         }}
                         className={`text-[10px] px-2 py-0.5 rounded font-mono transition-colors ${
                           importAspectRatio === r
-                            ? 'bg-indigo-600 text-white font-bold'
-                            : 'text-slate-400 hover:text-slate-200'
+                            ? 'bg-[#5F2CFF] text-white font-bold'
+                            : 'text-[#4A4070] hover:text-[#1A0A4A]'
                         }`}
                       >
                         {r}
@@ -721,7 +721,7 @@ export const QueueView: React.FC = () => {
                   </div>
                   <button
                     onClick={loadCsvTemplate}
-                    className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 ml-2"
+                    className="text-xs font-semibold text-[#5F2CFF] hover:text-[#7B52FF] ml-2"
                   >
                     CSV Mẫu
                   </button>
@@ -733,32 +733,32 @@ export const QueueView: React.FC = () => {
                 onChange={(e) => handleParseImport(e.target.value)}
                 placeholder="Dán danh sách 100 prompt vào đây (mỗi dòng 1 prompt)...&#10;Ví dụ:&#10;Stopping a vehicle in front of the security gate, chibi cartoon style...&#10;A cute cat barista serving coffee in cozy rainy cafe...&#10;Cyberpunk city market at sunset with neon reflections..."
                 rows={6}
-                className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 resize-none"
+                className="w-full p-3 rounded-xl bg-white border border-[#E2E6FF] shadow-sm text-xs font-mono text-[#1A0A4A] placeholder:text-[#4A4070] focus:outline-none focus:border-[#5F2CFF] resize-none"
               />
 
               {/* Live Preview Section */}
               {previewItems.length > 0 && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-200">
+                    <span className="text-xs font-bold text-[#1A0A4A]">
                       Bản xem trước ({previewItems.length} jobs hợp lệ):
                     </span>
                   </div>
 
-                  <div className="max-h-48 overflow-y-auto rounded-xl border border-slate-800 bg-slate-900/80 divide-y divide-slate-800">
+                  <div className="max-h-48 overflow-y-auto rounded-xl border border-[#E2E6FF] bg-[#F0F3FF]/80 divide-y divide-[#E2E6FF]">
                     {previewItems.map((item, idx) => (
                       <div key={idx} className="p-2.5 flex items-center justify-between gap-3 text-xs">
                         <div className="min-w-0">
-                          <p className="font-semibold text-slate-200 truncate">{item.prompt}</p>
-                          <span className="text-[10px] text-slate-400">
+                          <p className="font-semibold text-[#1A0A4A] truncate">{item.prompt}</p>
+                          <span className="text-[10px] text-[#4A4070]">
                             Tỷ lệ: {item.aspectRatio} | Thời lượng: {item.duration}s
                           </span>
                         </div>
                         <span
                           className={`text-[10px] px-2 py-0.5 rounded uppercase font-bold shrink-0 ${
                             item.type === 'video'
-                              ? 'bg-violet-500/10 text-violet-400'
-                              : 'bg-indigo-500/10 text-indigo-400'
+                              ? 'bg-[#7B52FF]/10 text-[#7B52FF]'
+                              : 'bg-[#5F2CFF]/10 text-[#5F2CFF]'
                           }`}
                         >
                           {item.type}
@@ -770,17 +770,17 @@ export const QueueView: React.FC = () => {
               )}
             </div>
 
-            <div className="p-4 border-t border-slate-800 bg-slate-900/50 flex items-center justify-end gap-3">
+            <div className="p-4 border-t border-[#E2E6FF] bg-white/50 flex items-center justify-end gap-3">
               <button
                 onClick={() => setIsImportModalOpen(false)}
-                className="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-slate-200"
+                className="px-4 py-2 rounded-xl text-xs font-medium text-[#4A4070] hover:text-[#1A0A4A]"
               >
                 Hủy
               </button>
               <button
                 disabled={previewItems.length === 0}
                 onClick={handleConfirmEnqueue}
-                className="px-5 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                className="px-5 py-2 rounded-xl text-xs font-bold bg-[#5F2CFF] hover:bg-[#7B52FF] text-white shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 Thêm {previewItems.length} Job vào Hàng đợi
               </button>
@@ -792,72 +792,72 @@ export const QueueView: React.FC = () => {
       {/* Job Details Modal */}
       {selectedJob && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in">
-          <div className="w-full max-w-lg bg-[#0d1322] border border-slate-800 rounded-2xl shadow-2xl p-6 space-y-4">
+          <div className="w-full max-w-lg bg-white border border-[#E2E6FF] rounded-2xl shadow-2xl p-6 space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span
                   className={`text-[10px] px-2 py-0.5 rounded uppercase font-extrabold ${
                     selectedJob.type === 'video'
-                      ? 'bg-violet-500/15 text-violet-400 border border-violet-500/30'
-                      : 'bg-indigo-500/15 text-indigo-400 border border-indigo-500/30'
+                      ? 'bg-[#5F2CFF]/10 text-[#7B52FF] border border-[#7B52FF]/25'
+                      : 'bg-[#5F2CFF]/15 text-[#5F2CFF] border border-[#5F2CFF]/25'
                   }`}
                 >
                   {selectedJob.type}
                 </span>
-                <h3 className="text-sm font-bold text-white truncate max-w-xs">{selectedJob.name}</h3>
+                <h3 className="text-sm font-bold text-[#1A0A4A] truncate max-w-xs">{selectedJob.name}</h3>
               </div>
               <button
                 onClick={() => setSelectedJob(null)}
-                className="text-slate-400 hover:text-white p-1"
+                className="text-[#4A4070] hover:text-[#1A0A4A] p-1"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Prompt */}
-            <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
-              <span className="text-[10px] font-bold text-slate-500 uppercase">PROMPT</span>
-              <p className="text-xs text-slate-200 leading-relaxed">{selectedJob.prompt}</p>
+            <div className="p-3 rounded-xl bg-white border border-[#E2E6FF] shadow-sm space-y-1">
+              <span className="text-[10px] font-bold text-[#8B85B8] uppercase">PROMPT</span>
+              <p className="text-xs text-[#1A0A4A] leading-relaxed">{selectedJob.prompt}</p>
             </div>
 
             {/* Error Message if failed */}
             {selectedJob.errorMessage && (
-              <div className="p-3 rounded-xl bg-rose-950/40 border border-rose-500/30 text-rose-300 text-xs space-y-1">
-                <span className="text-[10px] font-bold uppercase text-rose-400">CHI TIẾT LỖI</span>
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-500 text-xs space-y-1">
+                <span className="text-[10px] font-bold uppercase text-rose-600">CHI TIẾT LỖI</span>
                 <p>{selectedJob.errorMessage}</p>
               </div>
             )}
 
             {/* Parameters Grid */}
             <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="p-2.5 rounded-lg bg-slate-900/60 border border-slate-800">
-                <span className="text-[10px] text-slate-500 block">Trạng thái:</span>
-                <span className="font-semibold text-slate-200">{JOB_STATUS_NAMES[selectedJob.status] || selectedJob.status}</span>
+              <div className="p-2.5 rounded-lg bg-white/80 border border-[#E2E6FF]">
+                <span className="text-[10px] text-[#8B85B8] block">Trạng thái:</span>
+                <span className="font-semibold text-[#1A0A4A]">{JOB_STATUS_NAMES[selectedJob.status] || selectedJob.status}</span>
               </div>
-              <div className="p-2.5 rounded-lg bg-slate-900/60 border border-slate-800">
-                <span className="text-[10px] text-slate-500 block">Tỷ lệ khung hình:</span>
-                <span className="font-semibold text-slate-200">{selectedJob.aspectRatio}</span>
+              <div className="p-2.5 rounded-lg bg-white/80 border border-[#E2E6FF]">
+                <span className="text-[10px] text-[#8B85B8] block">Tỷ lệ khung hình:</span>
+                <span className="font-semibold text-[#1A0A4A]">{selectedJob.aspectRatio}</span>
               </div>
-              <div className="p-2.5 rounded-lg bg-slate-900/60 border border-slate-800">
-                <span className="text-[10px] text-slate-500 block">Thời lượng / Số lần thử:</span>
-                <span className="font-semibold text-slate-200">{selectedJob.duration}s | Lần thử {selectedJob.retryCount}/{selectedJob.maxRetries}</span>
+              <div className="p-2.5 rounded-lg bg-white/80 border border-[#E2E6FF]">
+                <span className="text-[10px] text-[#8B85B8] block">Thời lượng / Số lần thử:</span>
+                <span className="font-semibold text-[#1A0A4A]">{selectedJob.duration}s | Lần thử {selectedJob.retryCount}/{selectedJob.maxRetries}</span>
               </div>
-              <div className="p-2.5 rounded-lg bg-slate-900/60 border border-slate-800">
-                <span className="text-[10px] text-slate-500 block">Mã Job:</span>
-                <span className="font-mono text-[10px] text-slate-400 truncate block">{selectedJob.id}</span>
+              <div className="p-2.5 rounded-lg bg-white/80 border border-[#E2E6FF]">
+                <span className="text-[10px] text-[#8B85B8] block">Mã Job:</span>
+                <span className="font-mono text-[10px] text-[#4A4070] truncate block">{selectedJob.id}</span>
               </div>
             </div>
 
             {/* Output File Info */}
             {selectedJob.outputFile && (
-              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between gap-2">
+              <div className="p-3 rounded-xl bg-white border border-[#E2E6FF] shadow-sm flex items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <span className="text-[10px] text-emerald-400 font-bold block">FILE ĐẦU RA</span>
-                  <span className="text-xs font-mono text-slate-300 truncate block">{selectedJob.outputFile}</span>
+                  <span className="text-[10px] text-emerald-600 font-bold block">FILE ĐẦU RA</span>
+                  <span className="text-xs font-mono text-[#4A4070] truncate block">{selectedJob.outputFile}</span>
                 </div>
                 <button
                   onClick={() => window.api.openFile(selectedJob.outputFile!)}
-                  className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shrink-0"
+                  className="px-3 py-1.5 rounded-lg bg-[#5F2CFF] hover:bg-[#7B52FF] text-white text-xs font-semibold shrink-0"
                 >
                   Mở file
                 </button>
@@ -867,7 +867,7 @@ export const QueueView: React.FC = () => {
             <div className="pt-2 flex justify-end gap-2">
               <button
                 onClick={() => setSelectedJob(null)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300"
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#F0F3FF] hover:bg-[#E8ECFF] text-[#4A4070]"
               >
                 Đóng
               </button>
@@ -879,24 +879,24 @@ export const QueueView: React.FC = () => {
       {/* Quota Exhausted Confirmation Modal */}
       {quotaExhaustedModal?.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-          <div className="w-full max-w-md bg-[#0d1322] border border-amber-500/40 rounded-2xl shadow-2xl p-6 space-y-5">
+          <div className="w-full max-w-md bg-white border border-amber-200 rounded-2xl shadow-2xl p-6 space-y-5">
             <div className="flex items-start gap-3">
-              <div className="p-2.5 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/30 shrink-0">
+              <div className="p-2.5 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
                 <AlertTriangle className="w-6 h-6" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-sm font-bold text-white">Tài khoản hết Quota hôm nay</h3>
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  Tài khoản <span className="font-bold text-amber-300">"{quotaExhaustedModal.sessionName}"</span> đã dùng hết hạn mức tín dụng Google Flow.
+                <h3 className="text-sm font-bold text-[#1A0A4A]">Tài khoản hết Quota hôm nay</h3>
+                <p className="text-xs text-[#4A4070] leading-relaxed">
+                  Tài khoản <span className="font-bold text-amber-700">"{quotaExhaustedModal.sessionName}"</span> đã dùng hết hạn mức tín dụng Google Flow.
                 </p>
-                <p className="text-xs text-slate-400">
-                  Hiện còn <span className="font-bold text-white">{quotaExhaustedModal.pendingCount} tác vụ</span> của chủ đề này trong hàng đợi.
+                <p className="text-xs text-[#4A4070]">
+                  Hiện còn <span className="font-bold text-[#1A0A4A]">{quotaExhaustedModal.pendingCount} tác vụ</span> của chủ đề này trong hàng đợi.
                 </p>
               </div>
             </div>
 
-            <div className="space-y-3 p-4 rounded-xl bg-slate-900 border border-slate-800 text-xs">
-              <label className="font-semibold text-slate-300 block">
+            <div className="space-y-3 p-4 rounded-xl bg-white border border-[#E2E6FF] shadow-sm text-xs">
+              <label className="font-semibold text-[#4A4070] block">
                 Chọn phương án xử lý:
               </label>
 
@@ -907,18 +907,18 @@ export const QueueView: React.FC = () => {
                     name="quotaAction"
                     checked={quotaAction === 'transfer'}
                     onChange={() => setQuotaAction('transfer')}
-                    className="mt-0.5 text-indigo-600 focus:ring-0"
+                    className="mt-0.5 text-[#5F2CFF] focus:ring-0"
                   />
                   <div className="space-y-1 flex-1">
-                    <span className="font-bold text-white block">Chuyển sang tài khoản khác</span>
-                    <span className="text-[11px] text-slate-400 block">
+                    <span className="font-bold text-[#1A0A4A] block">Chuyển sang tài khoản khác</span>
+                    <span className="text-[11px] text-[#4A4070] block">
                       Tiếp tục chạy các tác vụ còn lại trên một tài khoản sẵn sàng khác.
                     </span>
                     {quotaAction === 'transfer' && (
                       <select
                         value={targetSessionId}
                         onChange={(e) => setTargetSessionId(e.target.value)}
-                        className="w-full mt-2 px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
+                        className="w-full mt-2 px-3 py-2 rounded-lg bg-[#F4F6FF] border border-[#C4CEFF] text-xs text-[#1A0A4A] focus:outline-none focus:border-[#5F2CFF]"
                       >
                         <option value="">-- Chọn tài khoản chuyển giao --</option>
                         {sessions
@@ -933,17 +933,17 @@ export const QueueView: React.FC = () => {
                   </div>
                 </label>
 
-                <label className="flex items-start gap-2.5 cursor-pointer pt-2 border-t border-slate-800/80">
+                <label className="flex items-start gap-2.5 cursor-pointer pt-2 border-t border-[#E2E6FF]">
                   <input
                     type="radio"
                     name="quotaAction"
                     checked={quotaAction === 'pause'}
                     onChange={() => setQuotaAction('pause')}
-                    className="mt-0.5 text-indigo-600 focus:ring-0"
+                    className="mt-0.5 text-[#5F2CFF] focus:ring-0"
                   />
                   <div>
-                    <span className="font-bold text-white block">Tạm dừng các tác vụ này</span>
-                    <span className="text-[11px] text-slate-400 block">
+                    <span className="font-bold text-[#1A0A4A] block">Tạm dừng các tác vụ này</span>
+                    <span className="text-[11px] text-[#4A4070] block">
                       Giữ nguyên dự án, để mai khi tài khoản hồi quota thì bấm chạy tiếp.
                     </span>
                   </div>
@@ -954,7 +954,7 @@ export const QueueView: React.FC = () => {
             <div className="flex items-center justify-end gap-3 pt-2">
               <button
                 onClick={() => setQuotaExhaustedModal(null)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white"
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-[#4A4070] hover:text-[#1A0A4A]"
               >
                 Đóng
               </button>
@@ -977,7 +977,7 @@ export const QueueView: React.FC = () => {
                   }
                   setQuotaExhaustedModal(null);
                 }}
-                className="px-5 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                className="px-5 py-2.5 rounded-xl text-xs font-bold bg-[#5F2CFF] hover:bg-[#7B52FF] text-white shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 Xác nhận thực hiện
               </button>

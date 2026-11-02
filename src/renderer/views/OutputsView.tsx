@@ -51,7 +51,7 @@ const SafeImage: React.FC<{
 
   if (hasError) {
     return (
-      <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900 text-slate-500 p-2 text-center text-[10px]">
+      <div className="w-full h-full flex flex-col items-center justify-center bg-white text-[#8B85B8] p-2 text-center text-[10px]">
         <ImageIcon className="w-6 h-6 mb-1 opacity-40 text-red-400" />
         <span>Không thể tải ảnh</span>
       </div>
@@ -431,13 +431,13 @@ export const OutputsView: React.FC = () => {
       {/* Top Header & Action Buttons */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+          <h1 className="text-xl font-bold text-[#1A0A4A] tracking-tight flex items-center gap-2">
             <span>Thư viện Media &amp; Ảnh đã xuất</span>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#5F2CFF]/10 text-[#5F2CFF] border border-[#5F2CFF]/20">
               {filteredOutputs.length} file
             </span>
           </h1>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-[#4A4070] mt-0.5">
             Xem toàn bộ ảnh đã tạo hoặc đồng bộ từ web Google Flow về máy tính với quy tắc đặt tên tự động.
           </p>
         </div>
@@ -461,16 +461,16 @@ export const OutputsView: React.FC = () => {
           {/* Batch Rename Button */}
           <button
             onClick={() => setIsRenameModalOpen(true)}
-            className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 hover:border-slate-600 transition-all flex items-center gap-2 shadow-sm"
+            className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-white hover:bg-[#F0F3FF] text-[#1A0A4A] border border-[#C4CEFF] hover:border-[#8B7AB8] transition-all flex items-center gap-2 shadow-sm"
           >
-            <Tag className="w-3.5 h-3.5 text-cyan-400" />
+            <Tag className="w-3.5 h-3.5 text-sky-700" />
             <span>Đặt tên hàng loạt</span>
           </button>
 
           {/* Sync from Google Flow Button */}
           <button
             onClick={() => setIsSyncModalOpen(true)}
-            className="px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white shadow-lg shadow-indigo-600/20 transition-all flex items-center gap-2"
+            className="px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-[#5F2CFF] via-[#7B52FF] to-[#9B7AFF] hover:from-[#7B52FF] hover:to-[#9B7AFF] text-white shadow-lg shadow-[#5F2CFF]/20 transition-all flex items-center gap-2"
           >
             <CloudDownload className="w-4 h-4 animate-bounce" />
             <span>Đồng bộ từ Google Flow</span>
@@ -479,7 +479,7 @@ export const OutputsView: React.FC = () => {
       </div>
 
       {/* Top Controls & Filtering Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-[#0d1322] border border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-white border border-[#E2E6FF] shadow-sm">
         <div className="flex items-center gap-2 flex-wrap">
           {/* Filter Type Pills */}
           {(['all', 'image', 'video'] as const).map((t) => {
@@ -489,8 +489,8 @@ export const OutputsView: React.FC = () => {
                 key={t}
                 onClick={() => setFilterType(t)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all ${isActive
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
+                    ? 'bg-[#5F2CFF] text-white shadow-sm'
+                    : 'bg-white text-[#4A4070] hover:text-[#1A0A4A] border border-[#E2E6FF]'
                   }`}
               >
                 {t === 'all' ? 'Tất cả' : t === 'image' ? 'Ảnh' : 'Video'}
@@ -503,7 +503,7 @@ export const OutputsView: React.FC = () => {
             <select
               value={filterProject}
               onChange={(e) => setFilterProject(e.target.value)}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 border border-slate-800 focus:outline-none focus:border-indigo-500"
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-[#4A4070] border border-[#E2E6FF] focus:outline-none focus:border-[#5F2CFF]"
             >
               <option value="all">📁 Tất cả dự án ({uniqueProjects.length})</option>
               {uniqueProjects.map((p) => (
@@ -518,7 +518,7 @@ export const OutputsView: React.FC = () => {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as any)}
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 border border-slate-800 focus:outline-none focus:border-indigo-500"
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-[#4A4070] border border-[#E2E6FF] focus:outline-none focus:border-[#5F2CFF]"
             title="Thứ tự hiển thị ảnh"
           >
             <option value="index_asc">🔢 Thứ tự dự án (#1 → #160)</option>
@@ -529,19 +529,19 @@ export const OutputsView: React.FC = () => {
 
           <button
             onClick={() => loadOutputs()}
-            className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition-colors"
+            className="p-1.5 rounded-lg bg-white border border-[#E2E6FF] shadow-sm text-[#4A4070] hover:text-[#1A0A4A] transition-colors"
             title="Làm mới danh sách"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-indigo-400' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-[#5F2CFF]' : ''}`} />
           </button>
 
           {/* View Mode Toggle (Grid / List) */}
-          <div className="flex items-center p-0.5 rounded-lg bg-slate-900 border border-slate-800">
+          <div className="flex items-center p-0.5 rounded-lg bg-white border border-[#E2E6FF] shadow-sm">
             <button
               onClick={() => setViewMode('grid')}
               className={`p-1.5 rounded-md transition-all ${viewMode === 'grid'
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-[#5F2CFF] text-white shadow-sm'
+                  : 'text-[#4A4070] hover:text-[#1A0A4A]'
                 }`}
               title="Chế độ Lưới (Grid)"
             >
@@ -550,8 +550,8 @@ export const OutputsView: React.FC = () => {
             <button
               onClick={() => setViewMode('list')}
               className={`p-1.5 rounded-md transition-all ${viewMode === 'list'
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-[#5F2CFF] text-white shadow-sm'
+                  : 'text-[#4A4070] hover:text-[#1A0A4A]'
                 }`}
               title="Chế độ Danh sách (List)"
             >
@@ -562,30 +562,30 @@ export const OutputsView: React.FC = () => {
 
         {/* Search Bar */}
         <div className="relative min-w-[260px]">
-          <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-3.5 h-3.5 text-[#8B85B8] absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Tìm theo prompt, tên file, dự án..."
-            className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
+            className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-white border border-[#E2E6FF] shadow-sm text-xs text-[#1A0A4A] placeholder:text-[#8B85B8] focus:outline-none focus:border-[#5F2CFF]"
           />
         </div>
       </div>
 
       {/* Media Grid or List */}
       {filteredOutputs.length === 0 ? (
-        <div className="py-20 flex flex-col items-center justify-center text-center text-slate-500 text-xs rounded-2xl border border-dashed border-slate-800 space-y-3">
-          <ImageIcon className="w-10 h-10 text-slate-600 opacity-60" />
+        <div className="py-20 flex flex-col items-center justify-center text-center text-[#8B85B8] text-xs rounded-2xl border border-dashed border-[#E2E6FF] space-y-3">
+          <ImageIcon className="w-10 h-10 text-[#4A4070] opacity-60" />
           <div className="space-y-1">
-            <p className="font-semibold text-slate-400">Chưa có file output nào trong thư viện.</p>
-            <p className="text-[11px] text-slate-500">
-              Hãy tạo ảnh mới hoặc bấm <span className="text-indigo-400 font-bold">"Đồng bộ từ Google Flow"</span> để tải tất cả ảnh từ tài khoản web về máy!
+            <p className="font-semibold text-[#4A4070]">Chưa có file output nào trong thư viện.</p>
+            <p className="text-[11px] text-[#8B85B8]">
+              Hãy tạo ảnh mới hoặc bấm <span className="text-[#5F2CFF] font-bold">"Đồng bộ từ Google Flow"</span> để tải tất cả ảnh từ tài khoản web về máy!
             </p>
           </div>
           <button
             onClick={() => setIsSyncModalOpen(true)}
-            className="mt-2 px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 transition-all flex items-center gap-1.5"
+            className="mt-2 px-4 py-2 rounded-xl text-xs font-bold bg-[#5F2CFF]/15 hover:bg-[#5F2CFF]/20 text-[#7B52FF] border border-[#5F2CFF]/25 transition-all flex items-center gap-1.5"
           >
             <CloudDownload className="w-3.5 h-3.5" />
             <span>Mở tính năng đồng bộ</span>
@@ -599,10 +599,10 @@ export const OutputsView: React.FC = () => {
               <div
                 key={item.id}
                 onClick={() => setSelectedItem(item)}
-                className="group rounded-2xl border border-slate-800 bg-[#0d1322] overflow-hidden hover:border-slate-700 hover:shadow-xl transition-all cursor-pointer flex flex-col justify-between"
+                className="group rounded-2xl border border-[#E2E6FF] bg-white overflow-hidden hover:border-[#C4CEFF] hover:shadow-xl transition-all cursor-pointer flex flex-col justify-between"
               >
                 {/* Media Preview Box */}
-                <div className="aspect-video bg-slate-950 relative overflow-hidden flex items-center justify-center border-b border-slate-800/80">
+                <div className="aspect-video bg-[#F4F6FF] relative overflow-hidden flex items-center justify-center border-b border-[#E2E6FF]">
                   {isImage ? (
                     <SafeImage
                       path={item.path}
@@ -610,7 +610,7 @@ export const OutputsView: React.FC = () => {
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-tr from-violet-950/40 to-slate-900 text-violet-400 gap-2">
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-tr from-[#EDF9FF] to-white text-[#7B52FF] gap-2">
                       <VideoIcon className="w-8 h-8 opacity-80 group-hover:scale-110 transition-transform" />
                       <span className="text-[10px] font-mono font-bold tracking-wider">MP4 VIDEO</span>
                     </div>
@@ -618,28 +618,28 @@ export const OutputsView: React.FC = () => {
 
                   <span
                     className={`absolute top-2 left-2 text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider backdrop-blur-md ${isImage
-                        ? 'bg-indigo-950/80 text-indigo-300 border border-indigo-500/30'
-                        : 'bg-violet-950/80 text-violet-300 border border-violet-500/30'
+                        ? 'bg-[#F0F3FF]/80 text-[#7B52FF] border border-[#5F2CFF]/25'
+                        : 'bg-[#F0F3FF]/80 text-[#9B7AFF] border border-[#7B52FF]/25'
                       }`}
                   >
                     {item.type}
                   </span>
 
                   {item.batchIndex !== undefined && (
-                    <span className="absolute top-2 right-2 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 backdrop-blur-md">
+                    <span className="absolute top-2 right-2 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-700 border border-emerald-200 backdrop-blur-md">
                       #{item.batchIndex}
                     </span>
                   )}
 
                   {item.projectName && (
-                    <span className="absolute bottom-2 left-2 text-[9px] font-semibold px-1.5 py-0.5 rounded bg-slate-950/80 text-slate-300 border border-slate-800 backdrop-blur-md truncate max-w-[140px]">
+                    <span className="absolute bottom-2 left-2 text-[9px] font-semibold px-1.5 py-0.5 rounded bg-[#F4F6FF]/80 text-[#4A4070] border border-[#E2E6FF] backdrop-blur-md truncate max-w-[140px]">
                       📁 {item.projectName}
                     </span>
                   )}
 
                   {item.size < 1024 && (
                     <span
-                      className="absolute top-2 right-2 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider bg-amber-950/80 text-amber-300 border border-amber-500/40 backdrop-blur-md"
+                      className="absolute top-2 right-2 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-200 backdrop-blur-md"
                       title="File nhỏ (<1KB)"
                     >
                       ⚠️ &lt;1KB
@@ -650,15 +650,15 @@ export const OutputsView: React.FC = () => {
                 {/* Info & Metadata */}
                 <div className="p-4 space-y-2 flex-1 flex flex-col justify-between">
                   <div className="space-y-1">
-                    <p className="text-xs font-bold text-slate-200 truncate" title={item.name}>
+                    <p className="text-xs font-bold text-[#1A0A4A] truncate" title={item.name}>
                       {item.name}
                     </p>
-                    <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">
+                    <p className="text-[11px] text-[#4A4070] line-clamp-2 leading-relaxed">
                       {item.prompt || 'Không có prompt'}
                     </p>
                   </div>
 
-                  <div className="pt-2 border-t border-slate-800/60 flex items-center justify-between text-[10px] text-slate-500 font-mono">
+                  <div className="pt-2 border-t border-[#E2E6FF]/60 flex items-center justify-between text-[10px] text-[#8B85B8] font-mono">
                     <span>{formatFileSize(item.size)}</span>
                     <span>{new Date(item.createdAt).toLocaleDateString()}</span>
                   </div>
@@ -667,14 +667,14 @@ export const OutputsView: React.FC = () => {
                   <div className="pt-2 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => openFile(item.path)}
-                      className="flex-1 py-1.5 px-2.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-semibold transition-colors flex items-center justify-center gap-1.5"
+                      className="flex-1 py-1.5 px-2.5 rounded-lg bg-[#5F2CFF]/15 hover:bg-[#5F2CFF]/20 text-[#7B52FF] border border-[#5F2CFF]/25 text-xs font-semibold transition-colors flex items-center justify-center gap-1.5"
                     >
                       <ExternalLink className="w-3 h-3" />
                       <span>Mở File</span>
                     </button>
                     <button
                       onClick={() => revealInExplorer(item.path)}
-                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700 transition-colors"
+                      className="p-1.5 rounded-lg bg-[#F0F3FF] hover:bg-[#E8ECFF] text-[#4A4070] hover:text-[#1A0A4A] border border-[#C4CEFF] transition-colors"
                       title="Hiện trong File Explorer"
                     >
                       <FolderOpen className="w-3.5 h-3.5" />
@@ -694,11 +694,11 @@ export const OutputsView: React.FC = () => {
         </div>
       ) : (
         /* List View */
-        <div className="rounded-2xl border border-slate-800 bg-[#0d1322] overflow-hidden shadow-xl">
+        <div className="rounded-2xl border border-[#E2E6FF] bg-white overflow-hidden shadow-xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-slate-800 bg-slate-900/60 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                <tr className="border-b border-[#E2E6FF] bg-white/80 text-[11px] font-bold text-[#4A4070] uppercase tracking-wider">
                   <th className="py-3 px-4 w-16 text-center">Xem</th>
                   <th className="py-3 px-4 min-w-[200px]">Tên tệp & Dự án</th>
                   <th className="py-3 px-4 w-24">Loại</th>
@@ -708,18 +708,18 @@ export const OutputsView: React.FC = () => {
                   <th className="py-3 px-4 w-32 text-right">Thao tác</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 text-xs text-slate-300">
+              <tbody className="divide-y divide-[#E2E6FF] text-xs text-[#4A4070]">
                 {filteredOutputs.map((item) => {
                   const isImage = item.type === 'image';
                   return (
                     <tr
                       key={item.id}
                       onClick={() => setSelectedItem(item)}
-                      className="hover:bg-slate-800/40 transition-colors cursor-pointer group"
+                      className="hover:bg-[#F0F3FF]/40 transition-colors cursor-pointer group"
                     >
                       {/* Thumbnail */}
                       <td className="py-2.5 px-4 text-center">
-                        <div className="w-12 h-9 mx-auto rounded-lg bg-slate-950 border border-slate-800 overflow-hidden flex items-center justify-center shrink-0">
+                        <div className="w-12 h-9 mx-auto rounded-lg bg-[#F4F6FF] border border-[#E2E6FF] overflow-hidden flex items-center justify-center shrink-0">
                           {isImage ? (
                             <SafeImage
                               path={item.path}
@@ -727,7 +727,7 @@ export const OutputsView: React.FC = () => {
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                             />
                           ) : (
-                            <VideoIcon className="w-4 h-4 text-violet-400" />
+                            <VideoIcon className="w-4 h-4 text-[#7B52FF]" />
                           )}
                         </div>
                       </td>
@@ -735,11 +735,11 @@ export const OutputsView: React.FC = () => {
                       {/* Name & Project */}
                       <td className="py-2.5 px-4">
                         <div className="space-y-1">
-                          <div className="font-semibold text-slate-200 truncate max-w-xs group-hover:text-indigo-300 transition-colors" title={item.name}>
+                          <div className="font-semibold text-[#1A0A4A] truncate max-w-xs group-hover:text-[#7B52FF] transition-colors" title={item.name}>
                             {item.name}
                           </div>
                           {item.projectName && (
-                            <span className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.2 rounded bg-slate-950 text-slate-400 border border-slate-800">
+                            <span className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.2 rounded bg-[#F4F6FF] text-[#4A4070] border border-[#E2E6FF]">
                               📁 {item.projectName}
                             </span>
                           )}
@@ -750,8 +750,8 @@ export const OutputsView: React.FC = () => {
                       <td className="py-2.5 px-4">
                         <span
                           className={`text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider ${isImage
-                              ? 'bg-indigo-950/80 text-indigo-300 border border-indigo-500/30'
-                              : 'bg-violet-950/80 text-violet-300 border border-violet-500/30'
+                              ? 'bg-[#F0F3FF]/80 text-[#7B52FF] border border-[#5F2CFF]/25'
+                              : 'bg-[#F0F3FF]/80 text-[#9B7AFF] border border-[#7B52FF]/25'
                             }`}
                         >
                           {item.type}
@@ -760,17 +760,17 @@ export const OutputsView: React.FC = () => {
 
                       {/* Prompt */}
                       <td className="py-2.5 px-4 max-w-md">
-                        <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed" title={item.prompt}>
-                          {item.prompt || <span className="italic text-slate-600">Không có prompt</span>}
+                        <p className="text-[11px] text-[#4A4070] line-clamp-2 leading-relaxed" title={item.prompt}>
+                          {item.prompt || <span className="italic text-[#4A4070]">Không có prompt</span>}
                         </p>
                       </td>
 
                       {/* Size */}
-                      <td className="py-2.5 px-4 font-mono text-[11px] text-slate-400">
+                      <td className="py-2.5 px-4 font-mono text-[11px] text-[#4A4070]">
                         <div className="flex items-center gap-1.5">
                           <span>{formatFileSize(item.size)}</span>
                           {item.size < 1024 && (
-                            <span className="text-[9px] font-bold px-1 rounded bg-amber-950/80 text-amber-300 border border-amber-500/40">
+                            <span className="text-[9px] font-bold px-1 rounded bg-amber-50 text-amber-700 border border-amber-200">
                               &lt;1KB
                             </span>
                           )}
@@ -778,7 +778,7 @@ export const OutputsView: React.FC = () => {
                       </td>
 
                       {/* Date */}
-                      <td className="py-2.5 px-4 font-mono text-[11px] text-slate-400">
+                      <td className="py-2.5 px-4 font-mono text-[11px] text-[#4A4070]">
                         {new Date(item.createdAt).toLocaleDateString()}
                       </td>
 
@@ -787,14 +787,14 @@ export const OutputsView: React.FC = () => {
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => openFile(item.path)}
-                            className="p-1.5 rounded-lg bg-indigo-600/15 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 transition-colors"
+                            className="p-1.5 rounded-lg bg-[#5F2CFF]/15 hover:bg-[#5F2CFF]/20 text-[#7B52FF] border border-[#5F2CFF]/25 transition-colors"
                             title="Mở file ngoài"
                           >
                             <ExternalLink className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => revealInExplorer(item.path)}
-                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700 transition-colors"
+                            className="p-1.5 rounded-lg bg-[#F0F3FF] hover:bg-[#E8ECFF] text-[#4A4070] hover:text-[#1A0A4A] border border-[#C4CEFF] transition-colors"
                             title="Hiện trong File Explorer"
                           >
                             <FolderOpen className="w-3.5 h-3.5" />
@@ -822,21 +822,21 @@ export const OutputsView: React.FC = () => {
       {/* ───────────────────────────────────────────────────────────── */}
       {isSyncModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
-          <div className="w-full max-w-2xl bg-[#0d1322] border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+          <div className="w-full max-w-2xl bg-white border border-[#E2E6FF] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
             {/* Modal Header */}
-            <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-gradient-to-r from-indigo-950/40 via-purple-950/30 to-transparent">
+            <div className="p-5 border-b border-[#E2E6FF] flex items-center justify-between bg-gradient-to-r from-[#EDF9FF]/40 via-[#EDF9FF]/30 to-transparent">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400">
+                <div className="p-2 rounded-xl bg-[#5F2CFF]/15 border border-[#5F2CFF]/25 text-[#5F2CFF]">
                   <CloudDownload className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-[#1A0A4A] flex items-center gap-2">
                     Đồng bộ ảnh từ Google Flow về máy
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-500/20">
                       Tự động chống trùng
                     </span>
                   </h3>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-[#4A4070]">
                     Tải toàn bộ hình ảnh trong tài khoản web về máy và áp dụng quy tắc đặt tên tự động.
                   </p>
                 </div>
@@ -844,7 +844,7 @@ export const OutputsView: React.FC = () => {
               {!isSyncing && (
                 <button
                   onClick={() => setIsSyncModalOpen(false)}
-                  className="text-slate-400 hover:text-white p-1 rounded-lg"
+                  className="text-[#4A4070] hover:text-[#1A0A4A] p-1 rounded-lg"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -855,15 +855,15 @@ export const OutputsView: React.FC = () => {
             <div className="p-6 space-y-5 overflow-y-auto">
               {/* Session Selector */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300 flex items-center justify-between">
+                <label className="text-xs font-semibold text-[#4A4070] flex items-center justify-between">
                   <span>Phiên làm việc (Session) đã đăng nhập Google:</span>
-                  <span className="text-[11px] text-slate-500">Dùng cookie để tải ảnh gốc</span>
+                  <span className="text-[11px] text-[#8B85B8]">Dùng cookie để tải ảnh gốc</span>
                 </label>
                 <select
                   disabled={isSyncing}
                   value={selectedSessionId}
                   onChange={(e) => setSelectedSessionId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 disabled:opacity-50"
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-[#E2E6FF] shadow-sm text-xs text-[#1A0A4A] focus:outline-none focus:border-[#5F2CFF] disabled:opacity-50"
                 >
                   {sessions.map((s) => {
                     const statusText =
@@ -885,14 +885,14 @@ export const OutputsView: React.FC = () => {
                   const curr = sessions.find((s) => s.id === selectedSessionId);
                   if (curr && curr.status !== 'ready') {
                     return (
-                      <p className="text-[11px] text-amber-400/90 flex items-center gap-1 mt-1">
+                      <p className="text-[11px] text-amber-700/90 flex items-center gap-1 mt-1">
                         ⚠️ Phiên "{curr.name}" chưa ở trạng thái Sẵn sàng ({curr.status}). Nếu quét không thấy dự án, hãy vào tab Cài đặt mở trình duyệt và đăng nhập.
                       </p>
                     );
                   }
                   if (curr) {
                     return (
-                      <p className="text-[11px] text-emerald-400/80 flex items-center gap-1 mt-1">
+                      <p className="text-[11px] text-emerald-600/80 flex items-center gap-1 mt-1">
                         ✓ Đang sử dụng tài khoản: <b>{curr.name}</b>
                       </p>
                     );
@@ -903,21 +903,21 @@ export const OutputsView: React.FC = () => {
 
               {/* Scope Selection */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">Phạm vi quét ảnh:</label>
+                <label className="text-xs font-semibold text-[#4A4070]">Phạm vi quét ảnh:</label>
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     disabled={isSyncing}
                     onClick={() => setSyncScope('all_projects')}
                     className={`p-3 rounded-xl border text-left transition-all ${syncScope === 'all_projects'
-                        ? 'bg-indigo-600/10 border-indigo-500/50 text-indigo-300'
-                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                        ? 'bg-[#5F2CFF]/10 border-[#5F2CFF]/50 text-[#7B52FF]'
+                        : 'bg-white border-[#E2E6FF] text-[#4A4070] hover:text-[#1A0A4A]'
                       }`}
                   >
                     <div className="text-xs font-bold flex items-center gap-1.5">
-                      <Layers className="w-3.5 h-3.5 text-indigo-400" />
+                      <Layers className="w-3.5 h-3.5 text-[#5F2CFF]" />
                       <span>Tất cả các Dự án trên Web</span>
                     </div>
-                    <p className="text-[10px] text-slate-500 mt-1">
+                    <p className="text-[10px] text-[#8B85B8] mt-1">
                       Quét và tải ảnh từ tất cả project trong tài khoản Google Flow.
                     </p>
                   </button>
@@ -926,15 +926,15 @@ export const OutputsView: React.FC = () => {
                     disabled={isSyncing}
                     onClick={() => setSyncScope('current_project')}
                     className={`p-3 rounded-xl border text-left transition-all ${syncScope === 'current_project'
-                        ? 'bg-indigo-600/10 border-indigo-500/50 text-indigo-300'
-                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                        ? 'bg-[#5F2CFF]/10 border-[#5F2CFF]/50 text-[#7B52FF]'
+                        : 'bg-white border-[#E2E6FF] text-[#4A4070] hover:text-[#1A0A4A]'
                       }`}
                   >
                     <div className="text-xs font-bold flex items-center gap-1.5">
-                      <FolderSync className="w-3.5 h-3.5 text-indigo-400" />
+                      <FolderSync className="w-3.5 h-3.5 text-[#5F2CFF]" />
                       <span>Dự án hiện tại</span>
                     </div>
-                    <p className="text-[10px] text-slate-500 mt-1">
+                    <p className="text-[10px] text-[#8B85B8] mt-1">
                       Chỉ quét và tải ảnh trong trang dự án đang mở hiện tại.
                     </p>
                   </button>
@@ -943,17 +943,17 @@ export const OutputsView: React.FC = () => {
 
               {/* Project Picker (only when scope = all_projects) */}
               {syncScope === 'all_projects' && !isSyncing && (
-                <div className="rounded-xl border border-slate-800 bg-slate-900/50 overflow-hidden">
+                <div className="rounded-xl border border-[#E2E6FF] bg-white/50 overflow-hidden">
                   {/* Header */}
-                  <div className="px-4 py-2.5 border-b border-slate-800 flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-                      <Layers className="w-3.5 h-3.5 text-indigo-400" />
+                  <div className="px-4 py-2.5 border-b border-[#E2E6FF] flex items-center justify-between">
+                    <span className="text-xs font-bold text-[#1A0A4A] flex items-center gap-1.5">
+                      <Layers className="w-3.5 h-3.5 text-[#5F2CFF]" />
                       Danh sách dự án trên web
                     </span>
                     <button
                       onClick={handleScanProjects}
                       disabled={isScanningProjects}
-                      className="px-3 py-1 rounded-lg text-[11px] font-bold bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 transition-all flex items-center gap-1.5 disabled:opacity-50"
+                      className="px-3 py-1 rounded-lg text-[11px] font-bold bg-[#5F2CFF]/15 hover:bg-[#5F2CFF]/20 text-[#7B52FF] border border-[#5F2CFF]/25 transition-all flex items-center gap-1.5 disabled:opacity-50"
                     >
                       {isScanningProjects ? (
                         <Loader2 className="w-3 h-3 animate-spin" />
@@ -967,15 +967,15 @@ export const OutputsView: React.FC = () => {
                   {/* Project list body */}
                   <div className="p-3">
                     {!hasScannedProjects && !isScanningProjects && (
-                      <div className="py-4 text-center text-[11px] text-slate-500">
+                      <div className="py-4 text-center text-[11px] text-[#8B85B8]">
                         <Layers className="w-6 h-6 mx-auto mb-1.5 opacity-30" />
-                        <p>Nhấn <b className="text-indigo-400">Quét dự án</b> để tải danh sách từ Google Flow.</p>
-                        <p className="text-[10px] mt-0.5 text-slate-600">Trình duyệt sẽ mở lên trong vài giây.</p>
+                        <p>Nhấn <b className="text-[#5F2CFF]">Quét dự án</b> để tải danh sách từ Google Flow.</p>
+                        <p className="text-[10px] mt-0.5 text-[#4A4070]">Trình duyệt sẽ mở lên trong vài giây.</p>
                       </div>
                     )}
 
                     {isScanningProjects && (
-                      <div className="py-4 text-center text-[11px] text-indigo-300 flex flex-col items-center gap-2">
+                      <div className="py-4 text-center text-[11px] text-[#7B52FF] flex flex-col items-center gap-2">
                         <Loader2 className="w-5 h-5 animate-spin" />
                         <span>Đang mở trình duyệt và quét danh sách dự án...</span>
                       </div>
@@ -990,30 +990,30 @@ export const OutputsView: React.FC = () => {
 
                     {discoveredProjects.length === 1 && (
                       /* Single project — show info only */
-                      <div className="flex items-center gap-2 py-2 px-1 text-xs text-slate-300">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                        <span>Tìm thấy <b className="text-white">1 dự án</b>: {discoveredProjects[0].name}</span>
-                        <span className="ml-auto text-[10px] text-emerald-400 font-semibold">Sẽ đồng bộ toàn bộ</span>
+                      <div className="flex items-center gap-2 py-2 px-1 text-xs text-[#4A4070]">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                        <span>Tìm thấy <b className="text-[#1A0A4A]">1 dự án</b>: {discoveredProjects[0].name}</span>
+                        <span className="ml-auto text-[10px] text-emerald-600 font-semibold">Sẽ đồng bộ toàn bộ</span>
                       </div>
                     )}
 
                     {discoveredProjects.length > 1 && (
                       <div className="space-y-1.5">
                         {/* Select all / deselect all */}
-                        <div className="flex items-center justify-between pb-1.5 border-b border-slate-800">
-                          <span className="text-[11px] text-slate-400">
-                            Đã chọn <b className="text-white">{selectedProjectNames.size}</b> / {discoveredProjects.length} dự án
+                        <div className="flex items-center justify-between pb-1.5 border-b border-[#E2E6FF]">
+                          <span className="text-[11px] text-[#4A4070]">
+                            Đã chọn <b className="text-[#1A0A4A]">{selectedProjectNames.size}</b> / {discoveredProjects.length} dự án
                           </span>
                           <div className="flex items-center gap-1.5">
                             <button
                               onClick={() => setSelectedProjectNames(new Set(discoveredProjects.map((p) => p.name)))}
-                              className="text-[10px] px-2 py-0.5 rounded bg-indigo-600/15 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/20 transition-all"
+                              className="text-[10px] px-2 py-0.5 rounded bg-[#5F2CFF]/15 hover:bg-[#5F2CFF]/20 text-[#7B52FF] border border-[#5F2CFF]/20 transition-all"
                             >
                               Chọn tất cả
                             </button>
                             <button
                               onClick={() => setSelectedProjectNames(new Set())}
-                              className="text-[10px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700 transition-all"
+                              className="text-[10px] px-2 py-0.5 rounded bg-[#F0F3FF] hover:bg-[#E8ECFF] text-[#4A4070] border border-[#C4CEFF] transition-all"
                             >
                               Bỏ chọn
                             </button>
@@ -1029,19 +1029,19 @@ export const OutputsView: React.FC = () => {
                                 key={proj.name}
                                 onClick={() => toggleProjectSelection(proj.name)}
                                 className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all text-left ${isSelected
-                                    ? 'bg-indigo-600/15 border border-indigo-500/30 text-indigo-200'
-                                    : 'bg-slate-950/50 border border-slate-800/60 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                                    ? 'bg-[#5F2CFF]/15 border border-[#5F2CFF]/25 text-[#7B52FF]'
+                                    : 'bg-[#F4F6FF]/50 border border-[#E2E6FF]/60 text-[#4A4070] hover:text-[#1A0A4A] hover:border-[#C4CEFF]'
                                   }`}
                               >
                                 <div className={`w-4 h-4 rounded flex-shrink-0 flex items-center justify-center border transition-all ${isSelected
-                                    ? 'bg-indigo-600 border-indigo-500'
-                                    : 'border-slate-600 bg-transparent'
+                                    ? 'bg-[#5F2CFF] border-[#5F2CFF]'
+                                    : 'border-[#8B7AB8] bg-transparent'
                                   }`}>
-                                  {isSelected && <Check className="w-2.5 h-2.5 text-white" />}
+                                  {isSelected && <Check className="w-2.5 h-2.5 text-[#1A0A4A]" />}
                                 </div>
                                 <span className="text-xs font-medium truncate flex-1">{proj.name}</span>
                                 {isSelected && (
-                                  <span className="text-[9px] font-bold text-indigo-400 uppercase tracking-wide flex-shrink-0">✓ Chọn</span>
+                                  <span className="text-[9px] font-bold text-[#5F2CFF] uppercase tracking-wide flex-shrink-0">✓ Chọn</span>
                                 )}
                               </button>
                             );
@@ -1054,24 +1054,24 @@ export const OutputsView: React.FC = () => {
               )}
 
               {/* Batch Naming Pattern Box */}
-              <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-4">
+              <div className="p-4 rounded-xl bg-[#F0F3FF]/80 border border-[#E2E6FF] space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-                    <Sliders className="w-3.5 h-3.5 text-indigo-400" />
+                  <span className="text-xs font-bold text-[#1A0A4A] flex items-center gap-1.5">
+                    <Sliders className="w-3.5 h-3.5 text-[#5F2CFF]" />
                     <span>Quy tắc đặt tên file tự động (Batch Naming Pattern)</span>
                   </span>
-                  <span className="text-[10px] text-emerald-400 font-mono font-semibold">Tự đánh số tránh trùng</span>
+                  <span className="text-[10px] text-emerald-600 font-mono font-semibold">Tự đánh số tránh trùng</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {/* Pattern select */}
                   <div className="space-y-1">
-                    <label className="text-[11px] font-semibold text-slate-400">Định dạng mẫu:</label>
+                    <label className="text-[11px] font-semibold text-[#4A4070]">Định dạng mẫu:</label>
                     <select
                       disabled={isSyncing}
                       value={namingConfig.pattern}
                       onChange={(e) => setNamingConfig({ ...namingConfig, pattern: e.target.value as any })}
-                      className="w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                      className="w-full px-2.5 py-1.5 rounded-lg bg-[#F4F6FF] border border-[#E2E6FF] text-xs text-[#1A0A4A] focus:outline-none focus:border-[#5F2CFF]"
                     >
                       <option value="prefix_date_index">&#123;Tiền_tố&#125;_&#123;Ngày&#125;_&#123;Số&#125;</option>
                       <option value="prefix_index">&#123;Tiền_tố&#125;_&#123;Số&#125;</option>
@@ -1082,38 +1082,38 @@ export const OutputsView: React.FC = () => {
 
                   {/* Prefix input */}
                   <div className="space-y-1">
-                    <label className="text-[11px] font-semibold text-slate-400">Tiền tố (Prefix):</label>
+                    <label className="text-[11px] font-semibold text-[#4A4070]">Tiền tố (Prefix):</label>
                     <input
                       disabled={isSyncing}
                       type="text"
                       value={namingConfig.prefix || ''}
                       onChange={(e) => setNamingConfig({ ...namingConfig, prefix: e.target.value })}
                       placeholder="vd: Chibi, Anime, Flow..."
-                      className="w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                      className="w-full px-2.5 py-1.5 rounded-lg bg-[#F4F6FF] border border-[#E2E6FF] text-xs text-[#1A0A4A] focus:outline-none focus:border-[#5F2CFF]"
                     />
                   </div>
 
                   {/* Start Number */}
                   <div className="space-y-1">
-                    <label className="text-[11px] font-semibold text-slate-400">Số bắt đầu:</label>
+                    <label className="text-[11px] font-semibold text-[#4A4070]">Số bắt đầu:</label>
                     <input
                       disabled={isSyncing}
                       type="number"
                       min={1}
                       value={namingConfig.startNumber}
                       onChange={(e) => setNamingConfig({ ...namingConfig, startNumber: Math.max(1, parseInt(e.target.value) || 1) })}
-                      className="w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                      className="w-full px-2.5 py-1.5 rounded-lg bg-[#F4F6FF] border border-[#E2E6FF] text-xs text-[#1A0A4A] focus:outline-none focus:border-[#5F2CFF]"
                     />
                   </div>
 
                   {/* Digits Padding */}
                   <div className="space-y-1">
-                    <label className="text-[11px] font-semibold text-slate-400">Định dạng số chữ số:</label>
+                    <label className="text-[11px] font-semibold text-[#4A4070]">Định dạng số chữ số:</label>
                     <select
                       disabled={isSyncing}
                       value={namingConfig.digits}
                       onChange={(e) => setNamingConfig({ ...namingConfig, digits: parseInt(e.target.value) || 3 })}
-                      className="w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                      className="w-full px-2.5 py-1.5 rounded-lg bg-[#F4F6FF] border border-[#E2E6FF] text-xs text-[#1A0A4A] focus:outline-none focus:border-[#5F2CFF]"
                     >
                       <option value={2}>2 chữ số (01, 02...)</option>
                       <option value={3}>3 chữ số (001, 002...)</option>
@@ -1123,36 +1123,36 @@ export const OutputsView: React.FC = () => {
                 </div>
 
                 {/* Live Preview Bar */}
-                <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800/80 flex items-center gap-2 text-xs">
-                  <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">Xem trước mẫu:</span>
-                  <div className="flex items-center gap-1.5 font-mono text-[11px] text-emerald-400 overflow-x-auto">
+                <div className="p-2.5 rounded-lg bg-[#F4F6FF] border border-[#E2E6FF] flex items-center gap-2 text-xs">
+                  <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">Xem trước mẫu:</span>
+                  <div className="flex items-center gap-1.5 font-mono text-[11px] text-emerald-600 overflow-x-auto">
                     {getPreviewNames(3).map((name, i) => (
-                      <span key={i} className="bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">
+                      <span key={i} className="bg-white px-1.5 py-0.5 rounded border border-[#E2E6FF]">
                         {name}
                       </span>
                     ))}
-                    <span className="text-slate-600 font-sans">...</span>
+                    <span className="text-[#4A4070] font-sans">...</span>
                   </div>
                 </div>
               </div>
 
               {/* Progress Box (When syncing) */}
               {isSyncing && syncProgress && (
-                <div className="p-4 rounded-xl bg-indigo-950/30 border border-indigo-500/30 space-y-3 animate-in fade-in">
+                <div className="p-4 rounded-xl bg-[#F0F3FF]/30 border border-[#5F2CFF]/25 space-y-3 animate-in fade-in">
                   <div className="flex items-center justify-between text-xs">
                     <div className="flex items-center gap-2">
-                      <Loader2 className="w-4 h-4 text-indigo-400 animate-spin" />
-                      <span className="font-bold text-indigo-200">{syncProgress.message}</span>
+                      <Loader2 className="w-4 h-4 text-[#5F2CFF] animate-spin" />
+                      <span className="font-bold text-[#7B52FF]">{syncProgress.message}</span>
                     </div>
-                    <span className="font-mono text-indigo-300 font-bold">
+                    <span className="font-mono text-[#7B52FF] font-bold">
                       Đã tải: {syncProgress.downloadedCount} | Bỏ qua: {syncProgress.skippedCount}
                     </span>
                   </div>
 
                   {syncProgress.currentProject && (
-                    <div className="text-[11px] text-slate-400 flex items-center gap-2">
-                      <span>Dự án: <b className="text-white">{syncProgress.currentProject}</b></span>
-                      {syncProgress.currentFile && <span>• Tệp: <b className="text-white font-mono">{syncProgress.currentFile}</b></span>}
+                    <div className="text-[11px] text-[#4A4070] flex items-center gap-2">
+                      <span>Dự án: <b className="text-[#1A0A4A]">{syncProgress.currentProject}</b></span>
+                      {syncProgress.currentFile && <span>• Tệp: <b className="text-[#1A0A4A] font-mono">{syncProgress.currentFile}</b></span>}
                     </div>
                   )}
                 </div>
@@ -1160,16 +1160,16 @@ export const OutputsView: React.FC = () => {
 
               {/* Completed Message */}
               {!isSyncing && syncProgress && syncProgress.status === 'completed' && (
-                <div className="p-3.5 rounded-xl bg-emerald-950/30 border border-emerald-500/30 flex items-center gap-2.5 text-xs text-emerald-300">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center gap-2.5 text-xs text-emerald-700">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
                   <span>{syncProgress.message}</span>
                 </div>
               )}
             </div>
 
             {/* Modal Footer */}
-            <div className="p-4 border-t border-slate-800 bg-slate-900/50 flex items-center justify-between">
-              <span className="text-[11px] text-slate-500">
+            <div className="p-4 border-t border-[#E2E6FF] bg-white/50 flex items-center justify-between">
+              <span className="text-[11px] text-[#8B85B8]">
                 ⚡ Tải nền nhanh (~100ms/ảnh), tự động bỏ qua các ảnh đã có trên máy.
               </span>
 
@@ -1177,7 +1177,7 @@ export const OutputsView: React.FC = () => {
                 {isSyncing ? (
                   <button
                     onClick={handleCancelSync}
-                    className="px-4 py-2 rounded-xl text-xs font-semibold bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30"
+                    className="px-4 py-2 rounded-xl text-xs font-semibold bg-rose-50 hover:bg-rose-100 text-rose-500 border border-rose-200"
                   >
                     Dừng đồng bộ
                   </button>
@@ -1192,7 +1192,7 @@ export const OutputsView: React.FC = () => {
                         setHasScannedProjects(false);
                         setProjectScanError(null);
                       }}
-                      className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700"
+                      className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#F0F3FF] hover:bg-[#E8ECFF] text-[#4A4070] border border-[#C4CEFF]"
                     >
                       Đóng
                     </button>
@@ -1203,7 +1203,7 @@ export const OutputsView: React.FC = () => {
                         discoveredProjects.length > 1 &&
                         selectedProjectNames.size === 0
                       }
-                      className="px-5 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white shadow-md flex items-center gap-1.5 transition-all"
+                      className="px-5 py-2 rounded-xl text-xs font-bold bg-[#5F2CFF] hover:bg-[#7B52FF] disabled:opacity-40 disabled:cursor-not-allowed text-white shadow-md flex items-center gap-1.5 transition-all"
                     >
                       <CloudDownload className="w-3.5 h-3.5" />
                       <span>
@@ -1225,20 +1225,20 @@ export const OutputsView: React.FC = () => {
       {/* ───────────────────────────────────────────────────────────── */}
       {isRenameModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
-          <div className="w-full max-w-xl bg-[#0d1322] border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-gradient-to-r from-cyan-950/30 to-transparent">
+          <div className="w-full max-w-xl bg-white border border-[#E2E6FF] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-5 border-b border-[#E2E6FF] flex items-center justify-between bg-gradient-to-r from-sky-50 to-transparent">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-cyan-600/20 border border-cyan-500/30 text-cyan-400">
+                <div className="p-2 rounded-xl bg-sky-50 border border-sky-200 text-sky-700">
                   <Tag className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white">Đổi tên hàng loạt các ảnh đã có</h3>
-                  <p className="text-xs text-slate-400">
+                  <h3 className="text-sm font-bold text-[#1A0A4A]">Đổi tên hàng loạt các ảnh đã có</h3>
+                  <p className="text-xs text-[#4A4070]">
                     Chuẩn hóa tên toàn bộ file trong thư mục output theo quy tắc và tự tăng số để tránh trùng.
                   </p>
                 </div>
               </div>
-              <button onClick={() => setIsRenameModalOpen(false)} className="text-slate-400 hover:text-white p-1">
+              <button onClick={() => setIsRenameModalOpen(false)} className="text-[#4A4070] hover:text-[#1A0A4A] p-1">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -1246,11 +1246,11 @@ export const OutputsView: React.FC = () => {
             <div className="p-6 space-y-4 overflow-y-auto">
               {/* Target Project */}
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-300">Áp dụng cho dự án:</label>
+                <label className="text-xs font-semibold text-[#4A4070]">Áp dụng cho dự án:</label>
                 <select
                   value={renameTargetProject}
                   onChange={(e) => setRenameTargetProject(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-[#E2E6FF] shadow-sm text-xs text-[#1A0A4A] focus:outline-none focus:border-[#5F2CFF]"
                 >
                   <option value="all">📁 Tất cả các dự án ({outputs.length} file)</option>
                   {uniqueProjects.map((p) => (
@@ -1262,14 +1262,14 @@ export const OutputsView: React.FC = () => {
               </div>
 
               {/* Naming configuration */}
-              <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3">
+              <div className="p-4 rounded-xl bg-[#F0F3FF]/80 border border-[#E2E6FF] space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-[11px] font-semibold text-slate-400">Định dạng mẫu:</label>
+                    <label className="text-[11px] font-semibold text-[#4A4070]">Định dạng mẫu:</label>
                     <select
                       value={namingConfig.pattern}
                       onChange={(e) => setNamingConfig({ ...namingConfig, pattern: e.target.value as any })}
-                      className="w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                      className="w-full px-2.5 py-1.5 rounded-lg bg-[#F4F6FF] border border-[#E2E6FF] text-xs text-[#1A0A4A] focus:outline-none focus:border-[#5F2CFF]"
                     >
                       <option value="prefix_date_index">&#123;Tiền_tố&#125;_&#123;Ngày&#125;_&#123;Số&#125;</option>
                       <option value="prefix_index">&#123;Tiền_tố&#125;_&#123;Số&#125;</option>
@@ -1279,33 +1279,33 @@ export const OutputsView: React.FC = () => {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[11px] font-semibold text-slate-400">Tiền tố (Prefix):</label>
+                    <label className="text-[11px] font-semibold text-[#4A4070]">Tiền tố (Prefix):</label>
                     <input
                       type="text"
                       value={namingConfig.prefix || ''}
                       onChange={(e) => setNamingConfig({ ...namingConfig, prefix: e.target.value })}
                       placeholder="vd: Chibi, Product..."
-                      className="w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                      className="w-full px-2.5 py-1.5 rounded-lg bg-[#F4F6FF] border border-[#E2E6FF] text-xs text-[#1A0A4A] focus:outline-none focus:border-[#5F2CFF]"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[11px] font-semibold text-slate-400">Số bắt đầu:</label>
+                    <label className="text-[11px] font-semibold text-[#4A4070]">Số bắt đầu:</label>
                     <input
                       type="number"
                       min={1}
                       value={namingConfig.startNumber}
                       onChange={(e) => setNamingConfig({ ...namingConfig, startNumber: Math.max(1, parseInt(e.target.value) || 1) })}
-                      className="w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                      className="w-full px-2.5 py-1.5 rounded-lg bg-[#F4F6FF] border border-[#E2E6FF] text-xs text-[#1A0A4A] focus:outline-none focus:border-[#5F2CFF]"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[11px] font-semibold text-slate-400">Độ dài số:</label>
+                    <label className="text-[11px] font-semibold text-[#4A4070]">Độ dài số:</label>
                     <select
                       value={namingConfig.digits}
                       onChange={(e) => setNamingConfig({ ...namingConfig, digits: parseInt(e.target.value) || 3 })}
-                      className="w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                      className="w-full px-2.5 py-1.5 rounded-lg bg-[#F4F6FF] border border-[#E2E6FF] text-xs text-[#1A0A4A] focus:outline-none focus:border-[#5F2CFF]"
                     >
                       <option value={2}>2 chữ số (01, 02...)</option>
                       <option value={3}>3 chữ số (001, 002...)</option>
@@ -1314,26 +1314,26 @@ export const OutputsView: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800 flex items-center gap-2 text-xs">
-                  <span className="text-[10px] font-bold text-cyan-400 uppercase">Mẫu sau đổi tên:</span>
-                  <span className="font-mono text-emerald-400 text-[11px]">
+                <div className="p-2.5 rounded-lg bg-[#F4F6FF] border border-[#E2E6FF] flex items-center gap-2 text-xs">
+                  <span className="text-[10px] font-bold text-sky-700 uppercase">Mẫu sau đổi tên:</span>
+                  <span className="font-mono text-emerald-600 text-[11px]">
                     {getPreviewNames(1)[0]}
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="p-4 border-t border-slate-800 bg-slate-900/50 flex items-center justify-end gap-2">
+            <div className="p-4 border-t border-[#E2E6FF] bg-white/50 flex items-center justify-end gap-2">
               <button
                 onClick={() => setIsRenameModalOpen(false)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700"
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#F0F3FF] hover:bg-[#E8ECFF] text-[#4A4070] border border-[#C4CEFF]"
               >
                 Hủy
               </button>
               <button
                 disabled={isRenaming}
                 onClick={handleApplyBatchRename}
-                className="px-5 py-2 rounded-xl text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-white shadow-md flex items-center gap-1.5 disabled:opacity-50"
+                className="px-5 py-2 rounded-xl text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-[#1A0A4A] shadow-md flex items-center gap-1.5 disabled:opacity-50"
               >
                 {isRenaming ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
                 <span>Áp dụng đổi tên</span>
@@ -1348,26 +1348,26 @@ export const OutputsView: React.FC = () => {
       {/* ───────────────────────────────────────────────────────────── */}
       {selectedItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
-          <div className="w-full max-w-3xl bg-[#0d1322] border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+          <div className="w-full max-w-3xl bg-white border border-[#E2E6FF] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-4 border-b border-[#E2E6FF] flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span
                   className={`text-[10px] px-2 py-0.5 rounded uppercase font-extrabold ${selectedItem.type === 'video'
-                      ? 'bg-violet-500/10 text-violet-400 border border-violet-500/20'
-                      : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
+                      ? 'bg-[#7B52FF]/10 text-[#7B52FF] border border-[#7B52FF]/20'
+                      : 'bg-[#5F2CFF]/10 text-[#5F2CFF] border border-[#5F2CFF]/20'
                     }`}
                 >
                   {selectedItem.type}
                 </span>
-                <h3 className="text-sm font-bold text-white truncate max-w-md">{selectedItem.name}</h3>
+                <h3 className="text-sm font-bold text-[#1A0A4A] truncate max-w-md">{selectedItem.name}</h3>
               </div>
-              <button onClick={() => setSelectedItem(null)} className="text-slate-400 hover:text-white p-1">
+              <button onClick={() => setSelectedItem(null)} className="text-[#4A4070] hover:text-[#1A0A4A] p-1">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="p-6 space-y-4 overflow-y-auto">
-              <div className="rounded-xl bg-slate-950 border border-slate-800 overflow-hidden flex items-center justify-center max-h-[420px]">
+              <div className="rounded-xl bg-[#F4F6FF] border border-[#E2E6FF] overflow-hidden flex items-center justify-center max-h-[420px]">
                 {selectedItem.type === 'image' ? (
                   <SafeImage
                     path={selectedItem.path}
@@ -1383,28 +1383,28 @@ export const OutputsView: React.FC = () => {
                 )}
               </div>
 
-              <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
-                <span className="text-[10px] font-bold text-slate-500 uppercase">PROMPT</span>
-                <p className="text-xs text-slate-200 leading-relaxed">{selectedItem.prompt}</p>
+              <div className="p-3.5 rounded-xl bg-white border border-[#E2E6FF] shadow-sm space-y-1">
+                <span className="text-[10px] font-bold text-[#8B85B8] uppercase">PROMPT</span>
+                <p className="text-xs text-[#1A0A4A] leading-relaxed">{selectedItem.prompt}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
-                  <span className="text-[10px] text-slate-500 block">Dung lượng:</span>
-                  <span className="font-semibold text-slate-200">{formatFileSize(selectedItem.size)}</span>
+                <div className="p-2.5 rounded-lg bg-white border border-[#E2E6FF] shadow-sm">
+                  <span className="text-[10px] text-[#8B85B8] block">Dung lượng:</span>
+                  <span className="font-semibold text-[#1A0A4A]">{formatFileSize(selectedItem.size)}</span>
                 </div>
-                <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
-                  <span className="text-[10px] text-slate-500 block">Dự án:</span>
-                  <span className="font-semibold text-slate-200">{selectedItem.projectName}</span>
+                <div className="p-2.5 rounded-lg bg-white border border-[#E2E6FF] shadow-sm">
+                  <span className="text-[10px] text-[#8B85B8] block">Dự án:</span>
+                  <span className="font-semibold text-[#1A0A4A]">{selectedItem.projectName}</span>
                 </div>
-                <div className="col-span-2 p-2.5 rounded-lg bg-slate-900 border border-slate-800 font-mono text-[10px] text-slate-400 truncate">
-                  <span className="text-[10px] text-slate-500 block font-sans">Đường dẫn tệp:</span>
+                <div className="col-span-2 p-2.5 rounded-lg bg-white border border-[#E2E6FF] shadow-sm font-mono text-[10px] text-[#4A4070] truncate">
+                  <span className="text-[10px] text-[#8B85B8] block font-sans">Đường dẫn tệp:</span>
                   {selectedItem.path}
                 </div>
               </div>
             </div>
 
-            <div className="p-4 border-t border-slate-800 bg-slate-900/50 flex items-center justify-between gap-3">
+            <div className="p-4 border-t border-[#E2E6FF] bg-white/50 flex items-center justify-between gap-3">
               <button
                 onClick={() => handleDeleteSingle(selectedItem)}
                 className="px-4 py-2 rounded-xl text-xs font-semibold bg-red-500/10 hover:bg-red-500/25 text-red-400 hover:text-red-300 border border-red-500/25 flex items-center gap-1.5 transition-colors"
@@ -1415,14 +1415,14 @@ export const OutputsView: React.FC = () => {
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => revealInExplorer(selectedItem.path)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#F0F3FF] hover:bg-[#E8ECFF] text-[#1A0A4A] border border-[#C4CEFF] flex items-center gap-1.5"
                 >
                   <FolderOpen className="w-3.5 h-3.5" />
                   <span>Mở trong Thư mục</span>
                 </button>
                 <button
                   onClick={() => openFile(selectedItem.path)}
-                  className="px-5 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-md flex items-center gap-1.5"
+                  className="px-5 py-2 rounded-xl text-xs font-bold bg-[#5F2CFF] hover:bg-[#7B52FF] text-white shadow-md flex items-center gap-1.5"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
                   <span>Mở tệp ngoài</span>
