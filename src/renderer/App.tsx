@@ -1,19 +1,21 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense, lazy } from 'react';
 import { Sidebar } from './components/Sidebar.tsx';
 import { Header } from './components/Header.tsx';
 import { useAppStore } from './store/app-store.ts';
 import { useQueueStore } from './store/queue-store.ts';
 import { useSessionStore } from './store/session-store.ts';
 import { DashboardView } from './views/DashboardView.tsx';
-import { ImageGenView } from './views/ImageGenView.tsx';
-import { VideoGenView } from './views/VideoGenView.tsx';
-import { ImageToVideoView } from './views/ImageToVideoView.tsx';
-import { QueueView } from './views/QueueView.tsx';
-import { SessionsView } from './views/SessionsView.tsx';
-import { OutputsView } from './views/OutputsView.tsx';
-import { SettingsView } from './views/SettingsView.tsx';
-import { PromptGenView } from './views/PromptGenView.tsx';
-import { TTSGenView } from './views/TTSGenView.tsx';
+
+// Code-split heavy views with React.lazy to make initial app launch instantaneous
+const ImageGenView = lazy(() => import('./views/ImageGenView.tsx').then((m) => ({ default: m.ImageGenView })));
+const VideoGenView = lazy(() => import('./views/VideoGenView.tsx').then((m) => ({ default: m.VideoGenView })));
+const ImageToVideoView = lazy(() => import('./views/ImageToVideoView.tsx').then((m) => ({ default: m.ImageToVideoView })));
+const QueueView = lazy(() => import('./views/QueueView.tsx').then((m) => ({ default: m.QueueView })));
+const SessionsView = lazy(() => import('./views/SessionsView.tsx').then((m) => ({ default: m.SessionsView })));
+const OutputsView = lazy(() => import('./views/OutputsView.tsx').then((m) => ({ default: m.OutputsView })));
+const SettingsView = lazy(() => import('./views/SettingsView.tsx').then((m) => ({ default: m.SettingsView })));
+const PromptGenView = lazy(() => import('./views/PromptGenView.tsx').then((m) => ({ default: m.PromptGenView })));
+const TTSGenView = lazy(() => import('./views/TTSGenView.tsx').then((m) => ({ default: m.TTSGenView })));
 
 export const App: React.FC = () => {
   const { activeTab, loadSettings, loadStats, addNotification } = useAppStore();
@@ -89,7 +91,16 @@ export const App: React.FC = () => {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Header />
         <main className="flex-1 overflow-hidden relative">
-          {renderActiveView()}
+          <Suspense fallback={
+            <div className="flex items-center justify-center h-full text-slate-500 text-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                <span>Đang tải giao diện...</span>
+              </div>
+            </div>
+          }>
+            {renderActiveView()}
+          </Suspense>
         </main>
       </div>
     </div>

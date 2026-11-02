@@ -175,9 +175,11 @@ export const OutputsView: React.FC = () => {
     return Array.from(set);
   }, [outputs]);
 
-  // Filtered Outputs
+  const [sortBy, setSortBy] = useState<'index_asc' | 'date_desc' | 'date_asc' | 'name_asc'>('index_asc');
+
+  // Filtered & Sorted Outputs
   const filteredOutputs = useMemo(() => {
-    return outputs.filter((item) => {
+    const list = outputs.filter((item) => {
       const matchesType = filterType === 'all' || item.type === filterType;
       const matchesProject = filterProject === 'all' || item.projectName === filterProject;
       const matchesSearch =
@@ -186,7 +188,33 @@ export const OutputsView: React.FC = () => {
         item.projectName.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesType && matchesProject && matchesSearch;
     });
-  }, [outputs, filterType, filterProject, searchQuery]);
+
+    return list.sort((a, b) => {
+      if (sortBy === 'index_asc') {
+        if (a.batchIndex !== undefined && b.batchIndex !== undefined) {
+          if (a.projectName === b.projectName) return a.batchIndex - b.batchIndex;
+        }
+        if (a.batchIndex !== undefined && a.projectName === b.projectName) return -1;
+        if (b.batchIndex !== undefined && a.projectName === b.projectName) return 1;
+
+        const timeA = new Date(a.originalCreatedAt || a.createdAt).getTime();
+        const timeB = new Date(b.originalCreatedAt || b.createdAt).getTime();
+        if (timeA !== timeB) return timeA - timeB;
+
+        return a.name.localeCompare(b.name, undefined, { numeric: true });
+      }
+      if (sortBy === 'date_desc') {
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }
+      if (sortBy === 'date_asc') {
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      }
+      if (sortBy === 'name_asc') {
+        return a.name.localeCompare(b.name, undefined, { numeric: true });
+      }
+      return 0;
+    });
+  }, [outputs, filterType, filterProject, searchQuery, sortBy]);
 
   // Preview Formatted Filename
   const getPreviewNames = (count: number = 3) => {
@@ -486,6 +514,19 @@ export const OutputsView: React.FC = () => {
             </select>
           )}
 
+          {/* Sort Selector */}
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as any)}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 border border-slate-800 focus:outline-none focus:border-indigo-500"
+            title="Thứ tự hiển thị ảnh"
+          >
+            <option value="index_asc">🔢 Thứ tự dự án (#1 → #160)</option>
+            <option value="date_desc">🕒 Mới nhất trước</option>
+            <option value="date_asc">🕒 Cũ nhất trước</option>
+            <option value="name_asc">🔤 Tên file (A → Z)</option>
+          </select>
+
           <button
             onClick={() => loadOutputs()}
             className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition-colors"
@@ -583,6 +624,12 @@ export const OutputsView: React.FC = () => {
                   >
                     {item.type}
                   </span>
+
+                  {item.batchIndex !== undefined && (
+                    <span className="absolute top-2 right-2 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 backdrop-blur-md">
+                      #{item.batchIndex}
+                    </span>
+                  )}
 
                   {item.projectName && (
                     <span className="absolute bottom-2 left-2 text-[9px] font-semibold px-1.5 py-0.5 rounded bg-slate-950/80 text-slate-300 border border-slate-800 backdrop-blur-md truncate max-w-[140px]">

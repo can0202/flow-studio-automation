@@ -153,6 +153,8 @@ export interface OutputFileItem {
   projectName: string;
   prompt: string;
   metadataPath?: string;
+  batchIndex?: number;
+  originalCreatedAt?: string;
 }
 
 export interface CreateJobInput {
@@ -227,6 +229,7 @@ export interface IElectronAPI {
   updateSettings: (settings: Partial<Settings>) => Promise<Settings>;
   getStats: () => Promise<QueueStats>;
   selectFolder: () => Promise<string | null>;
+  selectAudioFile: () => Promise<{ filePath: string; name: string; size: number } | null>;
   openExternal: (url: string) => Promise<void>;
 
   // Sessions

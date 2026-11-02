@@ -156,9 +156,9 @@ class TTSService {
     const scriptPath = path.join(__dirname, 'vieneu_server.py');
     console.log('[TTSService] Starting VieNeu Python server:', scriptPath);
 
-    this.serverProcess = spawn('python', [scriptPath, '--port', String(this.port)], {
+    this.serverProcess = spawn('python', ['-u', scriptPath, '--port', String(this.port)], {
       stdio: ['ignore', 'pipe', 'pipe'],
-      env: { ...process.env, PYTHONIOENCODING: 'utf-8' },
+      env: { ...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUNBUFFERED: '1', HF_HUB_OFFLINE: '1' },
     });
 
     // ── Parse [PROGRESS] lines from stdout and emit to all renderer windows ──
@@ -196,9 +196,9 @@ class TTSService {
       this.serverProcess = null;
     });
 
-    // Poll until ready (up to 30s)
+    // Poll until ready (up to 60s)
     const startTime = Date.now();
-    while (Date.now() - startTime < 30000) {
+    while (Date.now() - startTime < 60000) {
       await new Promise((r) => setTimeout(r, 800));
       const health = await this.checkHealth();
       if (health.running) {
@@ -210,7 +210,7 @@ class TTSService {
     }
 
     this.isStarting = false;
-    throw new Error('VieNeu Python server không thể khởi động sau 30 giây.');
+    throw new Error('VieNeu Python server không thể khởi động sau 60 giây.');
   }
 
   private httpRequest(endpoint: string, method = 'GET', body?: any): Promise<any> {

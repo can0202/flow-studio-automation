@@ -1,5 +1,8 @@
 import sys
 import os
+os.environ['HF_HUB_OFFLINE'] = '1'
+from pathlib import Path
+import shutil
 import json
 import argparse
 import time
@@ -183,25 +186,56 @@ def get_parsed_voices():
         seen = set()
         voices = []
 
-    # 2. Bổ sung các giọng tự nạp mới (Custom Enrolled Voices) nếu có
+    # 2. Bổ sung các giọng tự nạp từ custom_voices/metadata.json
+    custom_dir = Path(os.getcwd()) / "custom_voices"
+    if custom_dir.exists():
+        meta_file = custom_dir / "metadata.json"
+        if meta_file.exists():
+            try:
+                meta = json.loads(meta_file.read_text(encoding="utf-8"))
+                for v in meta:
+                    vname = v.get("name")
+                    if vname and vname not in seen:
+                        seen.add(vname)
+                        desc = v.get("desc", f"{'Nữ' if v.get('gender') == 'female' else 'Nam'} · {v.get('region', 'Miền Bắc')}")
+                        parts = vname.split()
+                        initials = (parts[0][0] + (parts[-1][0] if len(parts) > 1 else '')).upper() if parts else 'VN'
+                        voices.insert(0, {
+                            'id': vname,
+                            'name': vname,
+                            'label': f"{vname} — {desc} (Tùy chỉnh)",
+                            'desc': desc,
+                            'gender': v.get('gender', 'female'),
+                            'region': v.get('region', 'Miền Bắc'),
+                            'tags': ['Tùy chỉnh', 'Clone', 'Mới'],
+                            'isStar': True,
+                            'isCustom': True,
+                            'initials': initials,
+                            'lang': 'vi',
+                        })
+            except Exception as e:
+                print(f"[VieNeu] Error loading custom voices into catalog: {e}")
+
+    # 3. Bổ sung các giọng tự nạp mới (Custom Enrolled Voices) có trong engine
     if tts_engine and hasattr(tts_engine, '_preset_voices'):
         for vid, data in tts_engine._preset_voices.items():
-            if vid not in seen and vid.startswith('custom_'):
+            if vid not in seen:
                 seen.add(vid)
-                desc = data.get('description', '')
-                gender = data.get('gender', 'male')
-                region = data.get('region', 'Miền Bắc')
+                desc = data.get('description', '') if isinstance(data, dict) else ''
+                gender = data.get('gender', 'female') if isinstance(data, dict) else 'female'
+                region = data.get('region', 'Miền Bắc') if isinstance(data, dict) else 'Miền Bắc'
                 parts = vid.split()
-                initials = (parts[0][0] + (parts[-1][0] if len(parts) > 1 else '')).upper()
-                voices.append({
+                initials = (parts[0][0] + (parts[-1][0] if len(parts) > 1 else '')).upper() if parts else 'VN'
+                voices.insert(0, {
                     'id': vid,
                     'name': vid,
-                    'label': f"{vid} — {desc}",
+                    'label': f"{vid} — {desc} (Tùy chỉnh)",
                     'desc': desc,
                     'gender': gender,
                     'region': region,
                     'tags': ['Tùy chỉnh', 'Clone'],
-                    'isStar': False,
+                    'isStar': True,
+                    'isCustom': True,
                     'initials': initials,
                     'lang': 'vi',
                 })
@@ -549,22 +583,37 @@ class TTSRequestHandler(BaseHTTPRequestHandler):
                 region = payload.get('region', 'Miền Bắc')
                 style = payload.get('style', 'Tự nhiên')
 
-                if not name or not audio_path or not os.path.exists(audio_path):
-                    self._send_json({'success': False, 'error': 'Tên giọng hoặc file audio không tồn tại'}, status=400)
+                if not name:
+                    self._send_json({'success': False, 'error': 'Vui lòng nhập tên cho giọng đọc mới'}, status=400)
+                    return
+                if not audio_path:
+                    self._send_json({'success': False, 'error': 'Vui lòng chọn file ghi âm mẫu'}, status=400)
+                    return
+                if not os.path.exists(audio_path):
+                    self._send_json({'success': False, 'error': f'Không tìm thấy file audio tại: {audio_path}'}, status=400)
                     return
 
                 desc = f"{'Nữ' if gender == 'female' else 'Nam'} · {region.replace('Miền ', '')} · Phong cách {style}"
-                tts_engine.add_voice(name, audio_path, description=desc, gender=gender)
 
-                # Lưu vào custom_voices metadata để duy trì vĩnh viễn
+                # Ensure custom_voices dir exists
                 custom_dir = os.path.join(os.getcwd(), 'custom_voices')
                 os.makedirs(custom_dir, exist_ok=True)
+
+                # Copy reference audio into custom_voices
                 import shutil
-                ext = os.path.splitext(audio_path)[1]
+                ext = os.path.splitext(audio_path)[1].lower() or '.wav'
                 safe_name = "".join([c if c.isalnum() else "_" for c in name])
                 dest_file = os.path.join(custom_dir, f"{safe_name}{ext}")
-                shutil.copyfile(audio_path, dest_file)
+                try:
+                    shutil.copyfile(audio_path, dest_file)
+                except Exception as cp_err:
+                    print(f"[VieNeu] Notice copying audio: {cp_err}")
+                    dest_file = audio_path
 
+                # Enroll in Vieneu engine
+                tts_engine.add_voice(name, dest_file, description=desc, gender=gender)
+
+                # Persist to custom_voices/metadata.json
                 meta_path = os.path.join(custom_dir, 'metadata.json')
                 meta = []
                 if os.path.exists(meta_path):
@@ -576,7 +625,7 @@ class TTSRequestHandler(BaseHTTPRequestHandler):
                 meta = [m for m in meta if m.get('name') != name]
                 meta.append({
                     'name': name,
-                    'filename': f"{safe_name}{ext}",
+                    'filename': os.path.basename(dest_file),
                     'desc': desc,
                     'gender': gender,
                     'region': region,
@@ -585,11 +634,17 @@ class TTSRequestHandler(BaseHTTPRequestHandler):
                 with open(meta_path, 'w', encoding='utf-8') as f:
                     json.dump(meta, f, ensure_ascii=False, indent=2)
 
+                # Invalidate catalog cache so get_parsed_voices immediately reflects new voice
+                global _CATALOG_VOICES_CACHE
+                _CATALOG_VOICES_CACHE = None
+
                 print(f"[VieNeu] Successfully registered new custom voice: {name}")
                 self._send_json({'success': True, 'name': name, 'desc': desc})
             except Exception as e:
+                import traceback
+                traceback.print_exc()
                 print(f"[VieNeu] Error adding voice: {e}")
-                self._send_json({'success': False, 'error': str(e)}, status=500)
+                self._send_json({'success': False, 'error': f'Lỗi khi xử lý giọng đọc: {str(e)}'}, status=500)
         else:
             self._send_json({'error': 'Not found'}, status=404)
 

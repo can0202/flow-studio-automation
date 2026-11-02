@@ -61,6 +61,16 @@ export class OutputManager {
     };
 
     fs.writeFileSync(metaPath, JSON.stringify(data, null, 2), 'utf-8');
+
+    // Also write metadata keyed to the actual output filename if it differs from job.id
+    const fileBase = path.parse(outputFile).name;
+    const fileMetaPath = path.join(metadataDir, `${fileBase}.json`);
+    if (fileMetaPath !== metaPath) {
+      try {
+        fs.writeFileSync(fileMetaPath, JSON.stringify(data, null, 2), 'utf-8');
+      } catch {}
+    }
+
     return metaPath;
   }
 
@@ -93,13 +103,47 @@ export class OutputManager {
             let prompt = '';
             let metaPath = path.join(metaDir, `${baseName}.json`);
 
+            // If not found by file base name, attempt lookup via embedded job_ ID
+            if (!fs.existsSync(metaPath)) {
+              const jobMatch = baseName.match(/(job_[a-zA-Z0-9_]+)/);
+              if (jobMatch) {
+                const altPath = path.join(metaDir, `${jobMatch[1]}.json`);
+                if (fs.existsSync(altPath)) {
+                  metaPath = altPath;
+                }
+              }
+            }
+
+            let batchIndex: number | undefined = undefined;
+            let originalCreatedAt = stats.mtime.toISOString();
+
             if (fs.existsSync(metaPath)) {
               try {
                 const metaContent = JSON.parse(fs.readFileSync(metaPath, 'utf-8'));
                 prompt = metaContent.prompt || '';
+                if (metaContent.metadata?.batchIndex !== undefined) {
+                  batchIndex = Number(metaContent.metadata.batchIndex);
+                } else if (metaContent.name) {
+                  const m = metaContent.name.match(/\(#?(\d+)\)/);
+                  if (m) batchIndex = parseInt(m[1], 10);
+                }
+                if (metaContent.createdAt) {
+                  originalCreatedAt = metaContent.createdAt;
+                }
               } catch {}
-            } else {
-              metaPath = '';
+            }
+
+            // Fallback: extract index from filename, e.g. "0070_job_..." or "Image_070"
+            if (batchIndex === undefined) {
+              const leadMatch = baseName.match(/^0*(\d+)(?:[_\-\s]|$)/);
+              if (leadMatch) {
+                batchIndex = parseInt(leadMatch[1], 10);
+              } else {
+                const anyNumMatch = baseName.match(/(?:[_\-\s])0*(\d+)(?:[_\-\s]|$)/);
+                if (anyNumMatch) {
+                  batchIndex = parseInt(anyNumMatch[1], 10);
+                }
+              }
             }
 
             results.push({
@@ -113,6 +157,8 @@ export class OutputManager {
               projectName: proj,
               prompt,
               metadataPath: metaPath || undefined,
+              batchIndex,
+              originalCreatedAt,
             });
           } catch {}
         }
@@ -122,7 +168,24 @@ export class OutputManager {
       processFolder(vidDir, 'video');
     }
 
-    return results.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return results.sort((a, b) => {
+      // 1. Sort by batchIndex ascending if present
+      if (a.batchIndex !== undefined && b.batchIndex !== undefined) {
+        if (a.projectName === b.projectName) {
+          return a.batchIndex - b.batchIndex;
+        }
+      }
+      if (a.batchIndex !== undefined && a.projectName === b.projectName) return -1;
+      if (b.batchIndex !== undefined && a.projectName === b.projectName) return 1;
+
+      // 2. Sort by original job creation time ascending
+      const timeA = new Date(a.originalCreatedAt || a.createdAt).getTime();
+      const timeB = new Date(b.originalCreatedAt || b.createdAt).getTime();
+      if (timeA !== timeB) return timeA - timeB;
+
+      // 3. Natural alphanumeric sort by filename
+      return a.name.localeCompare(b.name, undefined, { numeric: true });
+    });
   }
 
   public openFile(filePath: string) {

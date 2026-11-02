@@ -865,9 +865,16 @@ export class GoogleFlowAdapter implements FlowProvider {
     this.batchProjectUrls.set(batchId, url);
   }
 
+  public hasActiveBatches(): boolean {
+    return this.activeBatches.size > 0;
+  }
+
   public async closeActiveSession(sessionId?: string): Promise<void> {
     if (sessionId) {
       await this.closeSessionBatch(sessionId);
+      return;
+    }
+    if (this.activeBatches.size === 0) {
       return;
     }
     for (const [sId, batch] of this.activeBatches.entries()) {
@@ -877,7 +884,7 @@ export class GoogleFlowAdapter implements FlowProvider {
       } catch {}
     }
     this.activeBatches.clear();
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    await new Promise((resolve) => setTimeout(resolve, 800));
   }
 
   public async closeSessionBatch(sessionId: string): Promise<void> {
@@ -1336,16 +1343,25 @@ export class GoogleFlowAdapter implements FlowProvider {
       await page.keyboard.press('Delete');
       await page.waitForTimeout(100 + Math.floor(Math.random() * 100));
 
-      // Typing via keyboard.insertText creates native ProseMirror transaction
-      await page.keyboard.insertText(job.prompt);
-      await page.waitForTimeout(300 + Math.floor(Math.random() * 200));
+      // Typing via keyboard.insertText in human-like chunks
+      const promptText = job.prompt;
+      let pIdx = 0;
+      while (pIdx < promptText.length) {
+        const chunkSize = Math.min(promptText.length - pIdx, Math.floor(4 + Math.random() * 7));
+        await page.keyboard.insertText(promptText.slice(pIdx, pIdx + chunkSize));
+        pIdx += chunkSize;
+        if (pIdx < promptText.length) {
+          await page.waitForTimeout(25 + Math.floor(Math.random() * 35));
+        }
+      }
+      await page.waitForTimeout(400 + Math.floor(Math.random() * 300));
 
       // Trigger change/input event fallbacks
       await activePromptField.dispatchEvent('input').catch(() => {});
       await activePromptField.dispatchEvent('change').catch(() => {});
 
       // ── Stealth Human Pause: Simulate user reviewing prompt before clicking Generate ──
-      const reviewPauseMs = 1200 + Math.floor(Math.random() * 1200);
+      const reviewPauseMs = 2800 + Math.floor(Math.random() * 2700);
       console.log(`[FlowAdapter] [Stealth] Giả lập người dùng xem lại prompt (${reviewPauseMs}ms)...`);
       await page.waitForTimeout(reviewPauseMs);
 
@@ -1415,8 +1431,12 @@ export class GoogleFlowAdapter implements FlowProvider {
       if (btnBox) {
         const targetX = btnBox.x + btnBox.width * 0.5 + (Math.random() * 8 - 4);
         const targetY = btnBox.y + btnBox.height * 0.5 + (Math.random() * 6 - 3);
-        await page.mouse.move(targetX, targetY, { steps: 6 + Math.floor(Math.random() * 6) }).catch(() => {});
-        await page.waitForTimeout(160 + Math.floor(Math.random() * 200));
+        const midX = (targetX + (promptBox?.x || targetX)) / 2 + (Math.random() * 30 - 15);
+        const midY = (targetY + (promptBox?.y || targetY)) / 2 + (Math.random() * 20 - 10);
+        await page.mouse.move(midX, midY, { steps: 4 }).catch(() => {});
+        await page.waitForTimeout(40 + Math.floor(Math.random() * 50));
+        await page.mouse.move(targetX, targetY, { steps: 6 + Math.floor(Math.random() * 5) }).catch(() => {});
+        await page.waitForTimeout(200 + Math.floor(Math.random() * 250));
       }
 
       await generateBtn.click({ timeout: 5000 });
@@ -1894,7 +1914,14 @@ export class GoogleFlowAdapter implements FlowProvider {
                 textLower.includes('unusual behavior') ||
                 textLower.includes('tiện ích trình duyệt sửa đổi trang') ||
                 textLower.includes('extensions that modify the page') ||
-                textLower.includes('truy cập vào trung tâm trợ giúp');
+                textLower.includes('truy cập vào trung tâm trợ giúp') ||
+                textLower.includes('tần suất') ||
+                textLower.includes('quá nhanh') ||
+                textLower.includes('too many requests') ||
+                textLower.includes('rate limit') ||
+                textLower.includes('slow down') ||
+                textLower.includes('thử lại sau') ||
+                textLower.includes('try again later');
 
               if (isUnusualActivity) {
                 console.warn(`[FlowAdapter] Unusual activity detected on page. Text: ${text.slice(0, 120)}`);
@@ -1986,9 +2013,19 @@ export class GoogleFlowAdapter implements FlowProvider {
       // If new results exist and loading is done and minimum time passed
       if (hasNewResults && !stillLoading && (Date.now() - startTime >= minGenerationTimeMs)) {
         console.log(`[FlowAdapter] Generation complete: ${newUrls.length} new items found, total ${current.count}, cardCount=${current.cardCount ?? 0}`);
-        // Allow 2 seconds for high-res render in Chromium DOM
-        await page.waitForTimeout(2000);
+        // Simulate human hovering/viewing new result before downloading
+        const viewX = 400 + Math.floor(Math.random() * 300);
+        const viewY = 300 + Math.floor(Math.random() * 200);
+        await page.mouse.move(viewX, viewY, { steps: 5 }).catch(() => {});
+        await page.waitForTimeout(2000 + Math.floor(Math.random() * 1500));
         return { success: true };
+      }
+
+      // Keep session active with micro-movements every ~8s (simulating human present at screen)
+      if (elapsed > 0 && elapsed % 8 === 0) {
+        const randX = 350 + Math.floor(Math.random() * 300);
+        const randY = 250 + Math.floor(Math.random() * 200);
+        await page.mouse.move(randX, randY, { steps: 3 }).catch(() => {});
       }
 
       await page.waitForTimeout(1500);
@@ -2037,14 +2074,24 @@ export class GoogleFlowAdapter implements FlowProvider {
     baseline?: MediaSnapshot
   ): Promise<{ success: boolean; outputFile?: string; thumbnailFile?: string; lastFrameFile?: string; error?: string }> {
     const ext = job.type === 'image' ? 'png' : 'mp4';
-    const filePath = path.join(targetDir, `${job.id}.${ext}`);
+    const padLen = Math.max(3, String(job.metadata?.batchTotal || 100).length);
+    const prefix = job.metadata?.batchIndex !== undefined
+      ? `${String(job.metadata.batchIndex).padStart(padLen, '0')}_`
+      : '';
+    const filePath = path.join(targetDir, `${prefix}${job.id}.${ext}`);
     const minImageBytes = 10240; // 10KB minimum for valid image (avoids avatars/icons)
     const minVideoBytes = 20480; // 20KB minimum for valid video
 
-    // Clean up any stale partial file from previous attempts
+    // Clean up any stale partial file from previous attempts (including without prefix)
     if (fs.existsSync(filePath)) {
       try {
         fs.unlinkSync(filePath);
+      } catch {}
+    }
+    const legacyPath = path.join(targetDir, `${job.id}.${ext}`);
+    if (legacyPath !== filePath && fs.existsSync(legacyPath)) {
+      try {
+        fs.unlinkSync(legacyPath);
       } catch {}
     }
 

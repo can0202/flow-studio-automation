@@ -12,6 +12,7 @@ const VIEW_TITLES: Record<TabType, { title: string; desc: string }> = {
   outputs: { title: 'File đầu ra', desc: 'Duyệt và xem các ảnh, video đã tải về và siêu dữ liệu JSON' },
   settings: { title: 'Cài đặt', desc: 'Cấu hình đồng thời, thư mục đầu ra và tùy chọn tự động hóa' },
   'prompt-gen': { title: 'Tạo Prompt từ SRT', desc: 'Dùng Gemini AI để chuyển phụ đề SRT thành image prompts theo nhân vật & style cố định' },
+  tts: { title: 'Chuyển Văn Bản Thành Giọng Đọc (TTS)', desc: 'Chuyển đổi văn bản thành giọng đọc tự nhiên, chất lượng cao' },
 };
 
 
@@ -78,9 +79,8 @@ export const Header: React.FC = () => {
           return (
             <div
               key={notif.id}
-              className={`pointer-events-auto p-3 rounded-xl border backdrop-blur-md shadow-2xl flex items-start gap-3 text-xs animate-in fade-in slide-in-from-top-2 duration-200 ${
-                borders[notif.type]
-              }`}
+              className={`pointer-events-auto p-3 rounded-xl border backdrop-blur-md shadow-2xl flex items-start gap-3 text-xs animate-in fade-in slide-in-from-top-2 duration-200 ${borders[notif.type]
+                }`}
             >
               {icons[notif.type]}
               <div className="flex-1 font-medium leading-relaxed">{notif.message}</div>

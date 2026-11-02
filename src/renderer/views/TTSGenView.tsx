@@ -36,6 +36,8 @@ import {
   Heart,
   AlertTriangle,
   Feather,
+  Upload,
+  Trash2,
 } from 'lucide-react';
 
 // Helper lấy màu avatar theo thương hiệu VieNeu
@@ -109,10 +111,63 @@ export const TTSGenView: React.FC = () => {
   const [isAddVoiceOpen, setIsAddVoiceOpen] = useState(false);
   const [newVoiceName, setNewVoiceName] = useState('');
   const [newVoiceAudioPath, setNewVoiceAudioPath] = useState('');
+  const [uploadedVoiceFile, setUploadedVoiceFile] = useState<{ name: string; size: number } | null>(null);
+  const voiceFileInputRef = useRef<HTMLInputElement | null>(null);
   const [newVoiceGender, setNewVoiceGender] = useState<'female' | 'male'>('female');
   const [newVoiceRegion, setNewVoiceRegion] = useState<'Miền Bắc' | 'Miền Trung' | 'Miền Nam'>('Miền Nam');
   const [newVoiceStyle, setNewVoiceStyle] = useState('Tự nhiên');
   const [isSubmittingVoice, setIsSubmittingVoice] = useState(false);
+
+  const formatAudioSize = (bytes: number) => {
+    if (!bytes) return '';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const handleSelectVoiceAudioFile = async () => {
+    try {
+      const res = await window.api.selectAudioFile();
+      if (res && res.filePath) {
+        setNewVoiceAudioPath(res.filePath);
+        setUploadedVoiceFile({ name: res.name, size: res.size });
+      }
+    } catch (err: any) {
+      console.error('Error selecting audio file:', err);
+      voiceFileInputRef.current?.click();
+    }
+  };
+
+  const handleSelectRefAudioFile = async () => {
+    try {
+      const res = await window.api.selectAudioFile();
+      if (res && res.filePath) {
+        setRefAudioPath(res.filePath);
+      }
+    } catch (err: any) {
+      console.error('Error selecting ref audio file:', err);
+    }
+  };
+
+  const handleVoiceFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      const p = (file as any).path || file.name;
+      setNewVoiceAudioPath(p);
+      setUploadedVoiceFile({ name: file.name, size: file.size });
+    }
+  };
+
+  const handleVoiceFileDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0];
+      const p = (file as any).path || file.name;
+      setNewVoiceAudioPath(p);
+      setUploadedVoiceFile({ name: file.name, size: file.size });
+    }
+  };
 
   // Voice data & Hardware status
   const [voices, setVoices] = useState<TTSVoiceItem[]>([]);
@@ -249,6 +304,7 @@ export const TTSGenView: React.FC = () => {
         setIsAddVoiceOpen(false);
         setNewVoiceName('');
         setNewVoiceAudioPath('');
+        setUploadedVoiceFile(null);
       } else {
         throw new Error(res.error || 'Thêm giọng đọc thất bại.');
       }
@@ -620,22 +676,41 @@ export const TTSGenView: React.FC = () => {
                 Instant Clone
               </span>
             </div>
-            <p className="text-xs text-slate-400">
-              Tải lên đường dẫn file ghi âm mẫu (3 - 8 giây) để nhân bản giọng đọc bất kỳ:
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-slate-400">
+                Tải lên file ghi âm mẫu (3 - 8 giây) để nhân bản giọng đọc tức thì:
+              </p>
+              <button
+                type="button"
+                onClick={handleSelectRefAudioFile}
+                className="px-3 py-1 rounded-lg text-xs font-semibold bg-violet-600/30 hover:bg-violet-600/50 text-violet-200 border border-violet-500/40 flex items-center gap-1.5 transition-all shadow-sm"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                <span>Upload file mẫu</span>
+              </button>
+            </div>
             <div className="flex gap-2">
               <input
                 type="text"
                 value={refAudioPath}
                 onChange={(e) => setRefAudioPath(e.target.value)}
-                placeholder="C:\Users\...\my_voice_sample.wav hoặc để trống để dùng giọng chuẩn"
+                placeholder="Chọn file hoặc nhập đường dẫn .wav / .mp3 / .m4a mẫu..."
                 className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono text-slate-200 focus:outline-none focus:border-violet-500"
               />
+              <button
+                type="button"
+                onClick={handleSelectRefAudioFile}
+                className="px-3.5 py-2.5 text-xs font-semibold text-slate-300 hover:text-white rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 flex items-center gap-1.5 transition-colors"
+                title="Duyệt file từ máy tính"
+              >
+                <FolderOpen className="w-3.5 h-3.5 text-violet-400" />
+                <span>Duyệt...</span>
+              </button>
               {refAudioPath && (
                 <button
                   type="button"
                   onClick={() => setRefAudioPath('')}
-                  className="px-3 py-1.5 text-xs text-slate-400 hover:text-white rounded-lg bg-slate-800"
+                  className="px-3 py-1.5 text-xs text-slate-400 hover:text-white rounded-lg bg-slate-800 hover:bg-red-950/40 hover:text-red-300 border border-slate-700 transition-colors"
                 >
                   Xóa
                 </button>
@@ -702,7 +777,7 @@ export const TTSGenView: React.FC = () => {
               ) : (
                 <>
                   <Volume2 className="w-4 h-4" />
-                  <span>Tạo File Giọng Đọc (Local)</span>
+                  <span>Tạo File Giọng Đọc</span>
                 </>
               )}
             </button>
@@ -831,8 +906,8 @@ export const TTSGenView: React.FC = () => {
                   <button
                     onClick={() => setSelectedLanguage('en')}
                     className={`px-3 py-1.5 rounded-lg font-medium transition-all ${selectedLanguage === 'en'
-                        ? 'bg-violet-600 text-white shadow'
-                        : 'text-slate-400 hover:text-slate-200'
+                      ? 'bg-violet-600 text-white shadow'
+                      : 'text-slate-400 hover:text-slate-200'
                       }`}
                   >
                     us Tiếng Anh
@@ -840,8 +915,8 @@ export const TTSGenView: React.FC = () => {
                   <button
                     onClick={() => setSelectedLanguage('vi')}
                     className={`px-3 py-1.5 rounded-lg font-medium transition-all ${selectedLanguage === 'vi'
-                        ? 'bg-violet-600 text-white shadow'
-                        : 'text-slate-400 hover:text-slate-200'
+                      ? 'bg-violet-600 text-white shadow'
+                      : 'text-slate-400 hover:text-slate-200'
                       }`}
                   >
                     vn Tiếng Việt
@@ -950,8 +1025,8 @@ export const TTSGenView: React.FC = () => {
                     <button
                       onClick={() => setRegionFilter('all')}
                       className={`px-3 py-1 rounded-xl border text-xs transition-all ${regionFilter === 'all'
-                          ? 'border-violet-500 bg-violet-600/30 text-white font-bold'
-                          : 'border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200'
+                        ? 'border-violet-500 bg-violet-600/30 text-white font-bold'
+                        : 'border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200'
                         }`}
                     >
                       Tất cả vùng
@@ -959,8 +1034,8 @@ export const TTSGenView: React.FC = () => {
                     <button
                       onClick={() => setRegionFilter('Miền Bắc')}
                       className={`px-3 py-1 rounded-xl border text-xs transition-all ${regionFilter === 'Miền Bắc'
-                          ? 'border-violet-500 bg-violet-600/30 text-white font-bold'
-                          : 'border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200'
+                        ? 'border-violet-500 bg-violet-600/30 text-white font-bold'
+                        : 'border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200'
                         }`}
                     >
                       🏛 Miền Bắc
@@ -968,8 +1043,8 @@ export const TTSGenView: React.FC = () => {
                     <button
                       onClick={() => setRegionFilter('Miền Trung')}
                       className={`px-3 py-1 rounded-xl border text-xs transition-all ${regionFilter === 'Miền Trung'
-                          ? 'border-violet-500 bg-violet-600/30 text-white font-bold'
-                          : 'border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200'
+                        ? 'border-violet-500 bg-violet-600/30 text-white font-bold'
+                        : 'border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200'
                         }`}
                     >
                       🏖 Miền Trung
@@ -977,8 +1052,8 @@ export const TTSGenView: React.FC = () => {
                     <button
                       onClick={() => setRegionFilter('Miền Nam')}
                       className={`px-3 py-1 rounded-xl border text-xs transition-all ${regionFilter === 'Miền Nam'
-                          ? 'border-violet-500 bg-violet-600/30 text-white font-bold'
-                          : 'border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200'
+                        ? 'border-violet-500 bg-violet-600/30 text-white font-bold'
+                        : 'border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200'
                         }`}
                     >
                       🌴 Miền Nam
@@ -991,8 +1066,8 @@ export const TTSGenView: React.FC = () => {
                     type="button"
                     onClick={() => setOnlyStarFilter(!onlyStarFilter)}
                     className={`px-3 py-1 rounded-xl border text-xs transition-all flex items-center gap-1.5 ${onlyStarFilter
-                        ? 'border-amber-500/60 bg-amber-950/40 text-amber-300 font-bold'
-                        : 'border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200'
+                      ? 'border-amber-500/60 bg-amber-950/40 text-amber-300 font-bold'
+                      : 'border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200'
                       }`}
                   >
                     <Star className={`w-3.5 h-3.5 ${onlyStarFilter ? 'text-amber-400 fill-amber-400' : 'text-slate-500'}`} />
@@ -1043,14 +1118,73 @@ export const TTSGenView: React.FC = () => {
                       </div>
 
                       <div className="space-y-1 md:col-span-2">
-                        <label className="text-slate-400 text-[11px] font-medium">Đường dẫn file ghi âm mẫu (.wav / 3-10 giây)</label>
+                        <label className="text-slate-300 text-[11px] font-semibold flex items-center justify-between">
+                          <span>File ghi âm mẫu (.wav, .mp3, .m4a / 3-10 giây)</span>
+                          {newVoiceAudioPath && (
+                            <span className="text-emerald-400 font-normal">✅ Đã chọn file</span>
+                          )}
+                        </label>
+
+                        {!newVoiceAudioPath ? (
+                          <div
+                            onClick={handleSelectVoiceAudioFile}
+                            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                            onDrop={handleVoiceFileDrop}
+                            className="border-2 border-dashed border-violet-500/40 hover:border-violet-400/80 rounded-xl p-3 text-center cursor-pointer bg-slate-950/40 hover:bg-violet-950/20 transition-all flex flex-col items-center justify-center gap-1.5 group"
+                          >
+                            <div className="w-8 h-8 rounded-full bg-violet-600/20 text-violet-300 flex items-center justify-center group-hover:scale-110 transition-transform">
+                              <Upload className="w-4 h-4" />
+                            </div>
+                            <div className="text-xs font-semibold text-slate-200">
+                              Bấm để tải lên hoặc kéo thả file ghi âm mẫu vào đây
+                            </div>
+                            <div className="text-[10px] text-slate-400">
+                              Hỗ trợ: WAV, MP3, M4A, FLAC, OGG (3 - 10 giây rõ tiếng)
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-violet-500/50 text-xs">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="w-8 h-8 rounded-lg bg-violet-600/30 text-violet-300 flex items-center justify-center shrink-0">
+                                <Volume2 className="w-4 h-4" />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="font-semibold text-slate-100 truncate text-[11px]">
+                                  {uploadedVoiceFile?.name || newVoiceAudioPath.split(/[\\/]/).pop()}
+                                </div>
+                                <div className="text-[10px] text-slate-400 font-mono truncate">
+                                  {uploadedVoiceFile?.size ? formatAudioSize(uploadedVoiceFile.size) + ' · ' : ''}{newVoiceAudioPath}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <button
+                                type="button"
+                                onClick={handleSelectVoiceAudioFile}
+                                className="px-2.5 py-1 text-[11px] font-medium text-violet-300 hover:text-white rounded-lg bg-violet-900/40 hover:bg-violet-800/60 border border-violet-500/30 transition-colors"
+                              >
+                                Đổi file
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setNewVoiceAudioPath('');
+                                  setUploadedVoiceFile(null);
+                                }}
+                                className="p-1 text-slate-400 hover:text-red-400 transition-colors"
+                                title="Xóa file đã chọn"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        )}
                         <input
-                          type="text"
-                          value={newVoiceAudioPath}
-                          onChange={(e) => setNewVoiceAudioPath(e.target.value)}
-                          placeholder="C:\duong_dan\mau_giong_doc.wav"
-                          className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-200 font-mono text-[11px] focus:outline-none focus:border-violet-500"
-                          required
+                          type="file"
+                          ref={voiceFileInputRef}
+                          onChange={handleVoiceFileChange}
+                          accept="audio/*,.wav,.mp3,.m4a,.flac,.ogg,.aac"
+                          className="hidden"
                         />
                       </div>
                     </div>
@@ -1170,8 +1304,8 @@ export const TTSGenView: React.FC = () => {
                         key={v.id}
                         onClick={() => setSelectedVoiceId(v.id)}
                         className={`p-4 rounded-2xl border transition-all cursor-pointer relative flex flex-col justify-between ${isSelected
-                            ? 'border-violet-500 bg-violet-950/30 shadow-lg shadow-violet-600/10'
-                            : 'border-slate-800/90 bg-slate-900/50 hover:border-slate-700'
+                          ? 'border-violet-500 bg-violet-950/30 shadow-lg shadow-violet-600/10'
+                          : 'border-slate-800/90 bg-slate-900/50 hover:border-slate-700'
                           }`}
                       >
                         {/* Top Row: Avatar, Name, Checked Pill */}
@@ -1242,8 +1376,8 @@ export const TTSGenView: React.FC = () => {
                               onClick={(e) => handlePreviewVoice(e, v.id)}
                               disabled={isLoadingPreview}
                               className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${isPreviewing
-                                  ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/30'
-                                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white'
+                                ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/30'
+                                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white'
                                 }`}
                               title={isPreviewing ? 'Dừng nghe thử' : 'Nghe thử giọng này'}
                             >
@@ -1266,8 +1400,8 @@ export const TTSGenView: React.FC = () => {
                                 setIsVoiceModalOpen(false);
                               }}
                               className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${isSelected
-                                  ? 'bg-violet-600 text-white shadow-md'
-                                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
+                                ? 'bg-violet-600 text-white shadow-md'
+                                : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
                                 }`}
                             >
                               {isSelected ? 'Đang chọn' : 'Chọn'}

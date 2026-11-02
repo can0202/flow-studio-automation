@@ -10,6 +10,8 @@ export class SessionManager {
   private db: AppDatabase;
   private baseDir: string;
   private activeContexts: Map<string, BrowserContext> = new Map();
+  private testingSessions: Set<string> = new Set();
+  private isTestingAny: boolean = false;
 
   constructor(db: AppDatabase, customBaseDir?: string) {
     this.db = db;
@@ -22,6 +24,30 @@ export class SessionManager {
 
     if (!fs.existsSync(this.baseDir)) {
       fs.mkdirSync(this.baseDir, { recursive: true });
+    }
+
+    this.cleanStaleLocks();
+  }
+
+  private cleanStaleLocks() {
+    try {
+      if (!fs.existsSync(this.baseDir)) return;
+      const dirs = fs.readdirSync(this.baseDir, { withFileTypes: true });
+      for (const d of dirs) {
+        if (!d.isDirectory()) continue;
+        const profilePath = path.join(this.baseDir, d.name);
+        const lockFiles = ['SingletonLock', 'SingletonCookie', 'SingletonSocket'];
+        for (const lf of lockFiles) {
+          const lp = path.join(profilePath, lf);
+          if (fs.existsSync(lp)) {
+            try {
+              fs.unlinkSync(lp);
+            } catch {}
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[SessionManager] cleanStaleLocks notice:', e);
     }
   }
 
@@ -119,6 +145,23 @@ export class SessionManager {
       return { success: false, status: 'disabled', message: 'Không tìm thấy phiên' };
     }
 
+    // ── Mutex Protection: Ngăn chặn click liên tục gây đơ máy ──
+    if (this.testingSessions.has(sessionId)) {
+      return {
+        success: false,
+        status: session.status,
+        message: `Phiên "${session.name}" đang được kiểm tra kết nối, vui lòng chờ trong giây lát...`,
+      };
+    }
+
+    if (this.isTestingAny) {
+      return {
+        success: false,
+        status: session.status,
+        message: 'Hệ thống đang kiểm tra một phiên khác. Vui lòng chờ ít giây để tránh quá tải máy tính.',
+      };
+    }
+
     const settings = this.db.getSettings();
 
     // If simulation mode is on, test connection cleanly
@@ -129,6 +172,18 @@ export class SessionManager {
         status: 'ready',
         message: `Phiên "${session.name}" đã xác minh sẵn sàng (Đang chạy chế độ giả lập).`,
       };
+    }
+
+    this.testingSessions.add(sessionId);
+    this.isTestingAny = true;
+
+    // Dọn dẹp stale locks của profile trước khi launch để Chrome không bị treo
+    const lockFiles = ['SingletonLock', 'SingletonCookie', 'SingletonSocket'];
+    for (const lf of lockFiles) {
+      const lp = path.join(session.profileDir, lf);
+      if (fs.existsSync(lp)) {
+        try { fs.unlinkSync(lp); } catch {}
+      }
     }
 
     let context: BrowserContext | null = null;
@@ -316,11 +371,13 @@ export class SessionManager {
         message: `Không thể kết nối Google Flow: ${err.message}`,
       };
     } finally {
+      this.testingSessions.delete(sessionId);
+      this.isTestingAny = false;
       if (ownContext && context) {
         try {
           await context.close();
         } catch {}
-        await new Promise((resolve) => setTimeout(resolve, 1500));
+        await new Promise((resolve) => setTimeout(resolve, 600));
       }
     }
   }

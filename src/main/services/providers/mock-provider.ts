@@ -76,17 +76,22 @@ export class MockProvider implements FlowProvider {
 
     let lastFrameFile: string | undefined = undefined;
 
+    const padLen = Math.max(3, String(job.metadata?.batchTotal || 100).length);
+    const prefix = job.metadata?.batchIndex !== undefined
+      ? `${String(job.metadata.batchIndex).padStart(padLen, '0')}_`
+      : '';
+
     if (job.type === 'image') {
-      const fileName = `${job.id}.svg`;
+      const fileName = `${prefix}${job.id}.svg`;
       outputFile = path.join(imagesDir, fileName);
       thumbnailFile = outputFile;
 
       const svgContent = this.createMockImageSvg(job, session);
       fs.writeFileSync(outputFile, svgContent, 'utf-8');
     } else {
-      const fileName = `${job.id}.mp4`;
-      const thumbName = `${job.id}_thumb.svg`;
-      const lastFrameName = `${job.id}_last_frame.svg`;
+      const fileName = `${prefix}${job.id}.mp4`;
+      const thumbName = `${prefix}${job.id}_thumb.svg`;
+      const lastFrameName = `${prefix}${job.id}_last_frame.svg`;
       outputFile = path.join(videosDir, fileName);
       thumbnailFile = path.join(videosDir, thumbName);
       lastFrameFile = path.join(videosDir, lastFrameName);

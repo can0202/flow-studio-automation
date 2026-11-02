@@ -23,7 +23,7 @@ import {
 
 
 export const SessionsView: React.FC = () => {
-  const { sessions, addSession, openBrowser, testConnection, updateStatus, removeSession } = useSessionStore();
+  const { sessions, addSession, openBrowser, testConnection, updateStatus, removeSession, loadSessions } = useSessionStore();
   const { addNotification, setActiveTab } = useAppStore();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -48,7 +48,7 @@ export const SessionsView: React.FC = () => {
   const handleOpenBrowser = async (session: Session) => {
     addNotification({
       type: 'info',
-      message: `Đang mở trình duyệt cho "${session.name}". Sau khi đăng nhập Google Flow, hãy bấm "Kiểm tra kết nối" để hệ thống tự chuyển sang màn hình Tạo ảnh!`,
+      message: `Đang mở trình duyệt cho "${session.name}". Sau khi đăng nhập Google Flow, hãy bấm "Kiểm tra kết nối" để xác minh trạng thái phiên!`,
     });
     const res = await openBrowser(session.id);
     if (!res.success) {
@@ -57,6 +57,7 @@ export const SessionsView: React.FC = () => {
   };
 
   const handleTestConnection = async (session: Session) => {
+    if (testingId) return; // Chống click spam khi đang kiểm tra
     setTestingId(session.id);
     try {
       const res = await testConnection(session.id);
@@ -64,12 +65,11 @@ export const SessionsView: React.FC = () => {
         addNotification({
           type: 'success',
           message: res.quotaInfo
-            ? `Phiên "${session.name}" sẵn sàng! Quota: ${res.quotaInfo}`
-            : `Phiên "${session.name}" đã sẵn sàng! Đang chuyển đến màn hình Tạo ảnh...`,
+            ? `Phiên "${session.name}" đã sẵn sàng! Quota: ${res.quotaInfo}`
+            : `Phiên "${session.name}" đã kết nối và sẵn sàng hoạt động.`,
         });
-        setTimeout(() => {
-          setActiveTab('image');
-        }, 700);
+        // Ở nguyên màn hình Quản lý phiên và cập nhật lại danh sách phiên mới nhất
+        loadSessions();
       } else {
         addNotification({ type: 'warning', message: res.message });
       }
@@ -200,9 +200,16 @@ export const SessionsView: React.FC = () => {
 
                 {/* Test Connection */}
                 <button
-                  disabled={isTesting}
+                  disabled={Boolean(testingId)}
                   onClick={() => handleTestConnection(session)}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors flex items-center gap-1.5"
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all flex items-center gap-1.5 ${
+                    isTesting
+                      ? 'bg-indigo-900/50 text-indigo-300 border-indigo-700/60 cursor-wait'
+                      : testingId
+                        ? 'bg-slate-800/30 text-slate-500 border-slate-800/60 cursor-not-allowed opacity-50'
+                        : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                  }`}
+                  title={testingId && !isTesting ? 'Hệ thống đang kiểm tra phiên khác, vui lòng chờ...' : ''}
                 >
                   <RotateCw className={`w-3.5 h-3.5 ${isTesting ? 'animate-spin text-indigo-400' : ''}`} />
                   <span>{isTesting ? 'Đang kiểm tra...' : 'Kiểm tra kết nối'}</span>

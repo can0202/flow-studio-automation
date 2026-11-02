@@ -120,8 +120,20 @@ export class BatchNamer {
         return { success: true, renamedCount: 0, message: 'Không có file nào cần đổi tên' };
       }
 
-      // Sort items chronologically (oldest first) so index 001 is assigned to first created
-      targetItems.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      // Sort items by batchIndex or natural sequence so retried items keep their correct slot
+      targetItems.sort((a, b) => {
+        if (a.batchIndex !== undefined && b.batchIndex !== undefined) {
+          return a.batchIndex - b.batchIndex;
+        }
+        if (a.batchIndex !== undefined) return -1;
+        if (b.batchIndex !== undefined) return 1;
+
+        const timeA = new Date(a.originalCreatedAt || a.createdAt).getTime();
+        const timeB = new Date(b.originalCreatedAt || b.createdAt).getTime();
+        if (timeA !== timeB) return timeA - timeB;
+
+        return a.name.localeCompare(b.name, undefined, { numeric: true });
+      });
 
       let renamed = 0;
       for (let i = 0; i < targetItems.length; i++) {
@@ -130,10 +142,11 @@ export class BatchNamer {
 
         const ext = path.extname(item.path);
         const dir = path.dirname(item.path);
+        const indexToUse = item.batchIndex !== undefined ? (item.batchIndex - 1) : i;
         const newTargetName = this.formatFilename({
           config: options.namingConfig,
           projectName: item.projectName,
-          index: i,
+          index: indexToUse,
           extension: ext,
           originalName: item.name,
         });

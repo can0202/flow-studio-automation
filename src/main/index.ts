@@ -17,6 +17,9 @@ if (process.platform === 'win32') {
   app.setAppUserModelId('com.flowstudio.automation');
 }
 
+app.commandLine.appendSwitch('enable-gpu-rasterization');
+app.commandLine.appendSwitch('enable-zero-copy');
+
 // Set Playwright browsers path to use system-level cache (works both in dev and packaged)
 // Playwright installs to %LOCALAPPDATA%\ms-playwright by default on Windows
 const playwrightBrowsersPath = process.env.PLAYWRIGHT_BROWSERS_PATH
@@ -53,6 +56,7 @@ function createWindow() {
   const preloadPath = path.join(__dirname, 'preload.cjs');
 
   mainWindow = new BrowserWindow({
+    show: false,
     width: 1360,
     height: 900,
     minWidth: 1080,
@@ -68,6 +72,17 @@ function createWindow() {
     },
   });
 
+  mainWindow.once('ready-to-show', () => {
+    mainWindow?.show();
+  });
+
+  // Fallback timer: ensure window is displayed within 4s even if ready-to-show is delayed
+  const showFallback = setTimeout(() => {
+    if (mainWindow && !mainWindow.isVisible()) {
+      mainWindow.show();
+    }
+  }, 4000);
+
   if (isDev && process.env.VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
   } else {
@@ -75,6 +90,7 @@ function createWindow() {
   }
 
   mainWindow.on('closed', () => {
+    clearTimeout(showFallback);
     mainWindow = null;
   });
 }
@@ -145,6 +161,29 @@ function registerIpcHandlers() {
     });
     if (result.canceled || result.filePaths.length === 0) return null;
     return result.filePaths[0];
+  });
+
+  ipcMain.handle('app:selectAudioFile', async () => {
+    if (!mainWindow) return null;
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: 'Chọn file ghi âm giọng đọc mẫu',
+      properties: ['openFile'],
+      filters: [
+        { name: 'Tệp âm thanh (.wav, .mp3, .m4a, .flac, .ogg)', extensions: ['wav', 'mp3', 'm4a', 'flac', 'ogg', 'aac'] },
+        { name: 'Tất cả các tệp', extensions: ['*'] },
+      ],
+    });
+    if (result.canceled || result.filePaths.length === 0) return null;
+    const filePath = result.filePaths[0];
+    let size = 0;
+    try {
+      size = fs.statSync(filePath).size;
+    } catch {}
+    return {
+      filePath,
+      name: path.basename(filePath),
+      size,
+    };
   });
 
   ipcMain.handle('app:openExternal', async (_e, url: string) => {
