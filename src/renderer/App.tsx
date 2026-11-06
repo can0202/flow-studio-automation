@@ -34,12 +34,10 @@ export const App: React.FC = () => {
     if (window.api) {
       const unsubJob = window.api.onJobUpdated((job) => {
         handleJobUpdate(job);
-        loadStats();
       });
 
       const unsubSession = window.api.onSessionUpdated((session) => {
         handleSessionUpdate(session);
-        loadStats();
       });
 
       const unsubStats = window.api.onQueueStatsUpdated((stats) => {

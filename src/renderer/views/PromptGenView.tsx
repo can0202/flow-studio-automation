@@ -556,7 +556,7 @@ ${endNum}. [image prompt], [NHÂN VẬT CỐ ĐỊNH nếu có nhân vật chín
   return (
     <div className="flex h-full overflow-hidden">
       {/* ── Left Panel: Inputs ── */}
-      <div className="w-[500px] shrink-0 flex flex-col border-r border-[#E2E6FF] bg-white overflow-y-auto">
+      <div className="w-[400px] shrink-0 flex flex-col border-r border-[#E2E6FF] bg-white overflow-y-auto">
         {/* Header */}
         <div className="px-6 py-5 border-b border-[#E2E6FF]">
           <div className="flex items-center gap-3">

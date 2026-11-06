@@ -37,6 +37,11 @@ const SafeImage: React.FC<{
   const [dataUrl, setDataUrl] = useState<string | null>(null);
   const [hasError, setHasError] = useState(false);
 
+  useEffect(() => {
+    setDataUrl(null);
+    setHasError(false);
+  }, [path]);
+
   const handleError = async () => {
     try {
       const fallback = await window.api.readAsDataUrl(path);
@@ -506,8 +511,8 @@ export const OutputsView: React.FC = () => {
                 key={t}
                 onClick={() => setFilterType(t)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all ${isActive
-                    ? 'bg-[#5F2CFF] text-white shadow-sm'
-                    : 'bg-white text-[#4A4070] hover:text-[#1A0A4A] border border-[#E2E6FF]'
+                  ? 'bg-[#5F2CFF] text-white shadow-sm'
+                  : 'bg-white text-[#4A4070] hover:text-[#1A0A4A] border border-[#E2E6FF]'
                   }`}
               >
                 {t === 'all' ? 'Tất cả' : t === 'image' ? 'Ảnh' : 'Video'}
@@ -557,8 +562,8 @@ export const OutputsView: React.FC = () => {
             <button
               onClick={() => setViewMode('grid')}
               className={`p-1.5 rounded-md transition-all ${viewMode === 'grid'
-                  ? 'bg-[#5F2CFF] text-white shadow-sm'
-                  : 'text-[#4A4070] hover:text-[#1A0A4A]'
+                ? 'bg-[#5F2CFF] text-white shadow-sm'
+                : 'text-[#4A4070] hover:text-[#1A0A4A]'
                 }`}
               title="Chế độ Lưới (Grid)"
             >
@@ -567,8 +572,8 @@ export const OutputsView: React.FC = () => {
             <button
               onClick={() => setViewMode('list')}
               className={`p-1.5 rounded-md transition-all ${viewMode === 'list'
-                  ? 'bg-[#5F2CFF] text-white shadow-sm'
-                  : 'text-[#4A4070] hover:text-[#1A0A4A]'
+                ? 'bg-[#5F2CFF] text-white shadow-sm'
+                : 'text-[#4A4070] hover:text-[#1A0A4A]'
                 }`}
               title="Chế độ Danh sách (List)"
             >
@@ -635,15 +640,15 @@ export const OutputsView: React.FC = () => {
 
                   <span
                     className={`absolute top-2 left-2 text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider backdrop-blur-md ${isImage
-                        ? 'bg-[#F0F3FF]/80 text-[#7B52FF] border border-[#5F2CFF]/25'
-                        : 'bg-[#F0F3FF]/80 text-[#9B7AFF] border border-[#7B52FF]/25'
+                      ? 'bg-[#F0F3FF]/80 text-[#7B52FF] border border-[#5F2CFF]/25'
+                      : 'bg-[#F0F3FF]/80 text-[#9B7AFF] border border-[#7B52FF]/25'
                       }`}
                   >
                     {item.type}
                   </span>
 
                   {item.batchIndex !== undefined && (
-                    <span className="absolute top-2 right-2 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-700 border border-emerald-200 backdrop-blur-md">
+                    <span className="absolute top-2 right-2 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#5F2CFF] text-white border border-emerald-200 backdrop-blur-md">
                       #{item.batchIndex}
                     </span>
                   )}
@@ -684,7 +689,7 @@ export const OutputsView: React.FC = () => {
                   <div className="pt-2 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => openFile(item.path)}
-                      className="flex-1 py-1.5 px-2.5 rounded-lg bg-[#5F2CFF]/15 hover:bg-[#5F2CFF]/20 text-[#7B52FF] border border-[#5F2CFF]/25 text-xs font-semibold transition-colors flex items-center justify-center gap-1.5"
+                      className="flex-1 py-1.5 px-2.5 rounded-lg bg-[#5F2CFF] hover:bg-[#5F2CFF]/90 text-white border border-[#5F2CFF]/25 text-xs font-semibold transition-colors flex items-center justify-center gap-1.5"
                     >
                       <ExternalLink className="w-3 h-3" />
                       <span>Mở File</span>
@@ -767,8 +772,8 @@ export const OutputsView: React.FC = () => {
                       <td className="py-2.5 px-4">
                         <span
                           className={`text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider ${isImage
-                              ? 'bg-[#F0F3FF]/80 text-[#7B52FF] border border-[#5F2CFF]/25'
-                              : 'bg-[#F0F3FF]/80 text-[#9B7AFF] border border-[#7B52FF]/25'
+                            ? 'bg-[#F0F3FF]/80 text-[#7B52FF] border border-[#5F2CFF]/25'
+                            : 'bg-[#F0F3FF]/80 text-[#9B7AFF] border border-[#7B52FF]/25'
                             }`}
                         >
                           {item.type}
@@ -926,8 +931,8 @@ export const OutputsView: React.FC = () => {
                     disabled={isSyncing}
                     onClick={() => setSyncScope('all_projects')}
                     className={`p-3 rounded-xl border text-left transition-all ${syncScope === 'all_projects'
-                        ? 'bg-[#5F2CFF]/10 border-[#5F2CFF]/50 text-[#7B52FF]'
-                        : 'bg-white border-[#E2E6FF] text-[#4A4070] hover:text-[#1A0A4A]'
+                      ? 'bg-[#5F2CFF]/10 border-[#5F2CFF]/50 text-[#7B52FF]'
+                      : 'bg-white border-[#E2E6FF] text-[#4A4070] hover:text-[#1A0A4A]'
                       }`}
                   >
                     <div className="text-xs font-bold flex items-center gap-1.5">
@@ -943,8 +948,8 @@ export const OutputsView: React.FC = () => {
                     disabled={isSyncing}
                     onClick={() => setSyncScope('current_project')}
                     className={`p-3 rounded-xl border text-left transition-all ${syncScope === 'current_project'
-                        ? 'bg-[#5F2CFF]/10 border-[#5F2CFF]/50 text-[#7B52FF]'
-                        : 'bg-white border-[#E2E6FF] text-[#4A4070] hover:text-[#1A0A4A]'
+                      ? 'bg-[#5F2CFF]/10 border-[#5F2CFF]/50 text-[#7B52FF]'
+                      : 'bg-white border-[#E2E6FF] text-[#4A4070] hover:text-[#1A0A4A]'
                       }`}
                   >
                     <div className="text-xs font-bold flex items-center gap-1.5">
@@ -1046,13 +1051,13 @@ export const OutputsView: React.FC = () => {
                                 key={proj.name}
                                 onClick={() => toggleProjectSelection(proj.name)}
                                 className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all text-left ${isSelected
-                                    ? 'bg-[#5F2CFF]/15 border border-[#5F2CFF]/25 text-[#7B52FF]'
-                                    : 'bg-[#F4F6FF]/50 border border-[#E2E6FF]/60 text-[#4A4070] hover:text-[#1A0A4A] hover:border-[#C4CEFF]'
+                                  ? 'bg-[#5F2CFF]/15 border border-[#5F2CFF]/25 text-[#7B52FF]'
+                                  : 'bg-[#F4F6FF]/50 border border-[#E2E6FF]/60 text-[#4A4070] hover:text-[#1A0A4A] hover:border-[#C4CEFF]'
                                   }`}
                               >
                                 <div className={`w-4 h-4 rounded flex-shrink-0 flex items-center justify-center border transition-all ${isSelected
-                                    ? 'bg-[#5F2CFF] border-[#5F2CFF]'
-                                    : 'border-[#8B7AB8] bg-transparent'
+                                  ? 'bg-[#5F2CFF] border-[#5F2CFF]'
+                                  : 'border-[#8B7AB8] bg-transparent'
                                   }`}>
                                   {isSelected && <Check className="w-2.5 h-2.5 text-[#1A0A4A]" />}
                                 </div>
@@ -1370,8 +1375,8 @@ export const OutputsView: React.FC = () => {
               <div className="flex items-center gap-2">
                 <span
                   className={`text-[10px] px-2 py-0.5 rounded uppercase font-extrabold ${selectedItem.type === 'video'
-                      ? 'bg-[#7B52FF]/10 text-[#7B52FF] border border-[#7B52FF]/20'
-                      : 'bg-[#5F2CFF]/10 text-[#5F2CFF] border border-[#5F2CFF]/20'
+                    ? 'bg-[#7B52FF]/10 text-[#7B52FF] border border-[#7B52FF]/20'
+                    : 'bg-[#5F2CFF]/10 text-[#5F2CFF] border border-[#5F2CFF]/20'
                     }`}
                 >
                   {selectedItem.type}

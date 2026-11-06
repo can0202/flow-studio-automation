@@ -270,6 +270,57 @@ function registerIpcHandlers() {
     jobQueue.processQueue();
   });
 
+  ipcMain.handle(
+    'jobs:updateSession',
+    async (
+      _e,
+      {
+        jobId,
+        sessionId,
+        applyToBatch,
+      }: { jobId: string; sessionId: string; applyToBatch?: boolean }
+    ) => {
+      const job = db.getJobById(jobId);
+      if (!job) return { success: false, updatedCount: 0 };
+
+      let updatedCount = 0;
+      const targetSessionId = sessionId ? sessionId : undefined;
+
+      const updateSingle = (j: any) => {
+        const updates: any = { sessionId: targetSessionId };
+        // If job was paused or failed, reset to pending when assigning a new session
+        if (j.status === 'paused' || j.status === 'failed') {
+          updates.status = 'pending';
+          updates.errorMessage = undefined;
+          updates.retryCount = 0;
+        }
+        const u = db.updateJob(j.id, updates);
+        if (u) {
+          mainWindow?.webContents.send('jobs:jobUpdated', u);
+          updatedCount++;
+        }
+      };
+
+      if (applyToBatch && job.metadata?.batchId) {
+        const batchJobs = db
+          .getJobs()
+          .filter(
+            (j) =>
+              j.metadata?.batchId === job.metadata?.batchId &&
+              (j.status === 'pending' || j.status === 'paused' || j.status === 'failed')
+          );
+        for (const bj of batchJobs) {
+          updateSingle(bj);
+        }
+      } else {
+        updateSingle(job);
+      }
+
+      jobQueue.processQueue();
+      return { success: true, updatedCount };
+    }
+  );
+
   // Queue
   ipcMain.handle('queue:start', async () => {
     jobQueue.startQueue();

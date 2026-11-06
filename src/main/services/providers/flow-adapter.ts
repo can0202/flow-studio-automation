@@ -17,14 +17,22 @@ export function getBrowserLaunchOptions(headless = false) {
   return {
     ...(hasChrome ? { channel: 'chrome' as const } : {}),
     headless,
-    viewport: { width: 1366, height: 768 },
+    viewport: { width: 1280, height: 720 },
     args: [
       '--disable-blink-features=AutomationControlled',
       '--disable-infobars',
       '--no-sandbox',
       '--disable-dev-shm-usage',
-      '--disable-features=VizDisplayCompositor',
+      '--disable-features=VizDisplayCompositor,Translate,OptimizationHints,MediaRouter',
       '--lang=vi-VN,vi,en-US,en',
+      '--mute-audio',
+      '--disable-background-timer-throttling',
+      '--disable-backgrounding-occluded-windows',
+      '--disable-renderer-backgrounding',
+      '--disable-breakpad',
+      '--disable-component-update',
+      '--no-default-browser-check',
+      '--no-first-run',
     ],
     ignoreDefaultArgs: ['--enable-automation'],
     userAgent:
@@ -270,10 +278,8 @@ export const FLOW_SELECTORS = {
     'button:has-text("Tạo dự án")',
     'button:has-text("Tạo dự án mới")',
     'button:has-text("+ Dự án mới")',
-    'button.mdc-fab',
-    'a.project-thumbnail-container',
-    'a[aria-label="Mở dự án"]',
-    'a[href*="/project/"]',
+    'button.mdc-fab:has-text("add")',
+    'button:has(mat-icon:has-text("add"))',
     '[aria-label*="New project" i]',
     '[aria-label*="Dự án mới" i]',
     '[aria-label*="Tạo dự án" i]',
@@ -652,31 +658,17 @@ export async function isAuthRequired(page: Page): Promise<boolean> {
 // ─────────────────────────────────────────────────────────────────────────────
 async function isQuotaExhausted(page: Page): Promise<boolean> {
   try {
-    for (const sel of FLOW_SELECTORS.quotaExhaustedIndicators) {
-      try {
-        const isVis = await page.locator(sel).first().isVisible({ timeout: 350 }).catch(() => false);
-        if (isVis) {
-          console.warn(`[FlowAdapter] Quota indicator visible matching: ${sel}`);
-          return true;
-        }
-      } catch {}
-    }
-
-    // Check modal overlays / snackbars / alerts specifically — NOT arbitrary body innerText!
     const hasModalQuota = await page.evaluate(() => {
       const overlays = Array.from(document.querySelectorAll('[role="dialog"], [role="alert"], .mat-mdc-snack-bar-container, mat-snack-bar-container, .cdk-overlay-container'));
       for (const el of overlays) {
-        const txt = ((el as HTMLElement).innerText || '').toLowerCase();
+        const txt = ((el as HTMLElement).textContent || '').toLowerCase();
         if (
-          txt.includes('bạn đã dùng hết hạn mức tín dụng') ||
-          txt.includes('bạn đã dùng hết tín dụng') ||
-          txt.includes('dùng hết tín dụng hôm nay') ||
+          txt.includes('hết hạn mức tín dụng') ||
+          txt.includes('hết tín dụng') ||
           txt.includes('out of credits') ||
           txt.includes('daily limit reached') ||
-          txt.includes('you are out of credits') ||
-          txt.includes('you\'re out of credits') ||
-          txt.includes('0 tín dụng còn lại') ||
-          txt.includes('0 credits remaining')
+          txt.includes('0 tín dụng') ||
+          txt.includes('0 credits')
         ) {
           return true;
         }
@@ -684,7 +676,7 @@ async function isQuotaExhausted(page: Page): Promise<boolean> {
       return false;
     }).catch(() => false);
 
-    if (hasModalQuota) return true;
+    return Boolean(hasModalQuota);
   } catch {}
   return false;
 }
@@ -1021,6 +1013,22 @@ export class GoogleFlowAdapter implements FlowProvider {
         // ── Dismiss any onboarding or consent modals ────────────────────────
         await dismissModals(page);
 
+        // ── Check if we need to create a fresh workspace ─────────────────────
+        const isResumingKnownProject = Boolean(
+          (job.metadata?.flowProjectUrl as string) ||
+          (batchId && this.batchProjectUrls.has(batchId))
+        );
+
+        // If this is a new project/batch (no explicit flowProjectUrl was requested),
+        // but the browser profile restored an old /project/... tab from a previous session,
+        // navigate to home so we create a BRAND NEW project rather than polluting the old one.
+        if (!isResumingKnownProject && page.url().includes('/project/')) {
+          console.log('[FlowAdapter] Browser profile restored an old project URL, but this job requires a NEW workspace. Navigating to dashboard to create a fresh project...');
+          await page.goto(FLOW_URLS.primary, { waitUntil: 'domcontentloaded', timeout: 25000 }).catch(() => {});
+          await page.waitForTimeout(2500);
+          await dismissModals(page);
+        }
+
         // ── Create fresh project workspace ──────────────────────────────────
         if (!page.url().includes('/project/')) {
           onProgress({ progress: 25, stage: 'starting', message: 'Đang tạo dự án mới...' });
@@ -1054,14 +1062,14 @@ export class GoogleFlowAdapter implements FlowProvider {
             }
           }
 
-          // Method 3 (LAST RESORT): Open existing project card
+          // Method 3: Retry creating new project by direct navigation to dashboard
           if (!page.url().includes('/project/')) {
-            console.log('[FlowAdapter] Cannot create new project, falling back to existing project card...');
-            const cardLink = page.locator('a.project-thumbnail-container, a[href*="/project/"]').first();
-            if (await cardLink.isVisible({ timeout: 3000 }).catch(() => false)) {
-              await cardLink.click({ timeout: 5000 }).catch(() => {});
-              await page.waitForURL((url) => url.pathname.includes('/project/'), { timeout: 8000 }).catch(() => {});
-              await page.waitForTimeout(2500);
+            console.log('[FlowAdapter] Retrying new project creation on clean dashboard...');
+            const altNewBtn = await findFirstVisible(page, FLOW_SELECTORS.newProjectButtons, 5000);
+            if (altNewBtn) {
+              await altNewBtn.click({ timeout: 5000 }).catch(() => {});
+              await page.waitForURL((url) => url.pathname.includes('/project/'), { timeout: 10000 }).catch(() => {});
+              await page.waitForTimeout(2000);
               await dismissModals(page);
             }
           }
@@ -1335,13 +1343,25 @@ export class GoogleFlowAdapter implements FlowProvider {
       }
 
       await activePromptField.click({ timeout: 5000 });
-      await page.waitForTimeout(150 + Math.floor(Math.random() * 150));
+      await page.waitForTimeout(100);
 
-      // Select all existing text and delete it
+      // Thoroughly clear existing text in contenteditable/input/ProseMirror
+      await activePromptField.evaluate((el: HTMLElement) => {
+        el.focus();
+        if (el.isContentEditable) {
+          el.innerHTML = '<p><br></p>';
+          el.textContent = '';
+        } else if ('value' in el) {
+          (el as HTMLInputElement).value = '';
+        }
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+      }).catch(() => {});
+
       await page.keyboard.press('Control+a');
-      await page.waitForTimeout(80 + Math.floor(Math.random() * 80));
-      await page.keyboard.press('Delete');
-      await page.waitForTimeout(100 + Math.floor(Math.random() * 100));
+      await page.waitForTimeout(50);
+      await page.keyboard.press('Backspace');
+      await page.waitForTimeout(100);
 
       // Typing via keyboard.insertText in human-like chunks
       const promptText = job.prompt;
@@ -1457,7 +1477,7 @@ export class GoogleFlowAdapter implements FlowProvider {
       // ── Download output ───────────────────────────────────────────────────
       onProgress({ progress: 90, stage: 'downloading', message: 'Đang tải về media đã tạo...' });
       const targetDir = job.type === 'image' ? imagesDir : videosDir;
-      const downloadResult = await this.downloadResult(page, job, targetDir, preSnapshot);
+      const downloadResult = await this.downloadResult(page, job, targetDir, preSnapshot, generationResult.metadata?.newUrls);
 
       if (!downloadResult.success || !downloadResult.outputFile) {
         if (isBatchJob) await this.closeSessionBatch(session.id);
@@ -1820,49 +1840,41 @@ export class GoogleFlowAdapter implements FlowProvider {
   ): Promise<GenerationResult> {
     const startTime = Date.now();
     const timeoutMs = 300000; // 5 minutes max
-    const minGenerationTimeMs = type === 'video' ? 12000 : 5000; // Video rendering takes longer
+    const minGenerationTimeMs = type === 'video' ? 10000 : 4000; // Video rendering takes longer
 
     // Phase 1: Wait up to 15s to observe generation START
     let generationStarted = false;
     const startWaitMs = Date.now();
 
     while (Date.now() - startWaitMs < 15000) {
-      for (const sel of FLOW_SELECTORS.loadingIndicators) {
-        try {
-          if (await page.locator(sel).first().isVisible({ timeout: 400 }).catch(() => false)) {
-            generationStarted = true;
-            console.log(`[FlowAdapter] Generation started signal detected via: ${sel}`);
-            break;
-          }
-        } catch {}
-      }
-
-      // Check if generate button is disabled or aria-busy (common while processing)
-      const isGenerateDisabled = await page.evaluate(() => {
+      const isStarted = await page.evaluate(() => {
+        const hasSpinner = Boolean(
+          document.querySelector('mat-progress-bar, .mat-mdc-progress-bar, [role="progressbar"], [aria-label*="Generating" i], [aria-label*="Đang tạo" i], [data-testid="generating-spinner"], .loading-indicator, .spinner')
+        );
         const btns = Array.from(document.querySelectorAll('button'));
         const genBtn = btns.find((b) => {
           const t = (b.textContent || '').trim().toLowerCase();
           return t === 'generate' || t === 'tạo' || t === 'chạy';
         });
-        return genBtn ? (genBtn.disabled || genBtn.getAttribute('aria-busy') === 'true') : false;
+        const isGenDisabled = genBtn ? (genBtn.disabled || genBtn.getAttribute('aria-busy') === 'true' || genBtn.getAttribute('aria-disabled') === 'true') : false;
+        return hasSpinner || isGenDisabled;
       }).catch(() => false);
 
-      if (isGenerateDisabled) {
+      if (isStarted) {
         generationStarted = true;
       }
 
       // Check if new results appeared
       const current = await getMediaSnapshot(page);
       const newUrls = current.urls.filter((u) => !baseline.urls.includes(u));
-      // For video: also check card count increase (Google Flow shows video thumbnail in card, not <video src>)
       const cardIncrease = type === 'video' && (current.cardCount ?? 0) > (baseline.cardCount ?? 0);
       if ((newUrls.length > 0 || current.count > baseline.count || cardIncrease) && (Date.now() - startTime >= minGenerationTimeMs)) {
         console.log(`[FlowAdapter] New results appeared early: ${newUrls.length} new items, cardIncrease=${cardIncrease}`);
-        return { success: true };
+        return { success: true, metadata: { newUrls } };
       }
 
       if (generationStarted) break;
-      await page.waitForTimeout(600);
+      await page.waitForTimeout(800);
     }
 
     if (!generationStarted) {
@@ -1876,9 +1888,9 @@ export class GoogleFlowAdapter implements FlowProvider {
       }
     }
 
-    // Phase 2: Poll for completion
+    // Phase 2: Poll for completion with fast, lightweight in-page evaluations
     while (Date.now() - startTime < timeoutMs) {
-      // Check quota
+      // Check quota (fast in-page)
       if (await isQuotaExhausted(page)) {
         return {
           success: false,
@@ -1896,103 +1908,102 @@ export class GoogleFlowAdapter implements FlowProvider {
         };
       }
 
-      // Check for error banners
-      for (const errSel of FLOW_SELECTORS.errorBanner) {
-        try {
-          const errLoc = page.locator(errSel).first();
-          if (await errLoc.isVisible({ timeout: 300 }).catch(() => false)) {
-            const text = (await errLoc.textContent().catch(() => '')) || '';
-            const textLower = text.toLowerCase();
-            if (text.length < 300 && !textLower.includes('cookie') && !textLower.includes('notice')) {
-              // "Unusual activity" = Google has soft-blocked this account session.
-              // Treat exactly like quota exhausted: pause all remaining jobs immediately
-              // instead of retrying 3 times and then moving on.
-              const isUnusualActivity =
-                textLower.includes('hoạt động bất thường') ||
-                textLower.includes('bất thường nào đó') ||
-                textLower.includes('unusual activity') ||
-                textLower.includes('unusual behavior') ||
-                textLower.includes('tiện ích trình duyệt sửa đổi trang') ||
-                textLower.includes('extensions that modify the page') ||
-                textLower.includes('truy cập vào trung tâm trợ giúp') ||
-                textLower.includes('tần suất') ||
-                textLower.includes('quá nhanh') ||
-                textLower.includes('too many requests') ||
-                textLower.includes('rate limit') ||
-                textLower.includes('slow down') ||
-                textLower.includes('thử lại sau') ||
-                textLower.includes('try again later');
-
-              if (isUnusualActivity) {
-                console.warn(`[FlowAdapter] Unusual activity detected on page. Text: ${text.slice(0, 120)}`);
-                return {
-                  success: false,
-                  isRateLimited: true,
-                  error: `Google Flow báo hoạt động bất thường (yêu cầu quá nhanh hoặc nghi ngờ tự động). Tạm dừng hàng đợi để bảo vệ tài khoản.`,
-                };
-              }
-
-              return {
-                success: false,
-                error: `Google Flow báo lỗi: ${text.trim().slice(0, 200)}`,
-              };
+      // Fast in-page check for error banners & rate limits
+      const errorText = await page.evaluate(() => {
+        const alerts = document.querySelectorAll('[role="alert"]:not([aria-hidden="true"]), .error-message, [data-testid="error-banner"]');
+        for (const el of Array.from(alerts)) {
+          const text = (el.textContent || '').trim();
+          if (text.length > 5 && text.length < 300) {
+            const tLower = text.toLowerCase();
+            if (!tLower.includes('cookie') && !tLower.includes('notice')) {
+              return text;
             }
           }
-        } catch {}
+        }
+        return null;
+      }).catch(() => null);
+
+      if (errorText) {
+        const textLower = errorText.toLowerCase();
+        const isUnusualActivity =
+          textLower.includes('hoạt động bất thường') ||
+          textLower.includes('bất thường nào đó') ||
+          textLower.includes('unusual activity') ||
+          textLower.includes('unusual behavior') ||
+          textLower.includes('tiện ích trình duyệt sửa đổi trang') ||
+          textLower.includes('extensions that modify the page') ||
+          textLower.includes('truy cập vào trung tâm trợ giúp') ||
+          textLower.includes('tần suất') ||
+          textLower.includes('quá nhanh') ||
+          textLower.includes('too many requests') ||
+          textLower.includes('rate limit') ||
+          textLower.includes('slow down') ||
+          textLower.includes('thử lại sau') ||
+          textLower.includes('try again later');
+
+        if (isUnusualActivity) {
+          console.warn(`[FlowAdapter] Unusual activity detected on page. Text: ${errorText.slice(0, 120)}`);
+          return {
+            success: false,
+            isRateLimited: true,
+            error: `Google Flow báo hoạt động bất thường (yêu cầu quá nhanh hoặc nghi ngờ tự động). Tạm dừng hàng đợi để bảo vệ tài khoản.`,
+          };
+        }
+
+        return {
+          success: false,
+          error: `Google Flow báo lỗi: ${errorText.trim().slice(0, 200)}`,
+        };
       }
 
-      // Check loading indicators
-      let stillLoading = false;
-      for (const loadSel of FLOW_SELECTORS.loadingIndicators) {
-        try {
-          if (await page.locator(loadSel).first().isVisible({ timeout: 300 }).catch(() => false)) {
-            stillLoading = true;
-            break;
+      // Fast in-page check for loading status and percentage (NO innerText reflow!)
+      const statusCheck = await page.evaluate((isVideo: boolean) => {
+        const hasSpinner = Boolean(
+          document.querySelector('mat-progress-bar, .mat-mdc-progress-bar, [role="progressbar"], [aria-label*="Generating" i], [aria-label*="Đang tạo" i], [data-testid="generating-spinner"], .loading-indicator, .spinner')
+        );
+
+        let busyTextFound = false;
+        let foundPercent: number | null = null;
+
+        const cards = Array.from(document.querySelectorAll('.tile-row, .virtual-item-container, .generation-card'));
+        for (const c of cards) {
+          const text = c.textContent || '';
+          if (isVideo && (text.includes('Đang tạo') || text.includes('Generating') || text.includes('Processing'))) {
+            busyTextFound = true;
           }
-        } catch {}
-      }
-
-      // For video: also check if there's a video-specific "generating" signal in the page
-      // (e.g., the generate button appears busy or a card shows a loading state)
-      if (!stillLoading && type === 'video') {
-        const videoStillGenerating = await page.evaluate(() => {
-          // Check for percentage text in result cards (e.g. "45%" during video render)
-          const cards = document.querySelectorAll('.tile-row, .virtual-item-container, .generation-card');
-          for (const card of Array.from(cards)) {
-            const text = card.textContent || '';
-            if (/\d{1,3}%/.test(text) || text.includes('Đang tạo') || text.includes('Generating') || text.includes('Processing')) {
-              return true;
+          const m = text.match(/(\d{1,3})%/);
+          if (m) {
+            const val = parseInt(m[1], 10);
+            if (val >= 0 && val <= 100) {
+              foundPercent = val;
+              busyTextFound = true;
             }
           }
-          // Check if generate button is still disabled (still processing)
-          const btns = Array.from(document.querySelectorAll('button'));
-          const genBtn = btns.find((b) => {
-            const t = (b.textContent || '').trim().toLowerCase();
-            return t === 'generate' || t === 'tạo' || t === 'chạy';
-          });
-          if (genBtn && (genBtn.disabled || genBtn.getAttribute('aria-busy') === 'true' || genBtn.getAttribute('aria-disabled') === 'true')) {
-            return true;
-          }
-          return false;
-        }).catch(() => false);
-        if (videoStillGenerating) stillLoading = true;
-      }
+        }
+
+        const btns = Array.from(document.querySelectorAll('button'));
+        const genBtn = btns.find((b) => {
+          const t = (b.textContent || '').trim().toLowerCase();
+          return t === 'generate' || t === 'tạo' || t === 'chạy';
+        });
+        const genDisabled = genBtn ? (genBtn.disabled || genBtn.getAttribute('aria-busy') === 'true' || genBtn.getAttribute('aria-disabled') === 'true') : false;
+
+        return {
+          stillLoading: hasSpinner || busyTextFound || genDisabled,
+          progressPercent: foundPercent,
+        };
+      }, type === 'video').catch(() => ({ stillLoading: false, progressPercent: null }));
+
+      const stillLoading = statusCheck.stillLoading;
+      const progressPercent = statusCheck.progressPercent;
 
       // Check media snapshot
       const current = await getMediaSnapshot(page);
       const newUrls = current.urls.filter((u) => !baseline.urls.includes(u));
-      // For video: card count increase is a valid completion signal (thumbnail = video rendered)
       const cardIncrease = type === 'video' && (current.cardCount ?? 0) > (baseline.cardCount ?? 0);
       const hasNewResults = newUrls.length > 0 || current.count > baseline.count || cardIncrease;
 
       const elapsed = Math.round((Date.now() - startTime) / 1000);
-
-      // Extract real percentage if shown on screen (e.g. 99%, 45%)
-      const progressPercent = await page.evaluate(() => {
-        const text = document.body.innerText || '';
-        const match = text.match(/(\d{1,3})%/);
-        return match ? parseInt(match[1], 10) : null;
-      }).catch(() => null);
 
       if (onProgress && elapsed > 0) {
         let prog = Math.min(88, 70 + Math.floor(elapsed / 2));
@@ -2013,22 +2024,11 @@ export class GoogleFlowAdapter implements FlowProvider {
       // If new results exist and loading is done and minimum time passed
       if (hasNewResults && !stillLoading && (Date.now() - startTime >= minGenerationTimeMs)) {
         console.log(`[FlowAdapter] Generation complete: ${newUrls.length} new items found, total ${current.count}, cardCount=${current.cardCount ?? 0}`);
-        // Simulate human hovering/viewing new result before downloading
-        const viewX = 400 + Math.floor(Math.random() * 300);
-        const viewY = 300 + Math.floor(Math.random() * 200);
-        await page.mouse.move(viewX, viewY, { steps: 5 }).catch(() => {});
-        await page.waitForTimeout(2000 + Math.floor(Math.random() * 1500));
-        return { success: true };
+        await page.waitForTimeout(1000);
+        return { success: true, metadata: { newUrls } };
       }
 
-      // Keep session active with micro-movements every ~8s (simulating human present at screen)
-      if (elapsed > 0 && elapsed % 8 === 0) {
-        const randX = 350 + Math.floor(Math.random() * 300);
-        const randY = 250 + Math.floor(Math.random() * 200);
-        await page.mouse.move(randX, randY, { steps: 3 }).catch(() => {});
-      }
-
-      await page.waitForTimeout(1500);
+      await page.waitForTimeout(2500);
     }
 
     return {
@@ -2071,7 +2071,8 @@ export class GoogleFlowAdapter implements FlowProvider {
     page: Page,
     job: Job,
     targetDir: string,
-    baseline?: MediaSnapshot
+    baseline?: MediaSnapshot,
+    passedNewUrls?: string[]
   ): Promise<{ success: boolean; outputFile?: string; thumbnailFile?: string; lastFrameFile?: string; error?: string }> {
     const ext = job.type === 'image' ? 'png' : 'mp4';
     const padLen = Math.max(3, String(job.metadata?.batchTotal || 100).length);
@@ -2124,9 +2125,9 @@ export class GoogleFlowAdapter implements FlowProvider {
           const locs = page.locator(sel);
           const count = await locs.count().catch(() => 0);
           if (count > 0) {
-            // Always pick the LAST element = most recently generated
-            targetCard = locs.last();
-            console.log(`[FlowAdapter] Found ${count} item(s) with selector "${sel}", targeting the last one.`);
+            // Pick the FIRST element = most recently generated video at top of feed
+            targetCard = locs.first();
+            console.log(`[FlowAdapter] Found ${count} item(s) with selector "${sel}", targeting the top/first one.`);
             break;
           }
         }
@@ -2239,225 +2240,218 @@ export class GoogleFlowAdapter implements FlowProvider {
       }
     }
 
-    // ── Strategy 1: Direct Playwright request via session cookies (Fastest & full-res) ────
+    // ── Strategy I1 (PRIMARY): Strictly NEW media URLs that appeared AFTER baseline ────
     if (job.type === 'image') {
       try {
-        const targetImgSrc = await page.evaluate((knownBaselineUrls: string[]) => {
-          const isAvatarOrUI = (el: Element): boolean => {
-            if (el.closest('header, nav, [role="banner"], [aria-label*="Google Account" i], [aria-label*="Tài khoản Google" i], [data-testid*="avatar" i], .gb_')) {
-              return true;
-            }
-            const src = (el.getAttribute('src') || '').toLowerCase();
-            if (
-              src.includes('/a/acg8oc') ||
-              src.includes('default_avatar') ||
-              src.includes('ogw/af2b') ||
-              src.includes('=s32') ||
-              src.includes('=s48') ||
-              src.includes('=s64') ||
-              src.includes('=s96') ||
-              src.includes('=s128')
-            ) {
-              return true;
-            }
-            const alt = (el.getAttribute('alt') || '').toLowerCase();
-            const aria = (el.getAttribute('aria-label') || '').toLowerCase();
-            if (alt.includes('account') || alt.includes('tài khoản') || aria.includes('account') || aria.includes('tài khoản')) {
-              return true;
-            }
-            return false;
-          };
-
-          const imgs = Array.from(document.querySelectorAll('img')).filter((img) => {
-            if (isAvatarOrUI(img)) return false;
-            const isFlow = img.src && (img.src.includes('/asb/') || img.classList.contains('image'));
-            const rect = img.getBoundingClientRect();
-            return isFlow || (rect.width >= 180 && rect.height >= 180) || (img.naturalWidth >= 180 && img.naturalHeight >= 180);
-          });
-
-          if (imgs.length === 0) return null;
-
-          // Prioritize: 1. URLs not in baseline, 2. /asb/ flow media, 3. Largest area
-          imgs.sort((a, b) => {
-            const aIsNew = !knownBaselineUrls.includes(a.src);
-            const bIsNew = !knownBaselineUrls.includes(b.src);
-            if (aIsNew && !bIsNew) return -1;
-            if (!aIsNew && bIsNew) return 1;
-
-            const aIsFlow = a.src.includes('/asb/') || a.classList.contains('image');
-            const bIsFlow = b.src.includes('/asb/') || b.classList.contains('image');
-            if (aIsFlow && !bIsFlow) return -1;
-            if (!aIsFlow && bIsFlow) return 1;
-
-            return (b.naturalWidth * b.naturalHeight) - (a.naturalWidth * a.naturalHeight);
-          });
-
-          return imgs[0]?.src || null;
-        }, baseline?.urls || []);
-
-        if (targetImgSrc) {
-          console.log(`[FlowAdapter] Downloading target media via page.request: ${targetImgSrc.slice(0, 80)}...`);
-          const resp = await page.request.get(targetImgSrc);
-          if (resp.ok()) {
-            const buf = await resp.body();
-            if (buf.length >= minImageBytes) {
-              fs.writeFileSync(filePath, buf);
-              console.log(`[FlowAdapter] Downloaded media via page.request: ${buf.length} bytes to ${filePath}`);
-              return { success: true, outputFile: filePath };
-            } else {
-              console.warn(`[FlowAdapter] page.request buffer too small (${buf.length} bytes), falling back.`);
-            }
-          }
+        console.log('[FlowAdapter] [Image Download] Checking for newly generated media URLs...');
+        let candidateUrls: string[] = passedNewUrls && passedNewUrls.length > 0 ? [...passedNewUrls] : [];
+        if (candidateUrls.length === 0) {
+          const currentSnapshot = await getMediaSnapshot(page);
+          candidateUrls = currentSnapshot.urls.filter((u) => !baseline?.urls?.includes(u));
         }
-      } catch (reqErr: any) {
-        console.warn(`[FlowAdapter] page.request download error: ${reqErr.message}`);
-      }
 
-      // ── Strategy 2: Direct Image Extraction (Canvas draw & Fetch) ─────────────
-      try {
-        const extractedDataUrl = await page.evaluate(async (knownBaselineUrls: string[]) => {
-          const isAvatarOrUI = (el: Element): boolean => {
-            if (el.closest('header, nav, [role="banner"], [aria-label*="Google Account" i], [aria-label*="Tài khoản Google" i], [data-testid*="avatar" i], .gb_')) {
-              return true;
-            }
-            const src = (el.getAttribute('src') || '').toLowerCase();
-            if (
-              src.includes('/a/acg8oc') ||
-              src.includes('default_avatar') ||
-              src.includes('ogw/af2b') ||
-              src.includes('=s32') ||
-              src.includes('=s48') ||
-              src.includes('=s64') ||
-              src.includes('=s96') ||
-              src.includes('=s128')
-            ) {
-              return true;
-            }
-            const alt = (el.getAttribute('alt') || '').toLowerCase();
-            const aria = (el.getAttribute('aria-label') || '').toLowerCase();
-            if (alt.includes('account') || alt.includes('tài khoản') || aria.includes('account') || aria.includes('tài khoản')) {
-              return true;
-            }
-            return false;
-          };
+        if (candidateUrls.length > 0) {
+          console.log(`[FlowAdapter] Found ${candidateUrls.length} strictly NEW media URL(s) generated for this job.`);
 
-          const imgs = Array.from(document.querySelectorAll('img')).filter((img) => {
-            if (isAvatarOrUI(img)) return false;
-            const isFlow = img.src && (img.src.includes('/asb/') || img.classList.contains('image'));
-            const rect = img.getBoundingClientRect();
-            return isFlow || (rect.width >= 180 && rect.height >= 180) || (img.naturalWidth >= 180 && img.naturalHeight >= 180);
-          });
+          // Collect valid downloaded buffers to pick highest quality / full resolution
+          let bestBuffer: Buffer | null = null;
+          let bestUrl = '';
 
-          if (imgs.length === 0) return null;
-
-          imgs.sort((a, b) => {
-            const aIsNew = !knownBaselineUrls.includes(a.src);
-            const bIsNew = !knownBaselineUrls.includes(b.src);
-            if (aIsNew && !bIsNew) return -1;
-            if (!aIsNew && bIsNew) return 1;
-
-            const aIsFlow = a.src.includes('/asb/') || a.classList.contains('image');
-            const bIsFlow = b.src.includes('/asb/') || b.classList.contains('image');
-            if (aIsFlow && !bIsFlow) return -1;
-            if (!aIsFlow && bIsFlow) return 1;
-
-            return (b.naturalWidth * b.naturalHeight) - (a.naturalWidth * a.naturalHeight);
-          });
-
-          const bestImg = imgs[0];
-          if (!bestImg) return null;
-
-          // Method A: In-page fetch with credentials
-          try {
-            const res = await fetch(bestImg.src, { credentials: 'include' });
-            if (res.ok) {
-              const blob = await res.blob();
-              return await new Promise<string>((resolve) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result as string);
-                reader.readAsDataURL(blob);
-              });
-            }
-          } catch {}
-
-          // Method B: Draw to temporary canvas
-          try {
-            const canvas = document.createElement('canvas');
-            canvas.width = bestImg.naturalWidth || bestImg.clientWidth || 512;
-            canvas.height = bestImg.naturalHeight || bestImg.clientHeight || 512;
-            const ctx = canvas.getContext('2d');
-            if (ctx) {
-              ctx.drawImage(bestImg, 0, 0, canvas.width, canvas.height);
-              const dataUrl = canvas.toDataURL('image/png');
-              if (dataUrl && dataUrl.length > 5000) {
-                return dataUrl;
+          for (const newUrl of candidateUrls) {
+            // 1. Direct HTTP request via Playwright request context
+            if (newUrl.startsWith('http')) {
+              try {
+                const resp = await page.request.get(newUrl);
+                if (resp.ok()) {
+                  const buf = await resp.body();
+                  if (buf.length >= minImageBytes) {
+                    if (!bestBuffer || buf.length > bestBuffer.length) {
+                      bestBuffer = buf;
+                      bestUrl = newUrl;
+                    }
+                  }
+                }
+              } catch (e: any) {
+                console.warn(`[FlowAdapter] [Strategy I1] Direct request for new URL failed: ${e.message}`);
               }
             }
-          } catch {}
 
-          return null;
-        }, baseline?.urls || []);
+            // 2. In-page fetch / blob / canvas extraction (handles blob: URLs & CORS)
+            if (!bestBuffer) {
+              try {
+                const cardDataUrl = await page.evaluate(async (targetUrl: string) => {
+                  try {
+                    const res = await fetch(targetUrl, { credentials: 'include' });
+                    if (res.ok) {
+                      const blob = await res.blob();
+                      return await new Promise<string>((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result as string);
+                        reader.readAsDataURL(blob);
+                      });
+                    }
+                  } catch {}
+                  try {
+                    const img = Array.from(document.querySelectorAll('img')).find((i) => i.src === targetUrl);
+                    if (img) {
+                      const canvas = document.createElement('canvas');
+                      canvas.width = img.naturalWidth || img.clientWidth || 512;
+                      canvas.height = img.naturalHeight || img.clientHeight || 512;
+                      const ctx = canvas.getContext('2d');
+                      if (ctx) {
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        return canvas.toDataURL('image/png');
+                      }
+                    }
+                  } catch {}
+                  return null;
+                }, newUrl).catch(() => null);
 
-        if (extractedDataUrl && extractedDataUrl.startsWith('data:')) {
-          const base64Data = extractedDataUrl.split(',')[1];
-          const buf = Buffer.from(base64Data, 'base64');
-          if (buf.length >= minImageBytes) {
-            fs.writeFileSync(filePath, buf);
-            console.log(`[FlowAdapter] Saved image via direct extraction: ${buf.length} bytes to ${filePath}`);
+                if (cardDataUrl && cardDataUrl.startsWith('data:')) {
+                  const base64Data = cardDataUrl.split(',')[1];
+                  const buf = Buffer.from(base64Data, 'base64');
+                  if (buf.length >= minImageBytes) {
+                    if (!bestBuffer || buf.length > bestBuffer.length) {
+                      bestBuffer = buf;
+                      bestUrl = newUrl;
+                    }
+                  }
+                }
+              } catch (e: any) {
+                console.warn(`[FlowAdapter] [Strategy I1] In-page extraction failed: ${e.message}`);
+              }
+            }
+
+            // 3. Element screenshot of the <img> matching this newUrl
+            if (!bestBuffer) {
+              try {
+                const newImgLoc = page.locator(`img[src="${newUrl}"]`).first();
+                if (await newImgLoc.isVisible({ timeout: 1500 }).catch(() => false)) {
+                  const box = await newImgLoc.boundingBox().catch(() => null);
+                  if (box && box.width >= 160 && box.height >= 160) {
+                    await newImgLoc.screenshot({ path: filePath });
+                    if (fs.existsSync(filePath) && fs.statSync(filePath).size >= minImageBytes) {
+                      console.log(`[FlowAdapter] [Strategy I1] Saved screenshot of new image element: ${fs.statSync(filePath).size} bytes`);
+                      return { success: true, outputFile: filePath };
+                    }
+                  }
+                }
+              } catch {}
+            }
+          }
+
+          if (bestBuffer) {
+            fs.writeFileSync(filePath, bestBuffer);
+            console.log(`[FlowAdapter] [Strategy I1] Successfully saved new media URL (${bestBuffer.length} bytes): ${bestUrl.slice(0, 80)}`);
             return { success: true, outputFile: filePath };
           }
         }
       } catch (err: any) {
-        console.warn('[FlowAdapter] Strategy 2 (direct extraction) error:', err.message);
+        console.warn('[FlowAdapter] Strategy I1 (new media URLs) error:', err.message);
       }
 
-      // ── Strategy 3: Canvas Element Extraction ──────────────────────────────
+      // ── Strategy I2 (FALLBACK): Extract image directly from the TOP / FIRST result card ────
       try {
-        const canvasDataUrl = await page.evaluate(() => {
-          const canvases = Array.from(document.querySelectorAll('canvas')).filter((c) => {
-            const rect = c.getBoundingClientRect();
-            return rect.width >= 180 && rect.height >= 180;
-          });
-          if (canvases.length > 0) {
-            try {
-              return canvases[canvases.length - 1].toDataURL('image/png');
-            } catch {}
-          }
-          return null;
-        });
+        console.log('[FlowAdapter] [Image Download] Fallback: locating TOP/FIRST generation result card...');
+        const candidateCards = page.locator(FLOW_SELECTORS.resultCard.join(', '));
+        const cardCount = await candidateCards.count().catch(() => 0);
+        if (cardCount > 0) {
+          // In Google Flow, NEWEST item is at the TOP (index 0, .first()), OLDEST is at bottom (.last())
+          const newestCard = candidateCards.first();
+          console.log(`[FlowAdapter] Found ${cardCount} result card(s), targeting TOP/FIRST card (index 0).`);
 
-        if (canvasDataUrl && canvasDataUrl.startsWith('data:')) {
-          const base64Data = canvasDataUrl.split(',')[1];
-          const buf = Buffer.from(base64Data, 'base64');
-          if (buf.length >= minImageBytes) {
-            fs.writeFileSync(filePath, buf);
-            console.log(`[FlowAdapter] Saved image via canvas extraction: ${buf.length} bytes`);
-            return { success: true, outputFile: filePath };
+          const cardImgs = newestCard.locator('img');
+          const imgCount = await cardImgs.count().catch(() => 0);
+          if (imgCount > 0) {
+            const newestImg = cardImgs.first();
+            if (await newestImg.isVisible({ timeout: 2500 }).catch(() => false)) {
+              const src = await newestImg.getAttribute('src').catch(() => null);
+              if (src && !src.includes('default_avatar') && !src.includes('/a/acg8oc') && !src.includes('ogw/af2b')) {
+                // Try direct request
+                try {
+                  const resp = await page.request.get(src);
+                  if (resp.ok()) {
+                    const buf = await resp.body();
+                    if (buf.length >= minImageBytes) {
+                      fs.writeFileSync(filePath, buf);
+                      console.log(`[FlowAdapter] [Strategy I2] Downloaded top card image via page.request: ${buf.length} bytes`);
+                      return { success: true, outputFile: filePath };
+                    }
+                  }
+                } catch {}
+
+                // Try in-page canvas/blob
+                try {
+                  const cardDataUrl = await newestImg.evaluate(async (img: HTMLImageElement) => {
+                    try {
+                      const res = await fetch(img.src, { credentials: 'include' });
+                      if (res.ok) {
+                        const blob = await res.blob();
+                        return await new Promise<string>((resolve) => {
+                          const reader = new FileReader();
+                          reader.onloadend = () => resolve(reader.result as string);
+                          reader.readAsDataURL(blob);
+                        });
+                      }
+                    } catch {}
+                    try {
+                      const canvas = document.createElement('canvas');
+                      canvas.width = img.naturalWidth || img.clientWidth || 512;
+                      canvas.height = img.naturalHeight || img.clientHeight || 512;
+                      const ctx = canvas.getContext('2d');
+                      if (ctx) {
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        return canvas.toDataURL('image/png');
+                      }
+                    } catch {}
+                    return null;
+                  }).catch(() => null);
+
+                  if (cardDataUrl && cardDataUrl.startsWith('data:')) {
+                    const base64Data = cardDataUrl.split(',')[1];
+                    const buf = Buffer.from(base64Data, 'base64');
+                    if (buf.length >= minImageBytes) {
+                      fs.writeFileSync(filePath, buf);
+                      console.log(`[FlowAdapter] [Strategy I2] Extracted top card image via canvas: ${buf.length} bytes`);
+                      return { success: true, outputFile: filePath };
+                    }
+                  }
+                } catch {}
+
+                // Try screenshot
+                try {
+                  const box = await newestImg.boundingBox().catch(() => null);
+                  if (box && box.width >= 160 && box.height >= 160) {
+                    await newestImg.screenshot({ path: filePath });
+                    if (fs.existsSync(filePath) && fs.statSync(filePath).size >= minImageBytes) {
+                      console.log(`[FlowAdapter] [Strategy I2] Captured screenshot of top card image: ${fs.statSync(filePath).size} bytes`);
+                      return { success: true, outputFile: filePath };
+                    }
+                  }
+                } catch {}
+              }
+            }
           }
         }
       } catch (err: any) {
-        console.warn('[FlowAdapter] Strategy 3 (canvas extraction) error:', err.message);
+        console.warn('[FlowAdapter] Strategy I2 (top card) error:', err.message);
       }
 
-      // ── Strategy 4: High-res Element Screenshot ────────────────────────────
+      // ── Strategy I3: High-res Element Screenshot of the FIRST result image element ────
       for (const sel of FLOW_SELECTORS.resultImage) {
         try {
           const locs = page.locator(sel);
           const count = await locs.count().catch(() => 0);
-          for (let i = count - 1; i >= 0; i--) {
-            const loc = locs.nth(i);
-            if (await loc.isVisible({ timeout: 500 }).catch(() => false)) {
-              const box = await loc.boundingBox().catch(() => null);
-              if (box && box.width >= 180 && box.height >= 180) {
-                await loc.screenshot({ path: filePath });
-                if (fs.existsSync(filePath)) {
-                  const sz = fs.statSync(filePath).size;
-                  if (sz >= minImageBytes) {
-                    console.log(`[FlowAdapter] Saved image via element screenshot: ${sz} bytes`);
-                    return { success: true, outputFile: filePath };
-                  } else {
-                    fs.unlinkSync(filePath);
-                  }
+          if (count > 0) {
+            // Pick FIRST element = top-most / newest rendered image in feed
+            const firstLoc = locs.first();
+            if (await firstLoc.isVisible({ timeout: 600 }).catch(() => false)) {
+              const box = await firstLoc.boundingBox().catch(() => null);
+              if (box && box.width >= 160 && box.height >= 160) {
+                await firstLoc.screenshot({ path: filePath });
+                if (fs.existsSync(filePath) && fs.statSync(filePath).size >= minImageBytes) {
+                  console.log(`[FlowAdapter] [Strategy I3] Saved image via element screenshot of first ${sel}: ${fs.statSync(filePath).size} bytes`);
+                  return { success: true, outputFile: filePath };
                 }
               }
             }
@@ -2465,13 +2459,12 @@ export class GoogleFlowAdapter implements FlowProvider {
         } catch {}
       }
     }
-
-    // ── Strategy 5: Hover over newest result card and click Download button ────
+    // ── Strategy 5: Hover over TOP result card and click Download button ────
     try {
       const candidateCards = page.locator(FLOW_SELECTORS.resultCard.join(', '));
       const cardCount = await candidateCards.count().catch(() => 0);
       if (cardCount > 0) {
-        const newestCard = candidateCards.last();
+        const newestCard = candidateCards.first();
         await newestCard.hover({ timeout: 2000 }).catch(() => {});
         await page.waitForTimeout(600);
       }
@@ -2523,7 +2516,7 @@ export class GoogleFlowAdapter implements FlowProvider {
         try {
           const locs = page.locator(sel);
           const count = await locs.count().catch(() => 0);
-          for (let i = count - 1; i >= 0; i--) {
+          for (let i = 0; i < count; i++) {
             const loc = locs.nth(i);
             if (await loc.isVisible({ timeout: 1000 }).catch(() => false)) {
               let src = await loc.getAttribute('src').catch(() => null);

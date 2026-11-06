@@ -141,9 +141,8 @@ export const SessionsView: React.FC = () => {
           return (
             <div
               key={session.id}
-              className={`p-6 rounded-2xl border bg-white space-y-5 transition-all ${
-                isAttention ? 'border-amber-200 shadow-lg shadow-amber-500/5' : 'border-[#E2E6FF]'
-              }`}
+              className={`p-6 rounded-2xl border bg-white space-y-1 transition-all ${isAttention ? 'border-amber-200 shadow-lg shadow-amber-500/5' : 'border-[#E2E6FF]'
+                }`}
             >
               {/* Card Header */}
               <div className="flex items-start justify-between gap-3">
@@ -163,9 +162,8 @@ export const SessionsView: React.FC = () => {
               {/* Status Note or Warning */}
               {session.notes && (
                 <div
-                  className={`p-3 rounded-xl text-xs flex items-center gap-2 ${
-                    isAttention ? 'bg-amber-50 border border-amber-200 text-amber-800' : 'bg-white text-[#4A4070]'
-                  }`}
+                  className={`p-3 rounded-xl text-xs flex items-center gap-2 ${isAttention ? 'bg-amber-50 border border-amber-200 text-amber-800' : 'bg-white text-[#4A4070]'
+                    }`}
                 >
                   {isAttention && <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0" />}
                   <span className="truncate">{formatNote(session.notes)}</span>
@@ -202,13 +200,12 @@ export const SessionsView: React.FC = () => {
                 <button
                   disabled={Boolean(testingId)}
                   onClick={() => handleTestConnection(session)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all flex items-center gap-1.5 ${
-                    isTesting
-                      ? 'bg-[#F0F3FF]/50 text-[#7B52FF] border-[#E2E6FF] cursor-wait'
-                      : testingId
-                        ? 'bg-[#F4F6FF] text-[#4A4070] border-[#E2E6FF] cursor-not-allowed opacity-40'
-                        : 'bg-[#F0F3FF] hover:bg-[#E8ECFF] text-[#1A0A4A] border-[#C4CEFF]'
-                  }`}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all flex items-center gap-1.5 ${isTesting
+                    ? 'bg-[#F0F3FF]/50 text-[#7B52FF] border-[#E2E6FF] cursor-wait'
+                    : testingId
+                      ? 'bg-[#F4F6FF] text-[#4A4070] border-[#E2E6FF] cursor-not-allowed opacity-40'
+                      : 'bg-[#F0F3FF] hover:bg-[#E8ECFF] text-[#1A0A4A] border-[#C4CEFF]'
+                    }`}
                   title={testingId && !isTesting ? 'Hệ thống đang kiểm tra phiên khác, vui lòng chờ...' : ''}
                 >
                   <RotateCw className={`w-3.5 h-3.5 ${isTesting ? 'animate-spin text-[#5F2CFF]' : ''}`} />

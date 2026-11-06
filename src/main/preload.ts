@@ -30,6 +30,8 @@ const api: IElectronAPI = {
   clearCompletedJobs: () => ipcRenderer.invoke('jobs:clearCompleted'),
   clearAllJobs: () => ipcRenderer.invoke('jobs:clearAll'),
   retryFailedJobs: () => ipcRenderer.invoke('jobs:retryFailed'),
+  updateJobSession: (jobId: string, sessionId: string, applyToBatch?: boolean) =>
+    ipcRenderer.invoke('jobs:updateSession', { jobId, sessionId, applyToBatch }),
 
   // Queue
   startQueue: () => ipcRenderer.invoke('queue:start'),

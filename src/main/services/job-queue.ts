@@ -325,13 +325,26 @@ export class JobQueue {
     }
 
     try {
+      let lastProgressTime = 0;
+      let lastProgressVal = -1;
+      let lastStage = '';
+
       const result = await provider.generate(
         updatedJob,
         session,
         (progress: GenerationProgress) => {
-          const current = this.db.getJobById(job.id);
-          if (current && (current.status === 'running' || current.status === 'downloading')) {
-            const nextStatus = progress.stage === 'downloading' ? 'downloading' : 'running';
+          const now = Date.now();
+          const nextStatus = progress.stage === 'downloading' ? 'downloading' : 'running';
+          const stageChanged = progress.stage !== lastStage;
+          const progressDiff = Math.abs(progress.progress - lastProgressVal);
+          const timeElapsed = now - lastProgressTime;
+
+          // Throttle updates: write to DB & emit IPC only on stage change, 5% delta, or every 2.5s
+          if (stageChanged || progressDiff >= 5 || timeElapsed >= 2500 || progress.progress >= 100) {
+            lastProgressTime = now;
+            lastProgressVal = progress.progress;
+            lastStage = progress.stage;
+
             const j = this.db.updateJob(job.id, {
               status: nextStatus,
               progress: progress.progress,
@@ -383,35 +396,9 @@ export class JobQueue {
             message: `Tác vụ đã hoàn thành: "${job.name}" (${job.type})`,
           });
 
-          // Human-like stealth pacing between consecutive generations on the same session
+          // Short settle delay between consecutive tasks
           if (!settings.simulationMode) {
-            const count = (this.sessionJobCounts.get(session.id) || 0) + 1;
-            this.sessionJobCounts.set(session.id, count);
-
-            let cooldownMs = 9000 + Math.floor(Math.random() * 7000); // 9s - 16s baseline human pace
-            let breatherNotice = '';
-
-            if (count % 25 === 0) {
-              // Extended breather after 25 images
-              cooldownMs = 60000 + Math.floor(Math.random() * 30000); // 60s - 90s
-              breatherNotice = `nghỉ dài chu kỳ 25 ảnh (${Math.round(cooldownMs / 1000)}s)`;
-            } else if (count % 8 === 0) {
-              // Regular breather after every 8 images
-              cooldownMs = 30000 + Math.floor(Math.random() * 20000); // 30s - 50s
-              breatherNotice = `nghỉ giãn cách chu kỳ 8 ảnh (${Math.round(cooldownMs / 1000)}s)`;
-            }
-
-            if (breatherNotice) {
-              console.log(`[JobQueue] [Stealth Pacing] Đang ${breatherNotice} cho phiên "${session.name}" để phòng ngừa Google giới hạn tần suất...`);
-              this.emitNotification({
-                type: 'info',
-                message: `[Bảo vệ phiên] Đang ${breatherNotice} cho tài khoản "${session.name}"...`,
-              });
-            } else {
-              console.log(`[JobQueue] [Stealth] Giãn cách an toàn ${Math.round(cooldownMs / 1000)}s cho phiên "${session.name}"...`);
-            }
-
-            await new Promise((resolve) => setTimeout(resolve, cooldownMs));
+            await new Promise((resolve) => setTimeout(resolve, 800));
           }
         }
       } else {

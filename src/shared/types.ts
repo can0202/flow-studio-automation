@@ -285,6 +285,7 @@ export interface IElectronAPI {
   clearCompletedJobs: () => Promise<void>;
   clearAllJobs: () => Promise<void>;
   retryFailedJobs: () => Promise<void>;
+  updateJobSession: (jobId: string, sessionId: string, applyToBatch?: boolean) => Promise<{ success: boolean; updatedCount: number }>;
 
   // Queue
   startQueue: () => Promise<void>;

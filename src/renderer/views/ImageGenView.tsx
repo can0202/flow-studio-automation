@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useQueueStore } from '../store/queue-store.ts';
 import { useSessionStore } from '../store/session-store.ts';
 import { useAppStore } from '../store/app-store.ts';
@@ -15,6 +15,8 @@ import {
   CheckCircle2,
   Pin,
   PinOff,
+  Upload,
+  X as XIcon,
 } from 'lucide-react';
 
 const ASPECT_RATIOS = [
@@ -62,10 +64,12 @@ export const ImageGenView: React.FC = () => {
   const [batchCount, setBatchCount] = useState(1);
   const [projectName, setProjectName] = useState('FlowStudioProject');
   const [referenceImageUrl, setReferenceImageUrl] = useState('');
+  const [referenceImagePreview, setReferenceImagePreview] = useState('');
   const [selectedSessionId, setSelectedSessionId] = useState('');
   const [pinSession, setPinSession] = useState(false);
   const [lastAddedInfo, setLastAddedInfo] = useState<{ count: number; sessionName: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const refFileInputRef = useRef<HTMLInputElement>(null);
 
   const promptLines = prompt
     .split(/\r?\n/)
@@ -387,14 +391,78 @@ export const ImageGenView: React.FC = () => {
               </div>
 
               <div className="sm:col-span-2">
-                <label className="text-xs font-semibold text-[#4A4070] block mb-1.5">Ảnh tham chiếu (Reference Image Path - Tùy chọn)</label>
+                <label className="text-xs font-semibold text-[#4A4070] block mb-1.5">🖼️ Ảnh tham chiếu (Reference Image — Tùy chọn)</label>
+
+                {/* Hidden file input */}
                 <input
-                  type="text"
-                  value={referenceImageUrl}
-                  onChange={(e) => setReferenceImageUrl(e.target.value)}
-                  placeholder="Đường dẫn tuyệt đối tới ảnh tham chiếu (vd: C:\Users\...\pose.png)"
-                  className="w-full px-3 py-2 rounded-xl bg-white border border-[#E2E6FF] shadow-sm text-sm text-[#1A0A4A] placeholder:text-[#4A4070] focus:outline-none focus:border-[#5F2CFF] font-mono text-xs"
+                  ref={refFileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    // In Electron, file.path gives native absolute path
+                    const filePath = (file as any).path || file.name;
+                    setReferenceImageUrl(filePath);
+                    // Create object URL for thumbnail preview
+                    const url = URL.createObjectURL(file);
+                    setReferenceImagePreview(url);
+                    e.target.value = '';
+                  }}
                 />
+
+                <div className="flex gap-2 items-center">
+                  {/* Path input */}
+                  <div className="flex-1 relative">
+                    <input
+                      type="text"
+                      value={referenceImageUrl}
+                      onChange={(e) => {
+                        setReferenceImageUrl(e.target.value);
+                        setReferenceImagePreview('');
+                      }}
+                      placeholder="Chọn file hoặc nhập đường dẫn / URL ảnh tham chiếu..."
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-[#E2E6FF] shadow-sm text-sm text-[#1A0A4A] placeholder:text-[#A09DC8] focus:outline-none focus:border-[#5F2CFF] font-mono text-xs pr-8"
+                    />
+                    {referenceImageUrl && (
+                      <button
+                        type="button"
+                        title="Xóa ảnh tham chiếu"
+                        onClick={() => { setReferenceImageUrl(''); setReferenceImagePreview(''); }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-[#8B85B8] hover:text-red-500 transition-colors"
+                      >
+                        <XIcon size={14} />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Browse button */}
+                  <button
+                    type="button"
+                    onClick={() => refFileInputRef.current?.click()}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#F0EDFF] border border-[#C4B5FF] text-[#5F2CFF] text-xs font-semibold hover:bg-[#E5DEFF] transition-colors whitespace-nowrap"
+                  >
+                    <Upload size={13} />
+                    Chọn file
+                  </button>
+                </div>
+
+                {/* Preview thumbnail */}
+                {(referenceImagePreview || (referenceImageUrl && (referenceImageUrl.startsWith('http://') || referenceImageUrl.startsWith('https://')))) && (
+                  <div className="mt-2 flex items-center gap-3 p-2 rounded-xl bg-[#F8F7FF] border border-[#E2E6FF]">
+                    <img
+                      src={referenceImagePreview || referenceImageUrl}
+                      alt="Reference preview"
+                      className="w-14 h-14 object-cover rounded-lg border border-[#C4CEFF] flex-shrink-0"
+                      onError={() => setReferenceImagePreview('')}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] font-semibold text-[#4A4070]">Ảnh tham chiếu đã chọn</p>
+                      <p className="text-[10px] text-[#8B85B8] truncate font-mono mt-0.5">{referenceImageUrl}</p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="sm:col-span-2 space-y-1.5">

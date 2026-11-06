@@ -23,11 +23,16 @@ import {
   Cpu,
   Layers,
   ArrowRightLeft,
+  User,
+  Users,
+  ChevronDown,
+  Loader2,
 } from 'lucide-react';
 
 export const QueueView: React.FC = () => {
   const {
     jobs,
+    loadJobs,
     retryJob,
     cancelJob,
     approveJob,
@@ -40,12 +45,18 @@ export const QueueView: React.FC = () => {
     pauseSessionJobs,
     resumeSessionJobs,
   } = useQueueStore();
-  const { isQueueRunning, toggleQueue, settings, updateSettings, addNotification } = useAppStore();
+  const { isQueueRunning, toggleQueue, settings, updateSettings, addNotification, loadStats } = useAppStore();
   const { sessions } = useSessionStore();
 
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [search, setSearch] = useState<string>('');
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+
+  // Change account modal state
+  const [changeSessionJob, setChangeSessionJob] = useState<Job | null>(null);
+  const [selectedNewSessionId, setSelectedNewSessionId] = useState<string>('');
+  const [applyToBatch, setApplyToBatch] = useState<boolean>(true);
+  const [isUpdatingSession, setIsUpdatingSession] = useState<boolean>(false);
 
   // Quota exhausted modal state
   const [quotaExhaustedModal, setQuotaExhaustedModal] = useState<{
@@ -564,13 +575,25 @@ export const QueueView: React.FC = () => {
 
                       {/* Session / Account */}
                       <td className="py-3 px-4 whitespace-nowrap">
-                        {job.sessionId ? (
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-[#F0F3FF] text-[#4A4070] border border-[#C4CEFF]/80">
-                            👤 {sessions.find((s) => s.id === job.sessionId)?.name || 'Phiên #' + job.sessionId.slice(-4)}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setChangeSessionJob(job);
+                            setSelectedNewSessionId(job.sessionId || '');
+                            setApplyToBatch(Boolean(job.metadata?.batchId));
+                          }}
+                          title="Bấm để đổi tài khoản khác cho job này"
+                          className="group inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-[#F0F3FF] hover:bg-[#E8EDFF] text-[#4A4070] hover:text-[#5F2CFF] border border-[#C4CEFF]/80 hover:border-[#5F2CFF] transition-all shadow-xs cursor-pointer active:scale-95"
+                        >
+                          <User className="w-3 h-3 text-[#5F2CFF] shrink-0" />
+                          <span className="truncate max-w-[130px]">
+                            {job.sessionId
+                              ? sessions.find((s) => s.id === job.sessionId)?.name || 'Phiên #' + job.sessionId.slice(-4)
+                              : 'Tự động chọn'}
                           </span>
-                        ) : (
-                          <span className="text-[10px] text-[#8B85B8] italic">Tự động chọn</span>
-                        )}
+                          <ChevronDown className="w-3 h-3 text-[#5F2CFF] opacity-60 group-hover:opacity-100 group-hover:translate-y-0.5 transition-all shrink-0" />
+                        </button>
                       </td>
 
                       {/* Status & Progress */}
@@ -846,6 +869,28 @@ export const QueueView: React.FC = () => {
                 <span className="text-[10px] text-[#8B85B8] block">Mã Job:</span>
                 <span className="font-mono text-[10px] text-[#4A4070] truncate block">{selectedJob.id}</span>
               </div>
+              <div className="p-2.5 rounded-lg bg-white/80 border border-[#E2E6FF] flex items-center justify-between col-span-2">
+                <div>
+                  <span className="text-[10px] text-[#8B85B8] block">Tài khoản thực hiện:</span>
+                  <span className="font-semibold text-[#1A0A4A]">
+                    {selectedJob.sessionId
+                      ? sessions.find((s) => s.id === selectedJob.sessionId)?.name || 'Phiên #' + selectedJob.sessionId.slice(-4)
+                      : 'Tự động chọn'}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setChangeSessionJob(selectedJob);
+                    setSelectedNewSessionId(selectedJob.sessionId || '');
+                    setApplyToBatch(Boolean(selectedJob.metadata?.batchId));
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-[#5F2CFF]/10 hover:bg-[#5F2CFF]/20 text-[#5F2CFF] text-[11px] font-bold border border-[#5F2CFF]/30 transition-all flex items-center gap-1 cursor-pointer"
+                >
+                  <User className="w-3 h-3" />
+                  <span>Đổi tài khoản</span>
+                </button>
+              </div>
             </div>
 
             {/* Output File Info */}
@@ -985,6 +1030,184 @@ export const QueueView: React.FC = () => {
           </div>
         </div>
       )}
+          {/* Modal: Đổi tài khoản thực hiện Job */}
+      {changeSessionJob && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="w-full max-w-md bg-white border border-[#E2E6FF] rounded-2xl shadow-2xl p-6 space-y-4 animate-in zoom-in-95">
+            <div className="flex items-start justify-between gap-3 border-b border-[#E2E6FF] pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-[#5F2CFF]/10 text-[#5F2CFF]">
+                  <Users className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-[#1A0A4A]">Chọn tài khoản thực hiện</h3>
+                  <p className="text-[11px] text-[#8B85B8]">
+                    Job: <span className="font-semibold text-[#4A4070]">{changeSessionJob.name}</span>
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setChangeSessionJob(null)}
+                className="text-[#8B85B8] hover:text-[#1A0A4A] p-1 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Prompt preview */}
+            <div className="p-2.5 rounded-xl bg-[#F8F9FE] border border-[#E2E6FF] text-xs text-[#4A4070]">
+              <span className="font-semibold text-[#1A0A4A]">Prompt: </span>
+              <span className="line-clamp-2">{changeSessionJob.prompt}</span>
+            </div>
+
+            {/* List of sessions */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-[#1A0A4A] block">
+                Chọn tài khoản:
+              </label>
+              <div className="max-h-56 overflow-y-auto space-y-1.5 pr-1">
+                {/* Auto assign option */}
+                <div
+                  onClick={() => setSelectedNewSessionId('')}
+                  className={`flex items-center justify-between p-2.5 rounded-xl border text-xs cursor-pointer transition-all ${
+                    selectedNewSessionId === ''
+                      ? 'bg-[#5F2CFF]/10 border-[#5F2CFF] text-[#5F2CFF] font-bold shadow-xs'
+                      : 'bg-white border-[#E2E6FF] hover:bg-slate-50 text-[#4A4070]'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded-full border border-current flex items-center justify-center shrink-0">
+                      {selectedNewSessionId === '' && <div className="w-2 h-2 rounded-full bg-[#5F2CFF]" />}
+                    </div>
+                    <span>🤖 Tự động chọn (Bất kỳ phiên sẵn sàng nào)</span>
+                  </div>
+                </div>
+
+                {/* Session list */}
+                {sessions.map((s) => {
+                  const isCurrent = changeSessionJob.sessionId === s.id;
+                  const isSelected = selectedNewSessionId === s.id;
+                  const isReady = s.status === 'ready';
+                  const isExhausted = s.status === 'quota_exhausted';
+
+                  return (
+                    <div
+                      key={s.id}
+                      onClick={() => setSelectedNewSessionId(s.id)}
+                      className={`flex items-center justify-between p-2.5 rounded-xl border text-xs cursor-pointer transition-all ${
+                        isSelected
+                          ? 'bg-[#5F2CFF]/10 border-[#5F2CFF] text-[#1A0A4A] font-bold shadow-xs'
+                          : 'bg-white border-[#E2E6FF] hover:bg-slate-50 text-[#4A4070]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-4 h-4 rounded-full border border-current flex items-center justify-center shrink-0">
+                          {isSelected && <div className="w-2 h-2 rounded-full bg-[#5F2CFF]" />}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="truncate">{s.name}</span>
+                            {isCurrent && (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 text-[#8B85B8] font-normal border">
+                                Hiện tại
+                              </span>
+                            )}
+                          </div>
+                          {s.quotaInfo && (
+                            <span className="text-[10px] text-[#8B85B8] block font-normal">
+                              {s.quotaInfo}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <span
+                        className={`text-[10px] px-2 py-0.5 rounded-full font-semibold shrink-0 uppercase ${
+                          isReady
+                            ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                            : isExhausted
+                            ? 'bg-rose-50 text-rose-600 border border-rose-200'
+                            : 'bg-amber-50 text-amber-700 border border-amber-200'
+                        }`}
+                      >
+                        {isReady ? 'Sẵn sàng' : isExhausted ? 'Hết quota' : s.status}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Batch toggle if job belongs to a batch */}
+            {changeSessionJob.metadata?.batchId && (
+              <div className="p-3 rounded-xl bg-[#F0F3FF] border border-[#C4CEFF] text-xs space-y-1">
+                <label className="flex items-center gap-2 cursor-pointer font-semibold text-[#1A0A4A]">
+                  <input
+                    type="checkbox"
+                    checked={applyToBatch}
+                    onChange={(e) => setApplyToBatch(e.target.checked)}
+                    className="w-4 h-4 text-[#5F2CFF] rounded border-[#C4CEFF] focus:ring-[#5F2CFF]"
+                  />
+                  <span>Áp dụng cho tất cả job đang chờ / thất bại cùng lô</span>
+                </label>
+                <p className="text-[11px] text-[#4A4070] pl-6">
+                  Tất cả các tác vụ cùng dự án chưa hoàn tất sẽ được chuyển sang tài khoản này.
+                </p>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#E2E6FF]">
+              <button
+                type="button"
+                onClick={() => setChangeSessionJob(null)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-[#4A4070] hover:bg-slate-100 transition-colors"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                disabled={isUpdatingSession}
+                onClick={async () => {
+                  try {
+                    setIsUpdatingSession(true);
+                    const res = await window.api.updateJobSession(
+                      changeSessionJob.id,
+                      selectedNewSessionId,
+                      applyToBatch
+                    );
+                    await loadJobs();
+                    await loadStats();
+                    const targetName = selectedNewSessionId
+                      ? sessions.find((s) => s.id === selectedNewSessionId)?.name || 'tài khoản mới'
+                      : 'chế độ tự động';
+                    addNotification({
+                      type: 'success',
+                      message: applyToBatch && res.updatedCount > 1
+                        ? `Đã chuyển ${res.updatedCount} tác vụ sang "${targetName}"!`
+                        : `Đã đổi tài khoản thành "${targetName}"!`,
+                    });
+                    setChangeSessionJob(null);
+                  } catch (err: any) {
+                    addNotification({
+                      type: 'error',
+                      message: `Lỗi đổi tài khoản: ${err?.message || 'Thất bại'}`,
+                    });
+                  } finally {
+                    setIsUpdatingSession(false);
+                  }
+                }}
+                className="flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-bold bg-[#5F2CFF] hover:bg-[#7B52FF] text-white shadow-md transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+              >
+                {isUpdatingSession && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                <span>Xác nhận đổi</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

@@ -900,7 +900,7 @@ export const TTSGenView: React.FC = () => {
                   title="Tạo bản nháp CapCut tự động với file giọng đọc và phụ đề này"
                 >
                   <Film className="w-4 h-4" />
-                  <span>Đưa lên CapCut</span>
+                  <span>CapCut</span>
                 </button>
 
                 {generatedSrtPath && (
