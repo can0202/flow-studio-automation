@@ -173,6 +173,7 @@ export const TTSGenView: React.FC = () => {
   // Voice data & Hardware status
   const [voices, setVoices] = useState<TTSVoiceItem[]>([]);
   const [hasGpu, setHasGpu] = useState(false);
+  const [isConnectingHardware, setIsConnectingHardware] = useState(true);
   const [isLoadingVoices, setIsLoadingVoices] = useState(false);
 
   // Generation state
@@ -190,6 +191,51 @@ export const TTSGenView: React.FC = () => {
 
   useEffect(() => {
     loadVoices();
+
+    // 1. Lắng nghe trạng thái Python TTS Server (sẵn sàng & có GPU hay không)
+    let unsubStatus: (() => void) | undefined;
+    if (window.api.onTtsStatus) {
+      unsubStatus = window.api.onTtsStatus(({ ready, hasGpu: gpuAvailable }) => {
+        if (ready) {
+          setHasGpu(gpuAvailable);
+          setIsConnectingHardware(false);
+          loadVoices();
+        } else {
+          setHasGpu(false);
+          setIsConnectingHardware(true);
+        }
+      });
+    }
+
+    // 2. Poll nhẹ nhàng kiểm tra server health nếu server chưa sẵn sàng khi vừa mở tab
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
+    let attempts = 0;
+    const checkHealth = async () => {
+      attempts++;
+      try {
+        if (window.api.ttsCheckHealth) {
+          const health = await window.api.ttsCheckHealth();
+          if (health.running) {
+            setHasGpu(health.hasGpu);
+            setIsConnectingHardware(false);
+            if (pollTimer) clearInterval(pollTimer);
+            return;
+          }
+        }
+      } catch {}
+      if (attempts >= 25 && pollTimer) {
+        clearInterval(pollTimer);
+        setIsConnectingHardware(false);
+      }
+    };
+
+    checkHealth();
+    pollTimer = setInterval(checkHealth, 2000);
+
+    return () => {
+      if (unsubStatus) unsubStatus();
+      if (pollTimer) clearInterval(pollTimer);
+    };
   }, []);
 
   // Lắng nghe tiến trình tổng hợp TTS từ main process
@@ -208,7 +254,12 @@ export const TTSGenView: React.FC = () => {
       const res = await window.api.ttsGetVoices();
       if (res && res.voices && res.voices.length > 0) {
         setVoices(res.voices);
-        setHasGpu(res.hasGpu);
+        if (typeof res.hasGpu === 'boolean') {
+          setHasGpu(res.hasGpu);
+          if (res.hasGpu) {
+            setIsConnectingHardware(false);
+          }
+        }
         if (!selectedVoiceId && res.voices[0]) {
           setSelectedVoiceId(res.voices[0].id);
         }
@@ -536,10 +587,20 @@ export const TTSGenView: React.FC = () => {
 
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#F0F3FF]/90 border border-[#E2E6FF] text-xs text-[#4A4070]">
-            {hasGpu ? (
+            {deviceMode === 'cpu' ? (
+              <>
+                <Cpu className="w-4 h-4 text-[#0EA5E9]" />
+                <span>Chế độ: <strong className="text-[#0EA5E9]">CPU (Thủ công)</strong></span>
+              </>
+            ) : hasGpu ? (
               <>
                 <Zap className="w-4 h-4 text-emerald-600" />
                 <span>Tăng tốc GPU CUDA: <strong className="text-emerald-600">BẬT</strong></span>
+              </>
+            ) : isConnectingHardware ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin text-[#7B52FF]" />
+                <span>Đang kết nối: <strong className="text-[#7B52FF]">Kiểm tra phần cứng...</strong></span>
               </>
             ) : (
               <>

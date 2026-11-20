@@ -34,6 +34,15 @@ class TTSService {
   private port = 58231;
   private isStarting = false;
   private isReady = false;
+  private lastKnownHasGpu = false;
+
+  private broadcastStatus(ready: boolean, hasGpu: boolean): void {
+    BrowserWindow.getAllWindows().forEach((win) => {
+      if (!win.isDestroyed()) {
+        win.webContents.send('tts:status', { ready, hasGpu });
+      }
+    });
+  }
 
   private getLocalCatalogVoices(): TTSVoice[] {
     const candidates = [
@@ -71,6 +80,9 @@ class TTSService {
       try {
         const res = await this.httpRequest('/voices', 'GET', null, 5000);
         if (res && Array.isArray(res.voices) && res.voices.length > 0) {
+          if (typeof res.hasGpu === 'boolean') {
+            this.lastKnownHasGpu = res.hasGpu;
+          }
           return res;
         }
       } catch (err: any) {
@@ -82,7 +94,7 @@ class TTSService {
     const localVoices = this.getLocalCatalogVoices();
     return {
       voices: localVoices,
-      hasGpu: false,
+      hasGpu: this.lastKnownHasGpu,
     };
   }
 
@@ -220,7 +232,9 @@ class TTSService {
       console.log(`[VieNeu-Server] Exited with code ${code}`);
       this.isReady = false;
       this.isStarting = false;
+      this.lastKnownHasGpu = false;
       this.serverProcess = null;
+      this.broadcastStatus(false, false);
     });
 
     // Poll until ready (up to 60s)
@@ -231,7 +245,9 @@ class TTSService {
       if (health.running) {
         this.isReady = true;
         this.isStarting = false;
-        console.log('[TTSService] VieNeu server is ready on port', this.port);
+        this.lastKnownHasGpu = health.hasGpu;
+        console.log('[TTSService] VieNeu server is ready on port', this.port, 'hasGpu:', health.hasGpu);
+        this.broadcastStatus(true, health.hasGpu);
         return;
       }
     }

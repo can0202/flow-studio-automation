@@ -436,6 +436,10 @@ function registerIpcHandlers() {
     return ttsService.cancelGeneration();
   });
 
+  ipcMain.handle('tts:checkHealth', async () => {
+    return ttsService.checkHealth();
+  });
+
   ipcMain.handle('tts:generate', async (_e, options: any) => {
     const settings = db.getSettings();
     const projName = options.projectName || settings.defaultProjectName || 'FlowStudioProject';

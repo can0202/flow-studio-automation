@@ -60,10 +60,16 @@ const api: IElectronAPI = {
   ttsPreviewVoice: (voice: string) => ipcRenderer.invoke('tts:previewVoice', voice),
   ttsAddVoice: (options: any) => ipcRenderer.invoke('tts:addVoice', options),
   ttsCancel: () => ipcRenderer.invoke('tts:cancel'),
+  ttsCheckHealth: () => ipcRenderer.invoke('tts:checkHealth'),
   onTtsProgress: (callback: (progress: { done: number; total: number; percent: number }) => void) => {
     const handler = (_event: any, progress: any) => callback(progress);
     ipcRenderer.on('tts:progress', handler);
     return () => ipcRenderer.removeListener('tts:progress', handler);
+  },
+  onTtsStatus: (callback: (status: { ready: boolean; hasGpu: boolean }) => void) => {
+    const handler = (_event: any, status: any) => callback(status);
+    ipcRenderer.on('tts:status', handler);
+    return () => ipcRenderer.removeListener('tts:status', handler);
   },
 
     // Media Sync
