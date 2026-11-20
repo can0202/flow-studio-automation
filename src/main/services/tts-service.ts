@@ -11,6 +11,10 @@ export interface TTSVoice {
   desc?: string;
   gender: 'male' | 'female';
   region?: string;
+  isStar?: boolean;
+  initials?: string;
+  lang?: 'vi' | 'en' | 'ja' | 'ko';
+  tags?: string[];
 }
 
 export interface TTSGenerateOptions {

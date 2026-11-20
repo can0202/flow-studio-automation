@@ -149,6 +149,176 @@ VOICE_ALIAS = {
     'Hữu Phước': 'Phạm Tuyên',
 }
 
+# ── Edge-TTS Voice Map (Japanese, Korean & Multilingual) ──────────────────────
+EDGE_VOICE_MAP = {
+    # Japanese
+    "ja_nanami": "ja-JP-NanamiNeural",
+    "ja_keita": "ja-JP-KeitaNeural",
+    "ja-JP-NanamiNeural": "ja-JP-NanamiNeural",
+    "ja-JP-KeitaNeural": "ja-JP-KeitaNeural",
+    "Nanami": "ja-JP-NanamiNeural",
+    "Keita": "ja-JP-KeitaNeural",
+    # Korean
+    "ko_sunhi": "ko-KR-SunHiNeural",
+    "ko_injoon": "ko-KR-InJoonNeural",
+    "ko_hyunsu": "ko-KR-HyunsuMultilingualNeural",
+    "ko-KR-SunHiNeural": "ko-KR-SunHiNeural",
+    "ko-KR-InJoonNeural": "ko-KR-InJoonNeural",
+    "ko-KR-HyunsuMultilingualNeural": "ko-KR-HyunsuMultilingualNeural",
+    "Sun-Hi": "ko-KR-SunHiNeural",
+    "In-Joon": "ko-KR-InJoonNeural",
+    "Hyunsu": "ko-KR-HyunsuMultilingualNeural",
+}
+
+def is_edge_voice(voice: str) -> bool:
+    if not voice:
+        return False
+    return (
+        voice in EDGE_VOICE_MAP or
+        voice.startswith(('ja_', 'ko_', 'ja-', 'ko-')) or
+        voice in ('Nanami', 'Keita', 'Sun-Hi', 'In-Joon', 'Hyunsu')
+    )
+
+def get_edge_voice_id(voice: str) -> str:
+    if voice in EDGE_VOICE_MAP:
+        return EDGE_VOICE_MAP[voice]
+    if voice.startswith(('ja-JP', 'ko-KR')):
+        return voice
+    return EDGE_VOICE_MAP.get(voice, 'ja-JP-NanamiNeural')
+
+def preview_edge_to_wav(voice: str, target_file: str):
+    import asyncio
+    import io
+    import wave
+    import soundfile as sf
+    import edge_tts
+
+    edge_voice_name = get_edge_voice_id(voice)
+    if 'ja' in edge_voice_name.lower():
+        sample_text = "こんにちは、お会いできて嬉しいです。"
+    else:
+        sample_text = "안녕하세요, 만나서 반갑습니다."
+
+    async def _run():
+        comm = edge_tts.Communicate(sample_text, edge_voice_name)
+        mp3_bytes = bytearray()
+        async for chunk in comm.stream():
+            if chunk['type'] == 'audio':
+                mp3_bytes.extend(chunk['data'])
+        pcm_data, sr = sf.read(io.BytesIO(mp3_bytes))
+        if pcm_data.ndim > 1:
+            pcm_data = pcm_data.mean(axis=1)
+        with wave.open(target_file, 'wb') as wf:
+            wf.setnchannels(1)
+            wf.setsampwidth(2)
+            wf.setframerate(sr)
+            pcm_bytes = (pcm_data * 32767).clip(-32768, 32767).astype('int16').tobytes()
+            wf.writeframes(pcm_bytes)
+
+    asyncio.run(_run())
+
+def synthesize_edge_to_wav(
+    text: str,
+    voice: str,
+    target_file: str,
+    speed: float = 1.0,
+    progress_callback = None
+):
+    import asyncio
+    import io
+    import wave
+    import numpy as np
+    import soundfile as sf
+    import edge_tts
+
+    edge_voice_name = get_edge_voice_id(voice)
+    rate_pct = int(round((speed - 1.0) * 100))
+    rate_str = f"+{rate_pct}%" if rate_pct >= 0 else f"{rate_pct}%"
+
+    top_segments = parse_segments(text)
+    speech_items = [p for p in top_segments if p['type'] == 'text' and p['value'].strip()]
+    total_steps = len(speech_items) if speech_items else 1
+
+    sample_rate = 24000
+    cursor_sec = 0.0
+    cue_index = 1
+    srt_cues = []
+    done_steps = 0
+    start_t = time.time()
+
+    async def _process_stream():
+        nonlocal cursor_sec, cue_index, done_steps
+        with wave.open(target_file, 'wb') as wf:
+            wf.setnchannels(1)
+            wf.setsampwidth(2)
+            wf.setframerate(sample_rate)
+
+            for item in top_segments:
+                if item['type'] == 'pause':
+                    sec = max(0.05, min(float(item['value']), 15.0))
+                    num_samples = int(sample_rate * sec)
+                    wf.writeframes(b'\x00\x00' * num_samples)
+                    cursor_sec += sec
+                else:
+                    seg_text = clean_for_tts(item['value']).strip()
+                    if not seg_text:
+                        continue
+
+                    sub_maker = edge_tts.SubMaker()
+                    comm = edge_tts.Communicate(seg_text, edge_voice_name, rate=rate_str, boundary='SentenceBoundary')
+                    mp3_bytes = bytearray()
+
+                    async for chunk in comm.stream():
+                        if chunk['type'] == 'audio':
+                            mp3_bytes.extend(chunk['data'])
+                        elif chunk['type'] in ('WordBoundary', 'SentenceBoundary'):
+                            sub_maker.feed(chunk)
+
+                    if mp3_bytes:
+                        pcm_data, sr = sf.read(io.BytesIO(mp3_bytes))
+                        if pcm_data.ndim > 1:
+                            pcm_data = pcm_data.mean(axis=1)
+                        if sr != sample_rate:
+                            import scipy.signal
+                            num_target = int(len(pcm_data) * sample_rate / sr)
+                            pcm_data = scipy.signal.resample(pcm_data, num_target)
+
+                        pcm_bytes = (pcm_data * 32767).clip(-32768, 32767).astype(np.int16).tobytes()
+                        wf.writeframes(pcm_bytes)
+                        seg_dur = len(pcm_data) / sample_rate
+
+                        if sub_maker.cues:
+                            for cue in sub_maker.cues:
+                                start_s = cursor_sec + cue.start.total_seconds()
+                                end_s = cursor_sec + cue.end.total_seconds()
+                                srt_cues.append({
+                                    'index': cue_index,
+                                    'start_sec': start_s,
+                                    'end_sec': end_s,
+                                    'text': clean_for_srt(cue.content),
+                                })
+                                cue_index += 1
+                        else:
+                            clean_txt = clean_for_srt(seg_text)
+                            if clean_txt:
+                                srt_cues.append({
+                                    'index': cue_index,
+                                    'start_sec': cursor_sec,
+                                    'end_sec': cursor_sec + seg_dur,
+                                    'text': clean_txt,
+                                })
+                                cue_index += 1
+
+                        cursor_sec += seg_dur
+
+                    done_steps += 1
+                    if progress_callback:
+                        progress_callback(done_steps, total_steps)
+
+    asyncio.run(_process_stream())
+    duration = round(time.time() - start_t, 2)
+    return duration, srt_cues
+
 def resolve_actual_voice(voice: str) -> str:
     global tts_engine
     if not voice:
@@ -683,14 +853,24 @@ class TTSRequestHandler(BaseHTTPRequestHandler):
                     sys.stdout.write(f"[PROGRESS] {done}/{total}\n")
                     sys.stdout.flush()
 
-                duration, srt_cues = synthesize_and_stream_to_wav(
-                    text=text,
-                    voice=voice,
-                    target_file=target_file,
-                    tts_engine=tts_engine,
-                    ref_audio_path=ref_audio_path,
-                    progress_callback=progress_cb
-                )
+                if is_edge_voice(voice):
+                    print(f"[VieNeu] Synthesizing via Edge-TTS (multilingual): {voice}")
+                    duration, srt_cues = synthesize_edge_to_wav(
+                        text=text,
+                        voice=voice,
+                        target_file=target_file,
+                        speed=speed,
+                        progress_callback=progress_cb
+                    )
+                else:
+                    duration, srt_cues = synthesize_and_stream_to_wav(
+                        text=text,
+                        voice=voice,
+                        target_file=target_file,
+                        tts_engine=tts_engine,
+                        ref_audio_path=ref_audio_path,
+                        progress_callback=progress_cb
+                    )
 
                 # Build & save SRT alongside WAV
                 srt_path = None
@@ -736,14 +916,17 @@ class TTSRequestHandler(BaseHTTPRequestHandler):
                     return
 
                 print(f"[VieNeu] Generating quick preview for voice: {voice}...")
-                actual_voice = resolve_actual_voice(voice)
-                if voice.startswith('en_'):
-                    sample_text = f"Hello, I am {voice.replace('en_', '').title()}, an AI voice."
+                if is_edge_voice(voice):
+                    preview_edge_to_wav(voice, target_file)
                 else:
-                    sample_text = f"Xin chào, tôi là {voice}."
+                    actual_voice = resolve_actual_voice(voice)
+                    if voice.startswith('en_'):
+                        sample_text = f"Hello, I am {voice.replace('en_', '').title()}, an AI voice."
+                    else:
+                        sample_text = f"Xin chào, tôi là {voice}."
 
-                audio = tts_engine.infer(sample_text, voice=actual_voice)
-                tts_engine.save(audio, target_file)
+                    audio = tts_engine.infer(sample_text, voice=actual_voice)
+                    tts_engine.save(audio, target_file)
 
                 self._send_json({
                     'success': True,

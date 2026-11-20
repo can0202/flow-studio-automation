@@ -7,7 +7,7 @@ export interface TTSVoiceItem {
   region?: string;
   isStar?: boolean;
   initials?: string;
-  lang?: 'vi' | 'en';
+  lang?: 'vi' | 'en' | 'ja' | 'ko';
   tags?: string[];
 }
 
@@ -229,6 +229,8 @@ export interface CapCutDraftOptions {
   audioPath?: string;
   srtContent?: string;
   srtPath?: string;
+  mappingPath?: string;
+  mappingContent?: string;
   mediaPaths?: string[];
   mediaFolder?: string;
   aspectRatio?: '16:9' | '9:16' | '1:1';
@@ -323,6 +325,8 @@ export interface IElectronAPI {
   capcutDetect: () => Promise<CapCutDetectResult>;
   capcutCreateDraft: (options: CapCutDraftOptions) => Promise<CapCutDraftResult>;
   capcutSelectSrtFile: () => Promise<{ filePath: string; content: string } | null>;
+  capcutSelectCsvFile: () => Promise<{ filePath: string; content: string } | null>;
+  capcutDetectMappingFile: (options: { mediaFolder?: string; srtPath?: string; mediaPaths?: string[] }) => Promise<{ filePath: string; content: string } | null>;
   capcutOpenDraftFolder: (draftPath: string) => Promise<void>;
   capcutLaunch: () => Promise<boolean>;
 
