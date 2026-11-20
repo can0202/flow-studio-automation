@@ -57,7 +57,7 @@ export async function applyStealthScripts(context: BrowserContext) {
         if (proto && 'webdriver' in proto) {
           delete (proto as any).webdriver;
         }
-      } catch {}
+      } catch { }
 
       // 2. Mock authentic Google Chrome environment
       try {
@@ -70,8 +70,8 @@ export async function applyStealthScripts(context: BrowserContext) {
             PlatformOs: { MAC: 'mac', WIN: 'win', ANDROID: 'android', CROS: 'cros', LINUX: 'linux', OPENBSD: 'openbsd' },
             PlatformArch: { ARM: 'arm', X86_32: 'x86-32', X86_64: 'x86-64', MIPS: 'mips', MIPS64: 'mips64' },
             PlatformNaclArch: { ARM: 'arm', X86_32: 'x86-32', X86_64: 'x86-64', MIPS: 'mips', MIPS64: 'mips64' },
-            connect: () => {},
-            sendMessage: () => {},
+            connect: () => { },
+            sendMessage: () => { },
           };
         }
         if (!win.chrome.loadTimes) {
@@ -99,7 +99,7 @@ export async function applyStealthScripts(context: BrowserContext) {
             tran: 15,
           });
         }
-      } catch {}
+      } catch { }
 
       // 3. Mock navigator.plugins & mimeTypes so browser doesn't look like a headless/bot environment
       try {
@@ -116,7 +116,7 @@ export async function applyStealthScripts(context: BrowserContext) {
             configurable: true,
           });
         }
-      } catch {}
+      } catch { }
 
       // 4. Mock navigator.languages
       try {
@@ -126,7 +126,7 @@ export async function applyStealthScripts(context: BrowserContext) {
             configurable: true,
           });
         }
-      } catch {}
+      } catch { }
 
       // 5. Ensure Notification permissions query doesn't betray automated environment
       try {
@@ -138,7 +138,7 @@ export async function applyStealthScripts(context: BrowserContext) {
               ? Promise.resolve({ state: Notification.permission })
               : origQuery(param);
         }
-      } catch {}
+      } catch { }
     });
   } catch (e) {
     console.warn('[FlowAdapter] [Stealth] Không thể khởi tạo stealth script:', e);
@@ -494,7 +494,7 @@ async function navigateToFlow(page: Page, preferredUrl: string): Promise<string>
       await Promise.race([
         page.waitForLoadState('networkidle', { timeout: 8000 }),
         page.waitForTimeout(4000),
-      ]).catch(() => {});
+      ]).catch(() => { });
 
       const finalUrl = page.url();
       console.log(`[FlowAdapter] Landed on: ${finalUrl}`);
@@ -523,10 +523,10 @@ async function dismissModals(page: Page): Promise<void> {
     try {
       const btn = page.locator(sel).first();
       if (await btn.isVisible({ timeout: 600 }).catch(() => false)) {
-        await btn.click({ timeout: 3000 }).catch(() => {});
+        await btn.click({ timeout: 3000 }).catch(() => { });
         await page.waitForTimeout(500);
       }
-    } catch {}
+    } catch { }
   }
 }
 
@@ -540,7 +540,7 @@ async function findFirstVisible(page: Page, selectors: string[], timeout = 2000)
       if (await locator.isVisible({ timeout }).catch(() => false)) {
         return locator;
       }
-    } catch {}
+    } catch { }
   }
   return null;
 }
@@ -572,7 +572,7 @@ export async function isAuthRequired(page: Page): Promise<boolean> {
       try {
         const isVis = await page.locator(sel).first().isVisible({ timeout: 500 }).catch(() => false);
         if (isVis) return false;
-      } catch {}
+      } catch { }
     }
 
     // 4. Evaluate DOM for login signals vs logged-in signals
@@ -632,16 +632,16 @@ export async function isAuthRequired(page: Page): Promise<boolean> {
       try {
         const isVis = await page.locator(sel).first().isVisible({ timeout: 600 }).catch(() => false);
         if (isVis) return true;
-      } catch {}
+      } catch { }
     }
 
     // Default to false: never falsely declare auth_required unless there is concrete evidence
     return false;
   } catch (err: any) {
     if (err.message?.includes('Execution context was destroyed') ||
-        err.message?.includes('Target closed') ||
-        err.message?.includes('Session closed')) {
-      await page.waitForTimeout(2000).catch(() => {});
+      err.message?.includes('Target closed') ||
+      err.message?.includes('Session closed')) {
+      await page.waitForTimeout(2000).catch(() => { });
       try {
         const url = page.url();
         return url.includes('accounts.google.com/signin') || url.includes('accounts.google.com/ServiceLogin');
@@ -677,7 +677,7 @@ async function isQuotaExhausted(page: Page): Promise<boolean> {
     }).catch(() => false);
 
     return Boolean(hasModalQuota);
-  } catch {}
+  } catch { }
   return false;
 }
 
@@ -697,9 +697,9 @@ async function waitForPromptInput(page: Page, maxWaitMs = 15000) {
           const isEnabled = await loc.isEnabled({ timeout: 500 }).catch(() => false);
           if (isEnabled) return loc;
         }
-      } catch {}
+      } catch { }
     }
-    await page.waitForTimeout(800);
+    await page.waitForTimeout(400);
   }
   return null;
 }
@@ -783,7 +783,7 @@ export async function getMediaSnapshot(page: Page): Promise<MediaSnapshot> {
             cardCount = cards.length;
             break;
           }
-        } catch {}
+        } catch { }
       }
 
       const urlList = Array.from(urls);
@@ -815,7 +815,7 @@ async function isInGalleryOrQueueView(page: Page): Promise<boolean> {
         if (await page.locator(sel).first().isVisible({ timeout: 400 }).catch(() => false)) {
           return true;
         }
-      } catch {}
+      } catch { }
     }
     return false;
   } catch {
@@ -873,7 +873,7 @@ export class GoogleFlowAdapter implements FlowProvider {
       console.log(`[FlowAdapter] Đóng cửa sổ trình duyệt lô [${batch.batchId}] cho phiên [${sId}]`);
       try {
         await batch.context.close();
-      } catch {}
+      } catch { }
     }
     this.activeBatches.clear();
     await new Promise((resolve) => setTimeout(resolve, 800));
@@ -885,7 +885,7 @@ export class GoogleFlowAdapter implements FlowProvider {
       console.log(`[FlowAdapter] Đóng cửa sổ trình duyệt lô [${batch.batchId}] cho phiên [${sessionId}]`);
       try {
         await batch.context.close();
-      } catch {}
+      } catch { }
       this.activeBatches.delete(sessionId);
       await new Promise((resolve) => setTimeout(resolve, 1500));
     }
@@ -963,7 +963,7 @@ export class GoogleFlowAdapter implements FlowProvider {
         await Promise.race([
           page.waitForLoadState('networkidle', { timeout: 8000 }),
           page.waitForTimeout(4000),
-        ]).catch(() => {});
+        ]).catch(() => { });
 
         console.log(`[FlowAdapter] Navigation landed at: ${page.url()}`);
 
@@ -974,11 +974,11 @@ export class GoogleFlowAdapter implements FlowProvider {
           const enterBtn = await findFirstVisible(page, FLOW_SELECTORS.enterStudioButtons, 3000);
           if (enterBtn) {
             console.log('[FlowAdapter] Found Enter Studio button on /about, clicking...');
-            await enterBtn.click({ timeout: 5000 }).catch(() => {});
+            await enterBtn.click({ timeout: 5000 }).catch(() => { });
             await Promise.race([
               page.waitForURL((url) => url.pathname.includes('/project/'), { timeout: 8000 }),
               page.waitForTimeout(3500),
-            ]).catch(() => {});
+            ]).catch(() => { });
             await dismissModals(page);
           }
 
@@ -987,14 +987,14 @@ export class GoogleFlowAdapter implements FlowProvider {
             console.log('[FlowAdapter] Still on /about, navigating to fallback tool URL...');
             try {
               await page.goto(FLOW_URLS.fallback, { waitUntil: 'domcontentloaded', timeout: 30000 });
-            } catch {}
+            } catch { }
             await page.waitForTimeout(3000);
             await dismissModals(page);
           }
           console.log(`[FlowAdapter] After /about resolution, URL: ${page.url()}`);
         }
 
-        await page.waitForTimeout(1500);
+        await page.waitForTimeout(800);
 
         // ── Auth checks ─────────────────────────────────────────────────────
         if (
@@ -1024,40 +1024,40 @@ export class GoogleFlowAdapter implements FlowProvider {
         // navigate to home so we create a BRAND NEW project rather than polluting the old one.
         if (!isResumingKnownProject && page.url().includes('/project/')) {
           console.log('[FlowAdapter] Browser profile restored an old project URL, but this job requires a NEW workspace. Navigating to dashboard to create a fresh project...');
-          await page.goto(FLOW_URLS.primary, { waitUntil: 'domcontentloaded', timeout: 25000 }).catch(() => {});
-          await page.waitForTimeout(2500);
+          await page.goto(FLOW_URLS.primary, { waitUntil: 'domcontentloaded', timeout: 25000 }).catch(() => { });
+          await page.waitForTimeout(1200);
           await dismissModals(page);
         }
 
         // ── Create fresh project workspace ──────────────────────────────────
         if (!page.url().includes('/project/')) {
           onProgress({ progress: 25, stage: 'starting', message: 'Đang tạo dự án mới...' });
-          await page.waitForTimeout(2000);
+          await page.waitForTimeout(800);
 
           // Method 1 (PRIMARY): Click the "Dự án mới" / "New Project" button
           console.log('[FlowAdapter] Looking for New Project button to create fresh workspace...');
           const newProjBtn = await findFirstVisible(page, FLOW_SELECTORS.newProjectButtons, 8000);
           if (newProjBtn) {
             console.log('[FlowAdapter] Clicking New Project button to create fresh workspace...');
-            await newProjBtn.click({ timeout: 5000 }).catch(() => {});
-            await page.waitForURL((url) => url.pathname.includes('/project/'), { timeout: 15000 }).catch(() => {});
-            await page.waitForTimeout(2500);
+            await newProjBtn.click({ timeout: 5000 }).catch(() => { });
+            await page.waitForURL((url) => url.pathname.includes('/project/'), { timeout: 15000 }).catch(() => { });
+            await page.waitForTimeout(1200);
             await dismissModals(page);
           }
 
           // Method 2 (FALLBACK): If new project button not found, navigate to dashboard and retry
           if (!page.url().includes('/project/')) {
             console.log('[FlowAdapter] New Project button not found, navigating to dashboard to retry...');
-            await page.goto('https://flow.google.com/', { waitUntil: 'domcontentloaded', timeout: 20000 }).catch(() => {});
+            await page.goto('https://flow.google.com/', { waitUntil: 'domcontentloaded', timeout: 20000 }).catch(() => { });
             await page.waitForTimeout(3000);
             await dismissModals(page);
 
             const newProjBtn2 = await findFirstVisible(page, FLOW_SELECTORS.newProjectButtons, 8000);
             if (newProjBtn2) {
               console.log('[FlowAdapter] Clicking New Project button (after dashboard reload)...');
-              await newProjBtn2.click({ timeout: 5000 }).catch(() => {});
-              await page.waitForURL((url) => url.pathname.includes('/project/'), { timeout: 15000 }).catch(() => {});
-              await page.waitForTimeout(2500);
+              await newProjBtn2.click({ timeout: 5000 }).catch(() => { });
+              await page.waitForURL((url) => url.pathname.includes('/project/'), { timeout: 15000 }).catch(() => { });
+              await page.waitForTimeout(1200);
               await dismissModals(page);
             }
           }
@@ -1067,8 +1067,8 @@ export class GoogleFlowAdapter implements FlowProvider {
             console.log('[FlowAdapter] Retrying new project creation on clean dashboard...');
             const altNewBtn = await findFirstVisible(page, FLOW_SELECTORS.newProjectButtons, 5000);
             if (altNewBtn) {
-              await altNewBtn.click({ timeout: 5000 }).catch(() => {});
-              await page.waitForURL((url) => url.pathname.includes('/project/'), { timeout: 10000 }).catch(() => {});
+              await altNewBtn.click({ timeout: 5000 }).catch(() => { });
+              await page.waitForURL((url) => url.pathname.includes('/project/'), { timeout: 10000 }).catch(() => { });
               await page.waitForTimeout(2000);
               await dismissModals(page);
             }
@@ -1079,9 +1079,9 @@ export class GoogleFlowAdapter implements FlowProvider {
             const enterBtn = await findFirstVisible(page, FLOW_SELECTORS.enterStudioButtons, 3000);
             if (enterBtn) {
               console.log('[FlowAdapter] Trying enter studio button as last resort...');
-              await enterBtn.click({ timeout: 5000 }).catch(() => {});
-              await page.waitForURL((url) => url.pathname.includes('/project/'), { timeout: 8000 }).catch(() => {});
-              await page.waitForTimeout(2500);
+              await enterBtn.click({ timeout: 5000 }).catch(() => { });
+              await page.waitForURL((url) => url.pathname.includes('/project/'), { timeout: 8000 }).catch(() => { });
+              await page.waitForTimeout(1200);
               await dismissModals(page);
             }
           }
@@ -1125,9 +1125,9 @@ export class GoogleFlowAdapter implements FlowProvider {
           message: `Đang tạo tiếp ${job.type === 'video' ? 'video' : 'ảnh'} trên cùng dự án (#${job.metadata?.batchIndex || 1}/${job.metadata?.batchTotal || '?'})...`,
         });
         // Dismiss any image preview lightbox, modal, or context menu left from previous step
-        await page.keyboard.press('Escape').catch(() => {});
+        await page.keyboard.press('Escape').catch(() => { });
         await page.waitForTimeout(300);
-        await page.keyboard.press('Escape').catch(() => {});
+        await page.keyboard.press('Escape').catch(() => { });
         await page.waitForTimeout(400);
         await dismissModals(page);
         await page.waitForTimeout(500);
@@ -1209,10 +1209,10 @@ export class GoogleFlowAdapter implements FlowProvider {
           const fileInputSelectors =
             job.type === 'video'
               ? [
-                  'input[type="file"][accept*="image"]',
-                  'input[type="file"][accept*="video"]',
-                  'input[type="file"]',
-                ]
+                'input[type="file"][accept*="image"]',
+                'input[type="file"][accept*="video"]',
+                'input[type="file"]',
+              ]
               : ['input[type="file"][accept*="image"]'];
 
           for (const selector of fileInputSelectors) {
@@ -1222,7 +1222,7 @@ export class GoogleFlowAdapter implements FlowProvider {
               await fileInputs.first().setInputFiles(job.referenceImageUrl);
               attached = true;
               console.log(`[FlowAdapter] Attached reference image via ${selector}: ${job.referenceImageUrl}`);
-              await page.waitForTimeout(1500);
+              await page.waitForTimeout(800);
               break;
             }
           }
@@ -1306,7 +1306,7 @@ export class GoogleFlowAdapter implements FlowProvider {
                   console.log(`[FlowAdapter] Attached reference image via file chooser (${bSel})`);
                   await page.waitForTimeout(1000);
                   break;
-                } catch {}
+                } catch { }
               }
             }
           }
@@ -1338,7 +1338,7 @@ export class GoogleFlowAdapter implements FlowProvider {
       if (promptBox) {
         const targetX = promptBox.x + Math.min(promptBox.width * 0.25, 40) + (Math.random() * 15 - 7);
         const targetY = promptBox.y + promptBox.height * 0.5 + (Math.random() * 8 - 4);
-        await page.mouse.move(targetX, targetY, { steps: 5 + Math.floor(Math.random() * 5) }).catch(() => {});
+        await page.mouse.move(targetX, targetY, { steps: 5 + Math.floor(Math.random() * 5) }).catch(() => { });
         await page.waitForTimeout(150 + Math.floor(Math.random() * 150));
       }
 
@@ -1356,7 +1356,7 @@ export class GoogleFlowAdapter implements FlowProvider {
         }
         el.dispatchEvent(new Event('input', { bubbles: true }));
         el.dispatchEvent(new Event('change', { bubbles: true }));
-      }).catch(() => {});
+      }).catch(() => { });
 
       await page.keyboard.press('Control+a');
       await page.waitForTimeout(50);
@@ -1377,8 +1377,8 @@ export class GoogleFlowAdapter implements FlowProvider {
       await page.waitForTimeout(400 + Math.floor(Math.random() * 300));
 
       // Trigger change/input event fallbacks
-      await activePromptField.dispatchEvent('input').catch(() => {});
-      await activePromptField.dispatchEvent('change').catch(() => {});
+      await activePromptField.dispatchEvent('input').catch(() => { });
+      await activePromptField.dispatchEvent('change').catch(() => { });
 
       // ── Stealth Human Pause: Simulate user reviewing prompt before clicking Generate ──
       const reviewPauseMs = 2800 + Math.floor(Math.random() * 2700);
@@ -1408,17 +1408,17 @@ export class GoogleFlowAdapter implements FlowProvider {
       // If still disabled, Angular may not have registered the input event: perform aggressive focus & trigger fallback
       if (isStillDisabled) {
         console.warn('[FlowAdapter] Generate button still disabled after typing prompt, attempting re-focus & change trigger...');
-        await activePromptField.focus().catch(() => {});
-        await page.keyboard.press('End').catch(() => {});
-        await page.keyboard.press('Space').catch(() => {});
+        await activePromptField.focus().catch(() => { });
+        await page.keyboard.press('End').catch(() => { });
+        await page.keyboard.press('Space').catch(() => { });
         await page.waitForTimeout(100);
-        await page.keyboard.press('Backspace').catch(() => {});
+        await page.keyboard.press('Backspace').catch(() => { });
         await page.waitForTimeout(200);
         await activePromptField.evaluate((el: HTMLElement) => {
           el.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
           el.dispatchEvent(new Event('change', { bubbles: true }));
           el.dispatchEvent(new Event('blur', { bubbles: true }));
-        }).catch(() => {});
+        }).catch(() => { });
         await page.waitForTimeout(1000);
 
         isStillDisabled = await generateBtn.evaluate((b: HTMLButtonElement) => {
@@ -1427,7 +1427,7 @@ export class GoogleFlowAdapter implements FlowProvider {
       }
 
       if (isStillDisabled) {
-        const btnState = await generateBtn.evaluate((b) => ({
+        const btnState = await generateBtn.evaluate((b: HTMLButtonElement) => ({
           disabled: b.disabled,
           ariaDisabled: b.getAttribute('aria-disabled'),
           classList: Array.from(b.classList),
@@ -1453,15 +1453,15 @@ export class GoogleFlowAdapter implements FlowProvider {
         const targetY = btnBox.y + btnBox.height * 0.5 + (Math.random() * 6 - 3);
         const midX = (targetX + (promptBox?.x || targetX)) / 2 + (Math.random() * 30 - 15);
         const midY = (targetY + (promptBox?.y || targetY)) / 2 + (Math.random() * 20 - 10);
-        await page.mouse.move(midX, midY, { steps: 4 }).catch(() => {});
+        await page.mouse.move(midX, midY, { steps: 4 }).catch(() => { });
         await page.waitForTimeout(40 + Math.floor(Math.random() * 50));
-        await page.mouse.move(targetX, targetY, { steps: 6 + Math.floor(Math.random() * 5) }).catch(() => {});
+        await page.mouse.move(targetX, targetY, { steps: 6 + Math.floor(Math.random() * 5) }).catch(() => { });
         await page.waitForTimeout(200 + Math.floor(Math.random() * 250));
       }
 
       await generateBtn.click({ timeout: 5000 });
       // Short wait for page to react to click (may navigate or show queue)
-      await page.waitForTimeout(2000);
+      await page.waitForTimeout(800);
 
       const postClickUrl = page.url();
       console.log(`[FlowAdapter] Post-click URL: ${postClickUrl}`);
@@ -1541,9 +1541,9 @@ export class GoogleFlowAdapter implements FlowProvider {
       if (context && !isBatchJob) {
         try {
           await context.close();
-        } catch {}
+        } catch { }
         // Allow OS time to release file locks on Windows
-        await new Promise((resolve) => setTimeout(resolve, 1500));
+        await new Promise((resolve) => setTimeout(resolve, 800));
       }
     }
   }
@@ -1572,23 +1572,23 @@ export class GoogleFlowAdapter implements FlowProvider {
     // Check if direct mode switch buttons are visible directly on the prompt toolbar
     const directSelectors = type === 'video'
       ? [
-          'button:has-text("Video")',
-          'button:has-text("Veo")',
-          '[role="tab"]:has-text("Video")',
-          '[role="tab"]:has-text("Veo")',
-        ]
+        'button:has-text("Video")',
+        'button:has-text("Veo")',
+        '[role="tab"]:has-text("Video")',
+        '[role="tab"]:has-text("Veo")',
+      ]
       : [
-          'button:has-text("Hình ảnh")',
-          'button:has-text("Image")',
-          'button:has-text("Nano Banana")',
-          '[role="tab"]:has-text("Hình ảnh")',
-          '[role="tab"]:has-text("Image")',
-        ];
+        'button:has-text("Hình ảnh")',
+        'button:has-text("Image")',
+        'button:has-text("Nano Banana")',
+        '[role="tab"]:has-text("Hình ảnh")',
+        '[role="tab"]:has-text("Image")',
+      ];
     for (const dSel of directSelectors) {
       const dBtn = page.locator(dSel).first();
       if (await dBtn.isVisible({ timeout: 500 }).catch(() => false)) {
         console.log(`[FlowAdapter] Direct mode button visible (${dSel}), clicking...`);
-        await dBtn.click({ timeout: 2000 }).catch(() => {});
+        await dBtn.click({ timeout: 2000 }).catch(() => { });
         await page.waitForTimeout(600);
         if (await this.isModeActive(page, type)) return true;
       }
@@ -1620,9 +1620,9 @@ export class GoogleFlowAdapter implements FlowProvider {
     }
 
     const triggerText = (await trigger.innerText().catch(() => '')).trim();
-    console.log(`[FlowAdapter] Settings trigger text before click: "${triggerText.replace(/\n/g, ' ')}"`); 
+    console.log(`[FlowAdapter] Settings trigger text before click: "${triggerText.replace(/\n/g, ' ')}"`);
 
-    await trigger.click({ timeout: 3000 }).catch(() => {});
+    await trigger.click({ timeout: 3000 }).catch(() => { });
     await page.waitForTimeout(1000);
 
     // ── Step 2: Find and click the mode toggle inside the popup ────────────
@@ -1674,13 +1674,13 @@ export class GoogleFlowAdapter implements FlowProvider {
     let clicked = false;
     if (toggleBtn) {
       console.log(`[FlowAdapter] Clicking mode toggle for "${type}"...`);
-      await toggleBtn.click({ timeout: 2500 }).catch(() => {});
+      await toggleBtn.click({ timeout: 2500 }).catch(() => { });
       clicked = true;
       await page.waitForTimeout(800);
     } else {
       console.warn(`[FlowAdapter] Mode toggle for "${type}" not found in popup.`);
       // Take a diagnostic screenshot to understand current UI state
-      await page.screenshot({ path: 'debug_mode_popup.png', fullPage: false }).catch(() => {});
+      await page.screenshot({ path: 'debug_mode_popup.png', fullPage: false }).catch(() => { });
     }
 
     // ── Step 3: Close popup ────────────────────────────────────────────────
@@ -1790,14 +1790,14 @@ export class GoogleFlowAdapter implements FlowProvider {
       }
 
       console.log(`[FlowAdapter] Opening settings popup to set repeat=${targetRepeatStr}, aspect=${aspectRatio || 'keep'} (current: "${currentText.replace(/\n/g, ' ')}")...`);
-      await trigger.click({ timeout: 3000 }).catch(() => {});
+      await trigger.click({ timeout: 3000 }).catch(() => { });
       await page.waitForTimeout(600);
 
       // Select repeat toggle (x1, x2, x3, x4)
       if (needsRepeatChange) {
         const repeatToggle = page.locator(`mat-button-toggle:has-text("${targetRepeatStr}"), button[role="radio"]:has-text("${targetRepeatStr}")`).first();
         if (await repeatToggle.isVisible({ timeout: 2000 }).catch(() => false)) {
-          await repeatToggle.click({ timeout: 2000 }).catch(() => {});
+          await repeatToggle.click({ timeout: 2000 }).catch(() => { });
           await page.waitForTimeout(300);
         }
       }
@@ -1806,7 +1806,7 @@ export class GoogleFlowAdapter implements FlowProvider {
       if (aspectRatio && needsAspectChange) {
         const aspectToggle = page.locator(`mat-button-toggle:has-text("${aspectRatio}"), button[role="radio"]:has-text("${aspectRatio}")`).first();
         if (await aspectToggle.isVisible({ timeout: 2000 }).catch(() => false)) {
-          await aspectToggle.click({ timeout: 2000 }).catch(() => {});
+          await aspectToggle.click({ timeout: 2000 }).catch(() => { });
           await page.waitForTimeout(300);
         }
       }
@@ -1819,7 +1819,7 @@ export class GoogleFlowAdapter implements FlowProvider {
       console.log(`[FlowAdapter] Settings configured successfully. Trigger button now shows: "${afterText.replace(/\n/g, ' ')}"`);
     } catch (err: any) {
       console.warn(`[FlowAdapter] Warning: Could not configure settings: ${err.message}`);
-      await page.keyboard.press('Escape').catch(() => {});
+      await page.keyboard.press('Escape').catch(() => { });
     }
   }
 
@@ -1840,7 +1840,7 @@ export class GoogleFlowAdapter implements FlowProvider {
   ): Promise<GenerationResult> {
     const startTime = Date.now();
     const timeoutMs = 300000; // 5 minutes max
-    const minGenerationTimeMs = type === 'video' ? 10000 : 4000; // Video rendering takes longer
+    const minGenerationTimeMs = type === 'video' ? 10000 : 2000; // Image: 2s min (faster detect), video: 10s
 
     // Phase 1: Wait up to 15s to observe generation START
     let generationStarted = false;
@@ -1874,7 +1874,7 @@ export class GoogleFlowAdapter implements FlowProvider {
       }
 
       if (generationStarted) break;
-      await page.waitForTimeout(800);
+      await page.waitForTimeout(400);
     }
 
     if (!generationStarted) {
@@ -1883,7 +1883,7 @@ export class GoogleFlowAdapter implements FlowProvider {
       const isStillEnabled = genBtn ? await genBtn.evaluate((b: HTMLButtonElement) => !b.disabled && !b.classList.contains('mat-mdc-button-disabled') && b.getAttribute('aria-disabled') !== 'true').catch(() => false) : false;
       if (isStillEnabled) {
         console.warn('[FlowAdapter] Generate button appears to still be active/unclicked. Attempting re-click...');
-        await genBtn?.click({ timeout: 3000 }).catch(() => {});
+        await genBtn?.click({ timeout: 3000 }).catch(() => { });
         await page.waitForTimeout(1500);
       }
     }
@@ -2024,11 +2024,11 @@ export class GoogleFlowAdapter implements FlowProvider {
       // If new results exist and loading is done and minimum time passed
       if (hasNewResults && !stillLoading && (Date.now() - startTime >= minGenerationTimeMs)) {
         console.log(`[FlowAdapter] Generation complete: ${newUrls.length} new items found, total ${current.count}, cardCount=${current.cardCount ?? 0}`);
-        await page.waitForTimeout(1000);
+        await page.waitForTimeout(type === 'video' ? 1000 : 300);
         return { success: true, metadata: { newUrls } };
       }
 
-      await page.waitForTimeout(2500);
+      await page.waitForTimeout(1200);
     }
 
     return {
@@ -2039,28 +2039,28 @@ export class GoogleFlowAdapter implements FlowProvider {
 
   // Helper to verify if a file is actually a valid video container (MP4, WebM, etc.)
   private isMp4File(filePath: string): boolean {
-  try {
-    if (!fs.existsSync(filePath)) return false;
-    const fd = fs.openSync(filePath, 'r');
-    const buffer = Buffer.alloc(12);
-    const bytesRead = fs.readSync(fd, buffer, 0, 12, 0);
-    fs.closeSync(fd);
-    if (bytesRead < 8) return false;
-    // Reject PNG (89 50 4E 47) and JPEG (FF D8 FF) explicitly
-    const isPng = buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47;
-    const isJpeg = buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
-    if (isPng || isJpeg) return false;
-    // MP4/MOV container has 'ftyp' at bytes 4..7
-    const ftyp = buffer.toString('ascii', 4, 8);
-    // WebM / MKV has EBML header: 0x1A 0x45 0xDF 0xA3
-    const isWebM = buffer[0] === 0x1a && buffer[1] === 0x45 && buffer[2] === 0xdf && buffer[3] === 0xa3;
-    // AVI / RIFF
-    const isRiff = buffer.toString('ascii', 0, 4) === 'RIFF';
-    return ftyp === 'ftyp' || isWebM || isRiff;
-  } catch {
-    return false;
+    try {
+      if (!fs.existsSync(filePath)) return false;
+      const fd = fs.openSync(filePath, 'r');
+      const buffer = Buffer.alloc(12);
+      const bytesRead = fs.readSync(fd, buffer, 0, 12, 0);
+      fs.closeSync(fd);
+      if (bytesRead < 8) return false;
+      // Reject PNG (89 50 4E 47) and JPEG (FF D8 FF) explicitly
+      const isPng = buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47;
+      const isJpeg = buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+      if (isPng || isJpeg) return false;
+      // MP4/MOV container has 'ftyp' at bytes 4..7
+      const ftyp = buffer.toString('ascii', 4, 8);
+      // WebM / MKV has EBML header: 0x1A 0x45 0xDF 0xA3
+      const isWebM = buffer[0] === 0x1a && buffer[1] === 0x45 && buffer[2] === 0xdf && buffer[3] === 0xa3;
+      // AVI / RIFF
+      const isRiff = buffer.toString('ascii', 0, 4) === 'RIFF';
+      return ftyp === 'ftyp' || isWebM || isRiff;
+    } catch {
+      return false;
+    }
   }
-}
 
   // ──────────────────────────────────────────────────────────────────────────
   // Download the generated result
@@ -2087,13 +2087,13 @@ export class GoogleFlowAdapter implements FlowProvider {
     if (fs.existsSync(filePath)) {
       try {
         fs.unlinkSync(filePath);
-      } catch {}
+      } catch { }
     }
     const legacyPath = path.join(targetDir, `${job.id}.${ext}`);
     if (legacyPath !== filePath && fs.existsSync(legacyPath)) {
       try {
         fs.unlinkSync(legacyPath);
-      } catch {}
+      } catch { }
     }
 
     // ── Strategy V1 (Primary for Video): Open video viewer & download 720p/Original MP4 ────
@@ -2135,9 +2135,9 @@ export class GoogleFlowAdapter implements FlowProvider {
         if (targetCard && await targetCard.isVisible({ timeout: 2500 }).catch(() => false)) {
           console.log('[FlowAdapter] Clicking video thumbnail to open viewer modal...');
           const thumbPath = filePath.replace('.mp4', '_thumb.png');
-          await targetCard.screenshot({ path: thumbPath }).catch(() => {});
+          await targetCard.screenshot({ path: thumbPath }).catch(() => { });
 
-          await targetCard.click({ timeout: 3000 }).catch(() => {});
+          await targetCard.click({ timeout: 3000 }).catch(() => { });
           await page.waitForTimeout(1500);
 
           // Find the download button in the modal header
@@ -2201,10 +2201,10 @@ export class GoogleFlowAdapter implements FlowProvider {
               const extractedFrame = await this.extractVideoLastFrame(page, filePath, lastFramePath);
 
               // Close the modal
-              await page.keyboard.press('Escape').catch(() => {});
+              await page.keyboard.press('Escape').catch(() => { });
               const doneBtn = page.locator('button:has-text("Xong"), button:has-text("Done")').first();
               if (await doneBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
-                await doneBtn.click().catch(() => {});
+                await doneBtn.click().catch(() => { });
               }
               await page.waitForTimeout(500);
 
@@ -2232,11 +2232,11 @@ export class GoogleFlowAdapter implements FlowProvider {
           }
 
           // Close modal if still open
-          await page.keyboard.press('Escape').catch(() => {});
+          await page.keyboard.press('Escape').catch(() => { });
         }
       } catch (videoErr: any) {
         console.warn(`[FlowAdapter] Video viewer download flow error: ${videoErr.message}`);
-        await page.keyboard.press('Escape').catch(() => {});
+        await page.keyboard.press('Escape').catch(() => { });
       }
     }
 
@@ -2290,7 +2290,7 @@ export class GoogleFlowAdapter implements FlowProvider {
                         reader.readAsDataURL(blob);
                       });
                     }
-                  } catch {}
+                  } catch { }
                   try {
                     const img = Array.from(document.querySelectorAll('img')).find((i) => i.src === targetUrl);
                     if (img) {
@@ -2303,7 +2303,7 @@ export class GoogleFlowAdapter implements FlowProvider {
                         return canvas.toDataURL('image/png');
                       }
                     }
-                  } catch {}
+                  } catch { }
                   return null;
                 }, newUrl).catch(() => null);
 
@@ -2336,7 +2336,7 @@ export class GoogleFlowAdapter implements FlowProvider {
                     }
                   }
                 }
-              } catch {}
+              } catch { }
             }
           }
 
@@ -2378,7 +2378,7 @@ export class GoogleFlowAdapter implements FlowProvider {
                       return { success: true, outputFile: filePath };
                     }
                   }
-                } catch {}
+                } catch { }
 
                 // Try in-page canvas/blob
                 try {
@@ -2393,7 +2393,7 @@ export class GoogleFlowAdapter implements FlowProvider {
                           reader.readAsDataURL(blob);
                         });
                       }
-                    } catch {}
+                    } catch { }
                     try {
                       const canvas = document.createElement('canvas');
                       canvas.width = img.naturalWidth || img.clientWidth || 512;
@@ -2403,7 +2403,7 @@ export class GoogleFlowAdapter implements FlowProvider {
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                         return canvas.toDataURL('image/png');
                       }
-                    } catch {}
+                    } catch { }
                     return null;
                   }).catch(() => null);
 
@@ -2416,7 +2416,7 @@ export class GoogleFlowAdapter implements FlowProvider {
                       return { success: true, outputFile: filePath };
                     }
                   }
-                } catch {}
+                } catch { }
 
                 // Try screenshot
                 try {
@@ -2428,7 +2428,7 @@ export class GoogleFlowAdapter implements FlowProvider {
                       return { success: true, outputFile: filePath };
                     }
                   }
-                } catch {}
+                } catch { }
               }
             }
           }
@@ -2456,7 +2456,7 @@ export class GoogleFlowAdapter implements FlowProvider {
               }
             }
           }
-        } catch {}
+        } catch { }
       }
     }
     // ── Strategy 5: Hover over TOP result card and click Download button ────
@@ -2465,7 +2465,7 @@ export class GoogleFlowAdapter implements FlowProvider {
       const cardCount = await candidateCards.count().catch(() => 0);
       if (cardCount > 0) {
         const newestCard = candidateCards.first();
-        await newestCard.hover({ timeout: 2000 }).catch(() => {});
+        await newestCard.hover({ timeout: 2000 }).catch(() => { });
         await page.waitForTimeout(600);
       }
 
@@ -2504,7 +2504,7 @@ export class GoogleFlowAdapter implements FlowProvider {
               }
             }
           }
-        } catch {}
+        } catch { }
       }
     } catch (e: any) {
       console.warn('[FlowAdapter] Download button error:', e.message);
@@ -2549,7 +2549,7 @@ export class GoogleFlowAdapter implements FlowProvider {
                       fs.unlinkSync(filePath);
                     } else {
                       const thumbPath = filePath.replace('.mp4', '_thumb.png');
-                      await loc.screenshot({ path: thumbPath }).catch(() => {});
+                      await loc.screenshot({ path: thumbPath }).catch(() => { });
                       console.log(`[FlowAdapter] Saved video via fetch: ${buf.length} bytes`);
                       return { success: true, outputFile: filePath, thumbnailFile: thumbPath };
                     }
@@ -2559,10 +2559,10 @@ export class GoogleFlowAdapter implements FlowProvider {
 
               // Fallback: screenshot video frame as thumbnail
               const thumbPath = filePath.replace('.mp4', '_thumb.png');
-              await loc.screenshot({ path: thumbPath }).catch(() => {});
+              await loc.screenshot({ path: thumbPath }).catch(() => { });
             }
           }
-        } catch {}
+        } catch { }
       }
     }
 

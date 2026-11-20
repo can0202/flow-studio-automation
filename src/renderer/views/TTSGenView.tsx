@@ -79,6 +79,15 @@ const getRegionBadge = (region?: string) => {
   if (region === 'Miền Trung') {
     return 'bg-amber-50 text-amber-700 border border-amber-200';
   }
+  if (region === 'Nhật Bản' || region === 'Tokyo') {
+    return 'bg-rose-50 text-rose-700 border border-rose-200';
+  }
+  if (region === 'Hàn Quốc' || region === 'Seoul') {
+    return 'bg-indigo-50 text-indigo-700 border border-indigo-200';
+  }
+  if (region === 'US') {
+    return 'bg-purple-50 text-purple-700 border border-purple-200';
+  }
   return 'bg-sky-50 text-sky-700 border border-sky-200';
 };
 
@@ -92,14 +101,14 @@ export const TTSGenView: React.FC = () => {
   const [selectedVoiceId, setSelectedVoiceId] = useState('Adam bựa');
   const [speed, setSpeed] = useState(1.0);
   const [deviceMode, setDeviceMode] = useState<'auto' | 'cpu' | 'gpu'>('auto');
-  const [selectedLanguage, setSelectedLanguage] = useState<'vi' | 'en'>('vi');
+  const [selectedLanguage, setSelectedLanguage] = useState<'vi' | 'en' | 'ja' | 'ko'>('vi');
   const [projectName, setProjectName] = useState(settings?.defaultProjectName || 'FlowStudioProject');
   const [refAudioPath, setRefAudioPath] = useState('');
 
   // Voice Modal State
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [regionFilter, setRegionFilter] = useState<'all' | 'Miền Bắc' | 'Miền Trung' | 'Miền Nam'>('all');
+  const [regionFilter, setRegionFilter] = useState<string>('all');
   const [genderFilter, setGenderFilter] = useState<'all' | 'female' | 'male'>('all');
   const [onlyStarFilter, setOnlyStarFilter] = useState(false);
 
@@ -581,7 +590,7 @@ export const TTSGenView: React.FC = () => {
             <h1 className="text-lg font-bold text-[#1A0A4A]">Chuyển Văn Bản Thành Giọng Đọc (TTS)</h1>
           </div>
           <p className="text-xs text-[#4A4070]">
-            Mô hình mã nguồn mở <strong className="text-[#9B7AFF]">VieNeu-TTS (48 kHz)</strong> chạy 100% Offline trên CPU/GPU của máy tính. Hỗ trợ song ngữ Tiếng Việt & Tiếng Anh.
+            Mô hình mã nguồn mở <strong className="text-[#9B7AFF]">VieNeu-TTS (48 kHz)</strong> & Neural AI thế hệ mới. Hỗ trợ đa ngôn ngữ: <strong className="text-[#5F2CFF]">Tiếng Việt</strong>, <strong className="text-[#5F2CFF]">Tiếng Nhật</strong>, <strong className="text-[#5F2CFF]">Tiếng Hàn</strong> và <strong className="text-[#5F2CFF]">Tiếng Anh</strong>.
           </p>
         </div>
 
@@ -1021,22 +1030,60 @@ export const TTSGenView: React.FC = () => {
                 <span className="text-[11px] font-bold text-[#4A4070] uppercase tracking-wider">NGÔN NGỮ</span>
                 <div className="flex items-center gap-1 p-0.5 rounded-xl bg-white border border-[#E2E6FF] shadow-sm">
                   <button
-                    onClick={() => setSelectedLanguage('en')}
-                    className={`px-3 py-1.5 rounded-lg font-bold transition-all ${selectedLanguage === 'en'
+                    type="button"
+                    onClick={() => {
+                      setSelectedLanguage('vi');
+                      const firstVi = voices.find((v) => v.lang === 'vi' || !v.lang);
+                      if (firstVi) setSelectedVoiceId(firstVi.id);
+                    }}
+                    className={`px-2.5 py-1.5 rounded-lg font-bold transition-all ${selectedLanguage === 'vi'
                       ? 'bg-[#5F2CFF] text-white shadow-sm'
                       : 'text-[#4A4070] hover:text-[#1A0A4A]'
                       }`}
                   >
-                    us Tiếng Anh
+                    🇻🇳 Tiếng Việt
                   </button>
                   <button
-                    onClick={() => setSelectedLanguage('vi')}
-                    className={`px-3 py-1.5 rounded-lg font-bold transition-all ${selectedLanguage === 'vi'
+                    type="button"
+                    onClick={() => {
+                      setSelectedLanguage('ja');
+                      const firstJa = voices.find((v) => v.lang === 'ja');
+                      if (firstJa) setSelectedVoiceId(firstJa.id);
+                    }}
+                    className={`px-2.5 py-1.5 rounded-lg font-bold transition-all ${selectedLanguage === 'ja'
                       ? 'bg-[#5F2CFF] text-white shadow-sm'
                       : 'text-[#4A4070] hover:text-[#1A0A4A]'
                       }`}
                   >
-                    vn Tiếng Việt
+                    🇯🇵 Tiếng Nhật
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedLanguage('ko');
+                      const firstKo = voices.find((v) => v.lang === 'ko');
+                      if (firstKo) setSelectedVoiceId(firstKo.id);
+                    }}
+                    className={`px-2.5 py-1.5 rounded-lg font-bold transition-all ${selectedLanguage === 'ko'
+                      ? 'bg-[#5F2CFF] text-white shadow-sm'
+                      : 'text-[#4A4070] hover:text-[#1A0A4A]'
+                      }`}
+                  >
+                    🇰🇷 Tiếng Hàn
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedLanguage('en');
+                      const firstEn = voices.find((v) => v.lang === 'en');
+                      if (firstEn) setSelectedVoiceId(firstEn.id);
+                    }}
+                    className={`px-2.5 py-1.5 rounded-lg font-bold transition-all ${selectedLanguage === 'en'
+                      ? 'bg-[#5F2CFF] text-white shadow-sm'
+                      : 'text-[#4A4070] hover:text-[#1A0A4A]'
+                      }`}
+                  >
+                    🇺🇸 Tiếng Anh
                   </button>
                 </div>
               </div>

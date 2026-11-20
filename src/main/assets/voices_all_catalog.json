@@ -418,5 +418,85 @@
     "isStar": true,
     "initials": "SR",
     "lang": "en"
+  },
+  {
+    "id": "ja_nanami",
+    "name": "Nanami",
+    "label": "⭐ Nanami — Nữ · Nhật Bản (Tokyo) · Dịu dàng",
+    "desc": "Tiếng Nhật · Nữ · Chuẩn Tokyo ngọt ngào, tự nhiên",
+    "gender": "female",
+    "region": "Nhật Bản",
+    "tags": [
+      "Chuẩn Tokyo",
+      "Dịu dàng",
+      "Tự nhiên"
+    ],
+    "isStar": true,
+    "initials": "NN",
+    "lang": "ja"
+  },
+  {
+    "id": "ja_keita",
+    "name": "Keita",
+    "label": "⭐ Keita — Nam · Nhật Bản (Tokyo) · Trầm ấm",
+    "desc": "Tiếng Nhật · Nam · Chuẩn Tokyo dứt khoát, trầm ấm",
+    "gender": "male",
+    "region": "Nhật Bản",
+    "tags": [
+      "Chuẩn Tokyo",
+      "Trầm ấm",
+      "Rõ ràng"
+    ],
+    "isStar": true,
+    "initials": "KT",
+    "lang": "ja"
+  },
+  {
+    "id": "ko_sunhi",
+    "name": "Sun-Hi",
+    "label": "⭐ Sun-Hi — Nữ · Hàn Quốc (Seoul) · Truyền cảm",
+    "desc": "Tiếng Hàn · Nữ · Chuẩn Seoul trong trẻo, truyền cảm",
+    "gender": "female",
+    "region": "Hàn Quốc",
+    "tags": [
+      "Chuẩn Seoul",
+      "Truyền cảm",
+      "Trong trẻo"
+    ],
+    "isStar": true,
+    "initials": "SH",
+    "lang": "ko"
+  },
+  {
+    "id": "ko_injoon",
+    "name": "In-Joon",
+    "label": "⭐ In-Joon — Nam · Hàn Quốc (Seoul) · Ấm áp",
+    "desc": "Tiếng Hàn · Nam · Chuẩn Seoul ấm áp, tự nhiên",
+    "gender": "male",
+    "region": "Hàn Quốc",
+    "tags": [
+      "Chuẩn Seoul",
+      "Ấm áp",
+      "Tự nhiên"
+    ],
+    "isStar": true,
+    "initials": "IJ",
+    "lang": "ko"
+  },
+  {
+    "id": "ko_hyunsu",
+    "name": "Hyunsu",
+    "label": "⭐ Hyunsu — Nam · Hàn Quốc (Seoul) · Hiện đại",
+    "desc": "Tiếng Hàn · Nam · Chuẩn Seoul phong cách hiện đại, tin tức",
+    "gender": "male",
+    "region": "Hàn Quốc",
+    "tags": [
+      "Chuẩn Seoul",
+      "Hiện đại",
+      "Tin tức"
+    ],
+    "isStar": true,
+    "initials": "HS",
+    "lang": "ko"
   }
 ]

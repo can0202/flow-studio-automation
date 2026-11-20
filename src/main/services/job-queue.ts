@@ -398,7 +398,7 @@ export class JobQueue {
 
           // Short settle delay between consecutive tasks
           if (!settings.simulationMode) {
-            await new Promise((resolve) => setTimeout(resolve, 800));
+            await new Promise((resolve) => setTimeout(resolve, 300));
           }
         }
       } else {
